@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import '../index.css';
 
+import logo from '../assets/logo-full-white.png';
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -46,7 +48,7 @@ const Login = () => {
                 boxShadow: 'var(--shadow-lg)'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '10px' }}>VoxFlow</h1>
+                    <img src={logo} alt="Vox2you" style={{ height: '60px', width: 'auto', marginBottom: '15px' }} />
                     <h2 style={{ color: 'var(--text-main)', marginBottom: '10px' }}>Bem-vindo de volta!</h2>
                     <p style={{ color: 'var(--text-muted)' }}>Faça login para acessar o sistema.</p>
                 </div>

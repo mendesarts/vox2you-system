@@ -14,9 +14,19 @@ const TasksPage = () => {
 
     const fetchTasks = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/tasks');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+            const res = await fetch(`${apiUrl}/tasks`);
             const data = await res.json();
-            setTasks(data);
+
+            if (Array.isArray(data)) {
+                setTasks({
+                    pedagogical: data.filter(t => t.category === 'pedagogical'),
+                    administrative: data.filter(t => t.category === 'administrative'),
+                    commercial: data.filter(t => t.category === 'commercial')
+                });
+            } else {
+                setTasks(data);
+            }
         } catch (error) {
             console.error('Erro ao buscar tarefas:', error);
         } finally {

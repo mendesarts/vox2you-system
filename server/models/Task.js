@@ -13,6 +13,10 @@ const Task = sequelize.define('Task', {
     priority: {
         type: DataTypes.ENUM('low', 'medium', 'high'),
         defaultValue: 'medium'
+    },
+    category: {
+        type: DataTypes.ENUM('pedagogical', 'administrative', 'commercial'),
+        allowNull: true
     }
 });
 

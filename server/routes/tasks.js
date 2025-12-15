@@ -12,7 +12,8 @@ try {
     Task = sequelize.define('Task', {
         title: Sequelize.STRING,
         status: Sequelize.STRING,
-        priority: Sequelize.STRING
+        priority: Sequelize.STRING,
+        category: Sequelize.STRING // 'pedagogical', 'administrative', 'commercial'
     });
 } catch (e) {
     console.log('Erro ao definir modelo Task, usando Mock:', e);
@@ -30,7 +31,7 @@ try {
 // Listar todas as tarefas
 router.get('/', async (req, res) => {
     try {
-        await Task.sync(); // Garante que a tabela existe
+        await Task.sync({ alter: true }); // Garante que a tabela existe e atualiza colunas
         const tasks = await Task.findAll();
         res.json(tasks);
     } catch (error) {

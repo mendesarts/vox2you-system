@@ -4,6 +4,8 @@ import { LayoutDashboard, Users, Calendar, MessageSquare, Settings, ShieldCheck,
 import './sidebar.css';
 import { useAuth } from '../context/AuthContext';
 
+import logo from '../assets/logo-full-white.png';
+
 const Sidebar = () => {
     const { user, logout } = useAuth();
 
@@ -20,8 +22,8 @@ const Sidebar = () => {
         <aside className="sidebar">
             <div className="sidebar-header">
                 <div className="logo">
-                    <NavLink to="/dashboard" style={{ textDecoration: 'none' }}>
-                        <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>VoxFlow</h1>
+                    <NavLink to="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                        <img src={logo} alt="Vox2you" style={{ height: '40px', width: 'auto' }} />
                     </NavLink>
                 </div>
             </div>
