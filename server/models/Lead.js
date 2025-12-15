@@ -36,7 +36,7 @@ const Lead = sequelize.define('Lead', {
         defaultValue: 'AI'
     },
     consultantId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: true // references Users.id
     },
     unitId: {

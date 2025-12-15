@@ -1,7 +1,75 @@
 const express = require('express');
 const router = express.Router();
 const Lead = require('../models/Lead');
+const User = require('../models/User'); // Import User
+const auth = require('../middleware/auth'); // Import Auth
 const { Op } = require('sequelize');
+
+// GET /api/crm/stats/top-seller
+router.get('/stats/top-seller', auth, async (req, res) => {
+    try {
+        const { unitId, role } = req.user;
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        // Filter for sales in current month
+        const where = {
+            status: 'won',
+            updatedAt: { [Op.between]: [startOfMonth, endOfMonth] }
+        };
+
+        // Unit filtering
+        if (role !== 'master') {
+            where.unitId = unitId;
+        }
+
+        // Fetch leads
+        const leads = await Lead.findAll({
+            where,
+            attributes: ['consultantId']
+        });
+
+        if (leads.length === 0) return res.json(null); // No sales
+
+        // Count sales
+        const counts = {};
+        leads.forEach(l => {
+            if (l.consultantId) {
+                counts[l.consultantId] = (counts[l.consultantId] || 0) + 1;
+            }
+        });
+
+        // Find max
+        let topConsultantId = null;
+        let maxSales = -1;
+        for (const [id, count] of Object.entries(counts)) {
+            if (count > maxSales) {
+                maxSales = count;
+                topConsultantId = id;
+            }
+        }
+
+        if (!topConsultantId) return res.json(null);
+
+        // Fetch User details
+        const topSeller = await User.findByPk(topConsultantId, {
+            attributes: ['id', 'name', 'profilePicture', 'role', 'unitId']
+        });
+
+        if (!topSeller) return res.json(null);
+
+        res.json({
+            ...topSeller.toJSON(),
+            salesCount: maxSales,
+            month: now.toLocaleString('pt-BR', { month: 'long' })
+        });
+
+    } catch (error) {
+        console.error('Top Seller Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // --- Helper: Simulated AI Actions ---
 const executeAIAction = async (lead, actionType) => {

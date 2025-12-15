@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, CalendarCheck, DollarSign, ArrowUpRight, Store } from 'lucide-react';
+import { TrendingUp, Users, CalendarCheck, DollarSign, ArrowUpRight, Store, Award } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './dashboard.css';
 
 const Dashboard = () => {
+    const { user } = useAuth(); // Need user token logic if useAuth provides api or token
     const [stats, setStats] = useState({
         commercial: { newLeadsMonth: 0, salesMonth: 0, conversionRate: 0 },
         financial: { revenue: 0, expense: 0, balance: 0 },
         pedagogical: { activeStudents: 0, activeClasses: 0 },
         units: []
     });
+    const [topSeller, setTopSeller] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedUnit, setSelectedUnit] = useState('');
 
@@ -20,9 +23,24 @@ const Dashboard = () => {
         try {
             // Build query
             const query = unitId && unitId !== 'all' ? `?unitId=${unitId}` : '';
-            const res = await fetch(`http://localhost:3000/api/dashboard/main-stats${query}`);
+
+            // 1. Fetch Main Stats
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${query}`);
             const data = await res.json();
             setStats(data);
+
+            // 2. Fetch Top Seller (Only if authenticated properly, assuming useAuth exposes token or local storage)
+            const token = localStorage.getItem('token');
+            if (token) {
+                const resSeller = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/stats/top-seller${query}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resSeller.ok) {
+                    const sellerData = await resSeller.json();
+                    setTopSeller(sellerData);
+                }
+            }
+
             if (unitId) setSelectedUnit(unitId);
         } catch (error) {
             console.error(error);
@@ -161,29 +179,63 @@ const Dashboard = () => {
             </div>
 
             {/* Second Row - Details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginTop: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginTop: '32px' }}>
+
+                {/* Top Seller Card */}
+                <div className="dashboard-card" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FDB931 100%)', color: '#78350f', border: 'none' }}>
+                    <div className="card-header" style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+                        <h3 style={{ color: '#78350f', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Award size={24} /> Destaque do Mês
+                        </h3>
+                    </div>
+                    {topSeller ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', height: 'calc(100% - 60px)' }}>
+                            <div style={{
+                                width: '80px', height: '80px', borderRadius: '50%',
+                                border: '4px solid rgba(255,255,255,0.5)', overflow: 'hidden',
+                                marginBottom: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                {topSeller.profilePicture ? (
+                                    <img src={topSeller.profilePicture} alt={topSeller.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#FDB931' }}>{topSeller.name.charAt(0)}</span>
+                                )}
+                            </div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{topSeller.name}</div>
+                            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>{topSeller.month}</div>
+                            <div style={{
+                                marginTop: '12px', background: 'rgba(255,255,255,0.3)',
+                                padding: '4px 12px', borderRadius: '20px', fontWeight: 'bold'
+                            }}>
+                                {topSeller.salesCount} Vendas
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ padding: '24px', textAlign: 'center', opacity: 0.8 }}>
+                            Nenhum destaque definido ainda.
+                        </div>
+                    )}
+                </div>
 
                 {/* Financial Breakdown */}
                 <div className="dashboard-card">
                     <div className="card-header">
-                        <h3><TrendingUp size={20} /> Saúde Financeira (Mês)</h3>
+                        <h3><TrendingUp size={20} /> Saúde Financeira</h3>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '24px' }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Receita</div>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#059669' }}>{formatMoney(stats.financial.revenue)}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>Receita</span>
+                            <span style={{ fontWeight: 700, color: '#059669' }}>{formatMoney(stats.financial.revenue)}</span>
                         </div>
-                        <div style={{ height: '40px', width: '1px', background: 'var(--border)' }}></div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Despesa</div>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>{formatMoney(stats.financial.expense)}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text-muted)' }}>Despesa</span>
+                            <span style={{ fontWeight: 700, color: '#ef4444' }}>{formatMoney(stats.financial.expense)}</span>
                         </div>
-                        <div style={{ height: '40px', width: '1px', background: 'var(--border)' }}></div>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Resultado</div>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: stats.financial.balance >= 0 ? '#3b82f6' : '#ef4444' }}>
+                        <div style={{ padding: '8px 0', borderTop: '1px solid var(--border)', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 600 }}>Saldo</span>
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: stats.financial.balance >= 0 ? '#3b82f6' : '#ef4444' }}>
                                 {formatMoney(stats.financial.balance)}
-                            </div>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -191,7 +243,7 @@ const Dashboard = () => {
                 {/* Conversion */}
                 <div className="dashboard-card">
                     <div className="card-header">
-                        <h3><ArrowUpRight size={20} /> Conversão de Vendas</h3>
+                        <h3><ArrowUpRight size={20} /> Conversão</h3>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', height: '100%' }}>
                         <div style={{ fontSize: '3rem', fontWeight: 800, color: '#3b82f6', lineHeight: 1 }}>
