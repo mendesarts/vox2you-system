@@ -15,14 +15,11 @@ router.get('/', auth, async (req, res) => {
         // Regras de Visualização
         if (role === 'master') {
             // Master vê tudo
-        } else if (['franchisee', 'manager', 'admin'].includes(role)) {
-            // Franqueado/Gestor/Admin vê apenas sua unidade
+        } else if (['franchisee', 'manager'].includes(role)) {
+            // Franqueado/Gestor vê apenas sua unidade
             where.unitId = unitId;
         } else {
-            // Outros cargos vêm apenas a si mesmos ou talvez sua equipe (por enquanto restringir a si mesmo ou nada?)
-            // O request pede "Líderes verão dados dos liderados". Implementaçao complexa. 
-            // Para "Listagem de Usuários" (tela de admin), geralmente só Gestores+ acessam.
-            // Vamos assumir que apenas Gestores+ acessam essa rota por enquanto ou retornam apenas eles mesmos.
+            // Outros cargos vêem APENAS o próprio perfil para edição
             where.id = req.user.id;
         }
 
@@ -44,21 +41,26 @@ router.post('/', auth, async (req, res) => {
         const requester = req.user;
 
         // 1. Permissões de Criação
-        // 'admin' (Administrativo) também deve poder criar usuários (ex: assistentes),
-        // mas restrito à unidade dele, assim como Manager/Franchisee.
-        if (!['master', 'franchisee', 'manager', 'admin'].includes(requester.role)) {
-            return res.status(403).json({ error: 'Permissão negada. Apenas Gestores e Diretores podem criar usuários.' });
+        // Apenas Master, Franqueado e Gestor podem criar contas
+        if (!['master', 'franchisee', 'manager'].includes(requester.role)) {
+            return res.status(403).json({ error: 'Permissão negada. Você não tem permissão para criar usuários.' });
         }
 
-        // 2. Restrições de Unidade
+        // 2. Restrições de Unidade e Hierarquia
         let targetUnitId = unitId;
+
         if (requester.role !== 'master') {
             // Se não for master, FORÇA a unidade do criador
             targetUnitId = requester.unitId;
 
-            // Se tentar criar um cargo maior que o proprio (ex: gestor criando master) -> Bloquear
-            if (['master'].includes(role)) {
-                return res.status(403).json({ error: 'Você não pode criar este tipo de cargo.' });
+            // Hierarquia:
+            // Franqueado não cria Master
+            if (requester.role === 'franchisee' && role === 'master') {
+                return res.status(403).json({ error: 'Franqueados não podem criar contas Master.' });
+            }
+            // Gestor não cria Master nem Franqueado
+            if (requester.role === 'manager' && ['master', 'franchisee'].includes(role)) {
+                return res.status(403).json({ error: 'Gestores não podem criar contas Master ou Franqueado.' });
             }
         }
 

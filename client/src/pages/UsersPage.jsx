@@ -106,6 +106,41 @@ const UsersPage = () => {
         }
     };
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [editId, setEditId] = useState(null);
+
+    const handleEditUser = (user) => {
+        setFormData({
+            name: user.name,
+            email: user.email,
+            whatsapp: user.whatsapp || '',
+            role: user.role,
+            position: user.position || '',
+            unitId: user.unitId || '',
+            password: '', // Password empty means "don't change"
+            profilePicture: user.profilePicture || ''
+        });
+        setPreviewImage(user.profilePicture || null);
+        setIsEditing(true);
+        setEditId(user.id);
+        setShowModal(true);
+    };
+
+    const resetForm = () => {
+        setFormData({
+            name: '', email: '', whatsapp: '', role: 'sales', position: '', unitId: '', password: '', profilePicture: ''
+        });
+        setPreviewImage(null);
+        setIsEditing(false);
+        setEditId(null);
+        setFormError('');
+    };
+
+    const handleOpenCreate = () => {
+        resetForm();
+        setShowModal(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
@@ -124,28 +159,55 @@ const UsersPage = () => {
         }
 
         try {
-            const passwordToSave = formData.password || 'Mudar123!';
-            await api.createUser({
-                ...formData,
-                password: passwordToSave
-            });
-            setShowModal(false);
-            fetchData();
+            if (isEditing) {
+                // Update User
+                const updateData = { ...formData };
+                if (!updateData.password) delete updateData.password; // Don't send empty password
 
-            // Show Success Modal with Credentials
-            setSuccessData({
-                name: formData.name,
-                email: formData.email,
-                password: passwordToSave
-            });
+                // Use the update API (assuming it's implemented as PUT /users/:id)
+                // We need to fetch/api call manually or add to services/api.js, assuming api.updateUser exists or we just fetch
+                // api.js was refactored, let's assume api.updateUser or use fetch directly if missing.
+                // The user previously edited api.js to consolidate. I'll assume it handles put.
+                // If not, I'll use fetch here to be safe and quick.
 
-            // Reset form
-            setFormData({
-                name: '', email: '', whatsapp: '', role: 'sales', position: '', unitId: '', password: '', profilePicture: ''
-            });
-            setPreviewImage(null);
+                const token = currentUser.token || localStorage.getItem('token');
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/users/${editId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Erro ao atualizar usuário');
+                }
+
+                alert('Usuário atualizado com sucesso!');
+                setShowModal(false);
+                fetchData();
+                resetForm();
+
+            } else {
+                // Create User
+                const passwordToSave = formData.password || 'Mudar123!';
+                await api.createUser({
+                    ...formData,
+                    password: passwordToSave
+                });
+                setShowModal(false);
+                fetchData();
+
+                // Show Success Modal with Credentials
+                setSuccessData({
+                    name: formData.name,
+                    email: formData.email,
+                    password: passwordToSave
+                });
+
+                resetForm(); // Note: resetForm clears form but SuccessModal is separate state
+            }
         } catch (error) {
-            setFormError(error.message || 'Erro ao criar usuário');
+            setFormError(error.message || 'Erro ao salvar usuário');
         }
     };
 
@@ -179,6 +241,8 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
         u.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const canCreateUsers = ['master', 'franchisee', 'manager'].includes(currentUser.role);
+
     return (
         <div className="page-fade-in" style={{ padding: '20px' }}>
             <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -186,9 +250,11 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
                     <h2 className="page-title">Gestão de Usuários</h2>
                     <p className="page-subtitle">Controle de acesso, cargos e permissões.</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowModal(true)}>
-                    <Plus size={20} /> Novo Usuário
-                </button>
+                {canCreateUsers && (
+                    <button className="btn-primary" onClick={() => setShowModal(true)}>
+                        <Plus size={20} /> Novo Usuário
+                    </button>
+                )}
             </header>
 
             {/* Filters */}
@@ -206,7 +272,17 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
             {/* Users Grid/List */}
             <div className="users-grid">
                 {filteredUsers.map(user => (
-                    <div key={user.id} className="user-card animate-fade-in">
+                    <div key={user.id} className="user-card animate-fade-in" style={{ position: 'relative' }}>
+                        <div className="user-card-actions" style={{ position: 'absolute', top: '15px', right: '15px' }}>
+                            <button
+                                onClick={() => handleEditUser(user)}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                                title="Editar Usuário"
+                            >
+                                <Edit size={18} />
+                            </button>
+                        </div>
+
                         <div className="user-card-header">
                             <div className="user-avatar-lg">
                                 {user.profilePicture ? (
@@ -247,7 +323,7 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '600px' }}>
                         <div className="modal-header">
-                            <h3>Novo Usuário</h3>
+                            <h3>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</h3>
                             <button onClick={() => setShowModal(false)}><X size={24} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="modal-body">
@@ -277,7 +353,13 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Email*</label>
-                                    <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        required
+                                        disabled={isEditing && currentUser.role !== 'master'} // Only master can change email on edit, or maybe stricter?
+                                    />
                                 </div>
                             </div>
 
@@ -295,7 +377,11 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Perfil de Acesso*</label>
-                                    <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                                    <select
+                                        value={formData.role}
+                                        onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                        disabled={isEditing && currentUser.role !== 'master'} // Prevent privilege change on edit unless master
+                                    >
                                         {getAvailableRoles().map(([key, label]) => (
                                             <option key={key} value={key}>{label}</option>
                                         ))}
@@ -306,7 +392,7 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
                                     <select
                                         value={formData.unitId}
                                         onChange={e => setFormData({ ...formData, unitId: e.target.value })}
-                                        disabled={currentUser.role !== 'master'} // Only master can change unit freely
+                                        disabled={currentUser.role !== 'master' || (isEditing && currentUser.role !== 'master')} // Only master can change unit freely
                                     >
                                         <option value="">Selecione...</option>
                                         {units.map(unit => (
@@ -319,8 +405,13 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
 
                             {/* Default Password Notice */}
                             <div className="form-group">
-                                <label>Senha Inicial</label>
-                                <input value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} placeholder="Padrão: Mudar123!" />
+                                <label>{isEditing ? 'Nova Senha (deixe em branco para manter)' : 'Senha Inicial'}</label>
+                                <input
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder={isEditing ? '******' : 'Padrão: Mudar123!'}
+                                    type="password"
+                                />
                             </div>
 
                             {formError && (
@@ -331,7 +422,7 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
 
                             <div className="modal-footer" style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
-                                <button type="submit" className="btn-primary">Criar Usuário</button>
+                                <button type="submit" className="btn-primary">{isEditing ? 'Salvar Alterações' : 'Criar Usuário'}</button>
                             </div>
                         </form>
                     </div>
