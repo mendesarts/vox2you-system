@@ -27,9 +27,84 @@ const UsersPage = () => {
 
     const [successData, setSuccessData] = useState(null);
 
-    // ... (keep useEffect/fetchData)
+    // Form State
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        whatsapp: '',
+        role: 'sales',
+        position: '',
+        unitId: '',
+        password: '', // Should be generated or set
+        profilePicture: ''
+    });
+    const [previewImage, setPreviewImage] = useState(null);
+    const [formError, setFormError] = useState('');
 
-    // ... (keep handleImageChange)
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [usersData, unitsData] = await Promise.all([
+                api.fetchUsers(),
+                fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units`).then(res => res.ok ? res.json() : [])
+            ]);
+            setUsers(usersData);
+            setUnits(unitsData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                setFormError('Imagem muito grande. Máximo 2MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                // Resize image to max 200x200
+                const img = new Image();
+                img.src = reader.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 200;
+                    const MAX_HEIGHT = 200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    setPreviewImage(dataUrl);
+                    setFormData(prev => ({ ...prev, profilePicture: dataUrl }));
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -307,4 +382,3 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
 };
 
 export default UsersPage;
-```
