@@ -25,85 +25,11 @@ const UsersPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Form State
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        whatsapp: '',
-        role: 'sales',
-        position: '',
-        unitId: '',
-        password: '', // Should be generated or set
-        profilePicture: ''
-    });
-    const [previewImage, setPreviewImage] = useState(null);
-    const [formError, setFormError] = useState('');
+    const [successData, setSuccessData] = useState(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    // ... (keep useEffect/fetchData)
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [usersData, unitsData] = await Promise.all([
-                api.fetchUsers(), // We need to ensure this matches api.js
-                // api.fetchUnits() // Need to implement
-                fetch('http://localhost:3000/api/units').then(res => res.ok ? res.json() : [])
-            ]);
-            setUsers(usersData);
-            setUnits(unitsData);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) { // 2MB limit
-                setFormError('Imagem muito grande. Máximo 2MB.');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                // Resize image to max 200x200
-                const img = new Image();
-                img.src = reader.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 200;
-                    const MAX_HEIGHT = 200;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    setPreviewImage(dataUrl);
-                    setFormData(prev => ({ ...prev, profilePicture: dataUrl }));
-                };
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    // ... (keep handleImageChange)
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -123,12 +49,21 @@ const UsersPage = () => {
         }
 
         try {
+            const passwordToSave = formData.password || 'Mudar123!';
             await api.createUser({
                 ...formData,
-                password: formData.password || 'Mudar123!' // Default password if empty
+                password: passwordToSave
             });
             setShowModal(false);
             fetchData();
+
+            // Show Success Modal with Credentials
+            setSuccessData({
+                name: formData.name,
+                email: formData.email,
+                password: passwordToSave
+            });
+
             // Reset form
             setFormData({
                 name: '', email: '', whatsapp: '', role: 'sales', position: '', unitId: '', password: '', profilePicture: ''
@@ -137,6 +72,23 @@ const UsersPage = () => {
         } catch (error) {
             setFormError(error.message || 'Erro ao criar usuário');
         }
+    };
+
+    const handleCopyMessage = () => {
+        if (!successData) return;
+        const message = `
+Olá, ${successData.name}!
+Seu acesso ao sistema Vox2you foi criado.
+
+🔗 Link: https://meuvoxflow.vercel.app/
+📧 Login: ${successData.email}
+🔑 Senha Provisória: ${successData.password}
+
+Você será solicitado a criar uma nova senha no primeiro acesso.
+        `.trim();
+
+        navigator.clipboard.writeText(message);
+        alert('Mensagem copiada para a área de transferência!');
     };
 
     const getAvailableRoles = () => {
@@ -215,7 +167,7 @@ const UsersPage = () => {
                 ))}
             </div>
 
-            {/* Modal */}
+            {/* Modal de Cadastro */}
             {showModal && (
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '600px' }}>
@@ -310,8 +262,49 @@ const UsersPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Modal de Sucesso (Boas Vindas) */}
+            {successData && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+                            <div style={{ background: '#dcfce7', padding: '15px', borderRadius: '50%', color: '#16a34a' }}>
+                                <Check size={32} />
+                            </div>
+                        </div>
+                        <h3>Usuário Criado com Sucesso!</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Envie as informações abaixo para o novo colaborador.</p>
+
+                        <div style={{
+                            background: 'var(--bg-app)',
+                            padding: '20px',
+                            borderRadius: 'var(--radius-md)',
+                            textAlign: 'left',
+                            border: '1px solid var(--border)',
+                            marginBottom: '20px'
+                        }}>
+                            <p><strong>Olá, {successData.name}!</strong></p>
+                            <p>Seu acesso ao sistema Vox2you foi criado.</p>
+                            <br />
+                            <p>🔗 <strong>Link:</strong> https://meuvoxflow.vercel.app/</p>
+                            <p>📧 <strong>Login:</strong> {successData.email}</p>
+                            <p>🔑 <strong>Senha Provisória:</strong> {successData.password}</p>
+                            <br />
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Você será solicitado a criar uma nova senha no primeiro acesso.</p>
+                        </div>
+
+                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '15px' }}>
+                            <button className="btn-secondary" onClick={() => setSuccessData(null)}>Fechar</button>
+                            <button className="btn-primary" onClick={handleCopyMessage}>
+                                <Check size={18} style={{ marginRight: '5px' }} /> Copiar Mensagem
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default UsersPage;
+```
