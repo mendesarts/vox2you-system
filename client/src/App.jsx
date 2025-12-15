@@ -10,6 +10,7 @@ import PedagogicalPage from './pages/PedagogicalPage';
 import Settings from './pages/Settings';
 import TasksPage from './pages/TasksPage';
 import Login from './pages/Login';
+import UsersPage from './pages/UsersPage';
 import './app.css';
 
 const ProtectedRoute = () => {
@@ -62,6 +63,7 @@ function App() {
                             <Route path="/crm" element={<CRMBoard />} /> {/* Replaced Commercial with CRMBoard */}
                             <Route path="/pedagogical" element={<PedagogicalPage />} />
                             <Route path="/calendar" element={<CalendarPage />} />
+                            <Route path="/users" element={<UsersPage />} />
                             <Route path="/settings" element={<Settings isLightMode={isLightMode} toggleTheme={toggleTheme} />} />
                         </Route>
                     </Route>

@@ -1,38 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { Sequelize } = require('sequelize');
+const Task = require('../models/Task');
+const auth = require('../middleware/auth');
 
-// Tenta importar o modelo, se der erro usa um mock para nao travar o deploy
-let Task;
-try {
-    const sequelize = process.env.DATABASE_URL
-        ? new Sequelize(process.env.DATABASE_URL)
-        : new Sequelize({ dialect: 'sqlite', storage: 'voxflow.sqlite' }); // Use safe fallback
+// Sync model on load (optional, usually done in index or separate script)
+// Task.sync({ alter: true }).catch(err => console.log('Task sync error:', err));
 
-    Task = sequelize.define('Task', {
-        title: Sequelize.STRING,
-        status: Sequelize.STRING,
-        priority: Sequelize.STRING,
-        category: Sequelize.STRING // 'pedagogical', 'administrative', 'commercial'
-    });
-} catch (e) {
-    console.log('Erro ao definir modelo Task, usando Mock:', e);
-    // Mock básico para não quebrar a API
-    const mockFn = async () => [];
-    Task = {
-        sync: mockFn,
-        findAll: mockFn,
-        create: mockFn,
-        update: mockFn,
-        destroy: mockFn
-    };
-}
-
-// Listar todas as tarefas
-router.get('/', async (req, res) => {
+// Listar todas as tarefas (Filtrado por unidade)
+router.get('/', auth, async (req, res) => {
     try {
-        await Task.sync({ alter: true }); // Garante que a tabela existe e atualiza colunas
-        const tasks = await Task.findAll();
+        const { unitId, role } = req.user;
+        let where = {};
+
+        if (role !== 'master' && unitId) {
+            where.unitId = unitId;
+        }
+
+        const tasks = await Task.findAll({ where });
         res.json(tasks);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -40,9 +24,20 @@ router.get('/', async (req, res) => {
 });
 
 // Criar nova tarefa
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     try {
-        const task = await Task.create(req.body);
+        const { unitId } = req.user;
+        const taskData = { ...req.body };
+
+        // Force unitId from token for non-masters
+        if (req.user.role !== 'master') {
+            taskData.unitId = unitId;
+        } else if (!taskData.unitId) {
+            // Master can specify unitId, or defaults to null (Global)?
+            // Maybe default to null if not provided
+        }
+
+        const task = await Task.create(taskData);
         res.json(task);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -50,9 +45,24 @@ router.post('/', async (req, res) => {
 });
 
 // Atualizar tarefa
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     try {
-        await Task.update(req.body, { where: { id: req.params.id } });
+        const { id } = req.params;
+        const { unitId, role } = req.user;
+
+        const where = { id };
+        if (role !== 'master' && unitId) {
+            where.unitId = unitId;
+        }
+
+        const [updated] = await Task.update(req.body, { where });
+
+        if (!updated && role !== 'master') {
+            // If not updated, implies maybe task doesn't exist OR belongs to another unit
+            // Check if exists? For now just return success false
+            // Actually findAll/check is better but simpler for now implies security via WHERE clause
+        }
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -60,9 +70,18 @@ router.put('/:id', async (req, res) => {
 });
 
 // Deletar tarefa
-router.delete('/:id', async (req, res) => {
+// Deletar tarefa
+router.delete('/:id', auth, async (req, res) => {
     try {
-        await Task.destroy({ where: { id: req.params.id } });
+        const { id } = req.params;
+        const { unitId, role } = req.user;
+
+        const where = { id };
+        if (role !== 'master' && unitId) {
+            where.unitId = unitId;
+        }
+
+        await Task.destroy({ where });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });

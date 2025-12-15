@@ -16,13 +16,32 @@ const User = sequelize.define('User', {
         allowNull: false,
         unique: true
     },
-    password: {
+    whatsapp: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
+    },
+    profilePicture: {
+        type: DataTypes.TEXT, // Base64 or URL
+        allowNull: true
+    },
+    position: {
+        type: DataTypes.STRING, // Cargo/Função ex: "Consultor Senior"
+        allowNull: true
     },
     role: {
-        type: DataTypes.ENUM('admin', 'sales_leader', 'consultant', 'admin_staff', 'pedagogical'),
-        defaultValue: 'consultant'
+        type: DataTypes.ENUM(
+            'master', // Diretor / Franqueadora (Acesso Total)
+            'franchisee', // Franqueado (Acesso Total Unidade)
+            'manager', // Gestor (Acesso Total Unidade)
+            'sales_leader', // Lider Comercial
+            'sales', // Comercial/Consultor
+            'pedagogical_leader', // Lider Pedagógico
+            'pedagogical', // Pedagógico/Professor
+            'admin_financial_manager', // Gerente Adm/Fin
+            'admin', // Administrativo
+            'financial' // Financeiro
+        ),
+        defaultValue: 'sales'
     },
     color: {
         type: DataTypes.STRING, // Hex code for custom UI color

@@ -18,6 +18,10 @@ const Sidebar = () => {
         { icon: Calendar, label: 'Calendário', path: '/calendar' },
     ];
 
+    if (user && ['master', 'franchisee', 'manager', 'admin_financial_manager'].includes(user.role)) {
+        navItems.push({ icon: ShieldCheck, label: 'Gestão Usuários', path: '/users' });
+    }
+
     return (
         <aside className="sidebar">
             <div className="sidebar-header">

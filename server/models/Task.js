@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../index').sequelize || new (require('sequelize'))(process.env.DATABASE_URL);
+const sequelize = require('../config/database');
 
 const Task = sequelize.define('Task', {
     title: {
@@ -17,6 +17,10 @@ const Task = sequelize.define('Task', {
     category: {
         type: DataTypes.ENUM('pedagogical', 'administrative', 'commercial'),
         allowNull: true
+    },
+    unitId: {
+        type: DataTypes.UUID,
+        allowNull: true // Null = Global Task? Or enforce it?
     }
 });
 
