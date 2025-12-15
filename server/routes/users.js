@@ -15,8 +15,8 @@ router.get('/', auth, async (req, res) => {
         // Regras de Visualização
         if (role === 'master') {
             // Master vê tudo
-        } else if (['franchisee', 'manager'].includes(role)) {
-            // Franqueado/Gestor vê apenas sua unidade
+        } else if (['franchisee', 'manager', 'admin'].includes(role)) {
+            // Franqueado/Gestor/Admin vê apenas sua unidade
             where.unitId = unitId;
         } else {
             // Outros cargos vêm apenas a si mesmos ou talvez sua equipe (por enquanto restringir a si mesmo ou nada?)
@@ -44,7 +44,9 @@ router.post('/', auth, async (req, res) => {
         const requester = req.user;
 
         // 1. Permissões de Criação
-        if (!['master', 'franchisee', 'manager'].includes(requester.role)) {
+        // 'admin' (Administrativo) também deve poder criar usuários (ex: assistentes),
+        // mas restrito à unidade dele, assim como Manager/Franchisee.
+        if (!['master', 'franchisee', 'manager', 'admin'].includes(requester.role)) {
             return res.status(403).json({ error: 'Permissão negada. Apenas Gestores e Diretores podem criar usuários.' });
         }
 
