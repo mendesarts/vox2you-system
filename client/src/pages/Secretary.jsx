@@ -310,7 +310,7 @@ const Secretary = () => {
                     {/* AI Advisor Button */}
                     <button
                         onClick={() => setShowAIAdvisor(true)}
-                        className="btn-primary"
+                        className="btn-primary btn-ai-analysis"
                         style={{
                             background: 'linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%)',
                             border: 'none',

@@ -140,3 +140,55 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Global Form Styles */
+input, select, textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color var(--trans-fast), box-shadow var(--trans-fast);
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Fix Sidebar Profile Text in Light Mode */
+.light-mode .user-profile .user-name {
+    color: #ffffff !important;
+}
+.light-mode .user-profile .user-role {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+.light-mode .logout-icon {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+.light-mode .logout-icon:hover {
+    color: #ffffff !important;
+}
+
+/* Button & Badge Tweaks */
+.btn-ai-analysis {
+    color: #ffffff !important; /* Force white text for readability */
+    font-weight: 600;
+}
