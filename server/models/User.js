@@ -1,0 +1,41 @@
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    role: {
+        type: DataTypes.ENUM('admin', 'sales_leader', 'consultant', 'admin_staff', 'pedagogical'),
+        defaultValue: 'consultant'
+    },
+    color: {
+        type: DataTypes.STRING, // Hex code for custom UI color
+        defaultValue: '#05AAA8'
+    },
+    active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
+    },
+    unitId: {
+        type: DataTypes.UUID,
+        allowNull: true // Null = Head Office / Master
+    }
+});
+
+module.exports = User;

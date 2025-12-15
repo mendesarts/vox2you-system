@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conectar Vox2You</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #e5ddd5; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
+        h1 { color: #075e54; margin: 0 0 20px 0; }
+        
+        /* Abas */
+        .tabs { display: flex; justify-content: center; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+        .tab { padding: 10px 20px; cursor: pointer; color: #777; font-weight: bold; }
+        .tab.active { color: #128c7e; border-bottom: 3px solid #128c7e; }
+        
+        /* Conteudo */
+        .content { display: none; }
+        .content.active { display: block; }
+
+        /* QR Code */
+        #qr-container { margin: 0 auto; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 8px; }
+        img { max-width: 100%; border-radius: 8px; }
+
+        /* Pairing Code */
+        input { width: 80%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
+        button { background: #128c7e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 85%; }
+        button:hover { background: #075e54; }
+        #code-display { font-size: 32px; letter-spacing: 5px; font-weight: bold; color: #333; margin: 20px 0; background: #eee; padding: 10px; border-radius: 5px; display: none;}
+        
+        #status { margin-top: 20px; font-weight: bold; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📱 Conectar WhatsApp</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('qr')">QR Code</div>
+            <div class="tab" onclick="switchTab('code')">Número (Código)</div>
+        </div>
+
+        <div id="tab-qr" class="content active">
+            <div id="qr-container">Aguardando...</div>
+            <p style="font-size: 12px; color: #888;">Menu > Aparelhos Conectados > Conectar</p>
+        </div>
+
+        <div id="tab-code" class="content">
+            <p>Digite seu número com DDD (Ex: 556199999999)</p>
+            <input type="text" id="phone-number" placeholder="55 + DDD + Número">
+            <button onclick="requestPairing()">Gerar Código</button>
+            <div id="code-display"></div>
+            <p style="font-size: 12px; color: #888;">O código aparecerá aqui. Digite-o no seu celular.</p>
+        </div>
+
+        <div id="status">🔴 Desconectado</div>
+    </div>
+
+    <script>
+        const socket = io();
+        
+        // Controle de Abas
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            
+            if(tab === 'qr') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('tab-qr').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('tab-code').classList.add('active');
+            }
+        }
+
+        // Solicitar Pairing Code
+        function requestPairing() {
+            const number = document.getElementById('phone-number').value.replace(/\D/g, '');
+            if(number.length < 10) {
+                alert("Número inválido. Use o formato 55 + DDD + Numero");
+                return;
+            }
+            document.getElementById('status').innerText = "Solicitando código...";
+            socket.emit('request_pairing_code', number);
+        }
+
+        // Socket Events
+        socket.on('connect', () => {
+            document.getElementById('status').innerText = "🟡 Conectado ao Servidor";
+            document.getElementById('status').style.color = "#d35400";
+        });
+
+        socket.on('qr', (url) => {
+            document.getElementById('qr-container').innerHTML = `<img src="${url}">`;
+        });
+
+        socket.on('pairing_code_response', (code) => {
+            const display = document.getElementById('code-display');
+            // Formata o codigo: ABC-1234
+            const formatted = code?.match(/.{1,4}/g)?.join('-') || code;
+            display.innerText = formatted;
+            display.style.display = 'block';
+            document.getElementById('status').innerText = "🟢 Código Gerado!";
+        });
+
+        socket.on('status', (msg) => {
+            document.getElementById('status').innerText = "✅ " + msg;
+            document.getElementById('status').style.color = "green";
+            if(msg.includes("Conectado")) {
+                document.querySelector('.card').innerHTML = "<h1>🎉 Tudo Pronto!</h1><p>Sistema Conectado.</p>";
+            }
+        });
+    </script>
+</body>
+</html>

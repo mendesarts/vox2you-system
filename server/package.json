@@ -1,0 +1,29 @@
+{
+  "name": "vox2you-system-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@whiskeysockets/baileys": "^6.7.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "pino": "^8.19.0",
+    "qrcode": "^1.5.3",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.7.4",
+    "sqlite3": "^5.1.7",
+    "terminal-kit": "^3.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

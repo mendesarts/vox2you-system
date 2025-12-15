@@ -1,0 +1,28 @@
+{
+    "name": "vox2you-system-client",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@radix-ui/react-tabs": "^1.1.13",
+        "date-fns": "^3.3.1",
+        "lucide-react": "^0.330.0",
+        "react": "^18.2.0",
+        "react-beautiful-dnd": "^13.1.1",
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^6.22.0",
+        "recharts": "^2.12.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.56",
+        "@types/react-dom": "^18.2.19",
+        "@vitejs/plugin-react": "^4.2.1",
+        "socket.io-client": "^4.8.1",
+        "vite": "^7.3.0"
+    }
+}
