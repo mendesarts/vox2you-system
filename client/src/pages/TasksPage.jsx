@@ -24,8 +24,12 @@ const TasksPage = () => {
                     administrative: data.filter(t => t.category === 'administrative'),
                     commercial: data.filter(t => t.category === 'commercial')
                 });
-            } else {
+            } else if (data && data.pedagogical) {
+                // Backwards compatibility or if backend returns formatted object
                 setTasks(data);
+            } else {
+                console.warn('Formato de dados inesperado:', data);
+                // Keep empty state to avoid crash
             }
         } catch (error) {
             console.error('Erro ao buscar tarefas:', error);
@@ -55,7 +59,7 @@ const TasksPage = () => {
         </div>
     );
 
-    const Section = ({ title, icon: Icon, items, color }) => (
+    const Section = ({ title, icon: Icon, items = [], color }) => (
         <div className="task-section">
             <h3 className="section-header" style={{ borderLeft: `4px solid ${color}` }}>
                 <Icon size={20} color={color} /> {title}
