@@ -79,8 +79,29 @@ router.post('/', auth, async (req, res) => {
             unitId: targetUnitId,
             whatsapp,
             position,
-            profilePicture // Base64 string from frontend
+            profilePicture, // Base64 string from frontend
+            forcePasswordChange: true // Garantir que novos usuários mudem a senha
         });
+
+        // 6. Enviar Email de Boas Vindas (Mock)
+        // Check if the mock function exists (it's attached to auth router, so we need to import or duplicate)
+        // Duplicating simple log here for robustness
+        console.log(`
+        =========================================
+        [MOCK EMAIL SERVICE]
+        To: ${email}
+        Subject: Bem-vindo ao Vox2you - Suas Credenciais
+
+        Olá, ${name}!
+        Bem-vindo à unidade ${targetUnitId ? 'Sua Unidade' : 'Matriz'}.
+        
+        Acesse: https://meuvoxflow.vercel.app/
+        Login: ${email}
+        Senha Provisória: ${password}
+        
+        Você será solicitado a criar uma nova senha no primeiro acesso.
+        =========================================
+        `);
 
         const userResponse = user.toJSON();
         delete userResponse.password;

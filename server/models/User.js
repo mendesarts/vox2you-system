@@ -25,8 +25,12 @@ const User = sequelize.define('User', {
         allowNull: true
     },
     position: {
-        type: DataTypes.STRING, // Cargo/Função ex: "Consultor Senior"
+        type: DataTypes.STRING,
         allowNull: true
+    },
+    forcePasswordChange: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true // Usuários novos devem mudar a senha
     },
     role: {
         type: DataTypes.ENUM(

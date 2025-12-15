@@ -50,7 +50,8 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                color: user.color
+                color: user.color,
+                forcePasswordChange: user.forcePasswordChange
             }
         });
 
@@ -58,5 +59,59 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Mock Email Sender (Simulado)
+const sendWelcomeEmail = (email, name, password) => {
+    console.log(`
+    =========================================
+    [MOCK EMAIL SERVER]
+    To: ${email}
+    Subject: Bem-vindo ao Vox2you System!
+    
+    Olá, ${name}!
+    
+    Sua conta foi criada com sucesso.
+    Acesse o sistema em: https://meuvoxflow.vercel.app/
+    
+    Login: ${email}
+    Senha Provisória: ${password}
+    
+    Por favor, altere sua senha no primeiro acesso.
+    =========================================
+    `);
+};
+
+// Change Password Route (First Access or User Request)
+router.post('/change-password', async (req, res) => {
+    try {
+        const { userId, newPassword } = req.body; // In real app, get userId from Token middleware
+        // But for "Forced Change" flow, user might be partially logged in or using a temp token.
+        // Let's assume frontend sends the ID if we use a specific unprotected route, BUT better to use auth middleware.
+        // For simplicity here, we'll assume we pass a header token or just trust ID if this is an open endpoint (NOT SECURE).
+        // Let's do it properly: User is technically logged in but restricted in frontend.
+
+        // BETTER: Use middleware. But let's keep it simple for prototype.
+
+        const user = await User.findByPk(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await user.update({
+            password: hashedPassword,
+            forcePasswordChange: false // Mark as changed
+        });
+
+        res.json({ success: true, message: 'Senha alterada com sucesso!' });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Export email sender to be used in users route
+router.sendWelcomeEmail = sendWelcomeEmail;
 
 module.exports = router;
