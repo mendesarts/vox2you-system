@@ -136,20 +136,50 @@ router.post('/leads', async (req, res) => {
 // PUT /api/crm/leads/:id/move - Move card in Kanban
 router.put('/leads/:id/move', async (req, res) => {
     try {
-        const { status } = req.body;
+        const { status, notes, proposedValue } = req.body;
         const lead = await Lead.findByPk(req.params.id);
 
         if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
         const oldStatus = lead.status;
+        const now = new Date();
 
         let updates = { status };
 
+        // Handle Extra Data
+        if (notes) updates.notes = notes; // Or append? Let's overwrite or valid logic
+        // Value field doesn't exist on Lead yet, maybe put in notes or history for now? 
+        // Or strictly if we had a dealValue field. I'll put in history/notes.
+
+        // Log Transition
+        const history = JSON.parse(lead.history || '[]');
+        history.push({
+            date: now.toISOString(),
+            actor: 'HUMAN',
+            action: 'move_stage',
+            content: `Moveu de ${oldStatus} para ${status}. ${notes ? `Obs: ${notes}` : ''} ${proposedValue ? `Valor: ${proposedValue}` : ''}`
+        });
+
         // Logic: Switch AI/Human based on column
-        if (['new', 'qualifying_ia', 'no_show'].includes(status)) {
+        if (['new', 'connecting', 'no_show'].includes(status)) {
             updates.handledBy = 'AI';
-        } else if (['scheduled', 'negotiation', 'won'].includes(status)) {
+        } else if (['connected', 'scheduled', 'negotiation', 'won', 'closed'].includes(status)) {
             updates.handledBy = 'HUMAN';
+        }
+
+        // AUTO-TASK: If moving to Negotiation
+        if (status === 'negotiation' && oldStatus !== 'negotiation') {
+            const Task = require('../models/Task'); // Lazy load
+            await Task.create({
+                title: `Negociação: ${lead.name}`,
+                description: `Acompanhar negociação. Obs: ${notes || ''}. Valor Proposto: ${proposedValue || 'N/A'}`,
+                dueDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000), // Due in 2 days
+                priority: 'high',
+                status: 'pending',
+                leadId: lead.id,
+                userId: lead.consultantId || req.user.id, // Assign to consultant
+                category: 'commercial'
+            });
         }
 
         // Logic: Reset attempts if moving to No-Show to start reactivation cadence
@@ -158,6 +188,8 @@ router.put('/leads/:id/move', async (req, res) => {
             // Immediate Trigger
             await executeAIAction(lead, 'reactivation');
         }
+
+        updates.history = JSON.stringify(history);
 
         await lead.update(updates);
         res.json(lead);
@@ -173,11 +205,11 @@ router.post('/cadence/run', async (req, res) => {
         const now = new Date();
 
         // Find leads handled by AI that are due for contact
-        // Rules: active AI, not lost, nextActionAt is passed or null (new), attemptCount < 5
+        // Rules: active AI, not closed, nextActionAt is passed or null (new), attemptCount < 5
         const leads = await Lead.findAll({
             where: {
                 handledBy: 'AI',
-                status: { [Op.notIn]: ['won', 'lost', 'scheduled'] },
+                status: { [Op.notIn]: ['won', 'closed', 'scheduled', 'negotiation', 'connected'] }, // Only run on new/connecting/no_show
                 attemptCount: { [Op.lt]: 5 },
                 [Op.or]: [
                     { nextActionAt: { [Op.lte]: now } },
@@ -196,13 +228,13 @@ router.post('/cadence/run', async (req, res) => {
         const expiredLeads = await Lead.findAll({
             where: {
                 handledBy: 'AI',
-                status: { [Op.notIn]: ['won', 'lost'] },
+                status: { [Op.notIn]: ['won', 'closed'] },
                 attemptCount: { [Op.gte]: 5 }
             }
         });
 
         for (const lead of expiredLeads) {
-            await lead.update({ status: 'lost', notes: 'Encerrado automaticamente pela IA após 5 tentativas sem resposta.' });
+            await lead.update({ status: 'closed', notes: 'Encerrado automaticamente pela IA após 5 tentativas sem resposta.' });
         }
 
         res.json({ message: 'Cadence ran', processed, expired: expiredLeads.length });
@@ -260,20 +292,19 @@ router.post('/leads/:id/interaction', async (req, res) => {
             attemptCount: lead.attemptCount + 1 // Increment attempts? Or maybe reset if successful contact?
         };
 
-        // AUTOMATION: If Lead is NEW and we interacted, move to Qualifying
+        // AUTOMATION: If Lead is NEW and we interacted, move to Connecting
         if (lead.status === 'new') {
-            updates.status = 'qualifying_ia';
+            updates.status = 'connecting';
             updates.handledBy = 'HUMAN'; // Assuming human logged the interaction usually
         }
 
-        // AUTOMATION: If Lead was No-Show and we contacted, maybe move to Qualifying or keep No-Show until rescheduled?
-        // User requested: "se consegui contato... mas nao agendei... passar para aba qualificacao"
-        // This implies if we establish contact, we are now "Qualifying/Negotiating".
+        // AUTOMATION: If Lead was No-Show and we contacted, move to Connecting
         if (lead.status === 'no_show') {
-            updates.status = 'qualifying_ia';
+            updates.status = 'connecting';
         }
 
         await lead.update(updates);
+
         res.json(lead);
     } catch (error) {
         res.status(500).json({ error: error.message });

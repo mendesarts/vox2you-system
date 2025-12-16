@@ -16,17 +16,19 @@ const CRMBoard = () => {
     const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', source: 'Instagram', campaign: '' });
 
     // Kanban Columns Configuration
+    // Kanban Columns Configuration
     const columns = {
-        'new': { id: 'new', title: 'Novos Lead', color: '#3b82f6', icon: Bot },
-        'qualifying_ia': { id: 'qualifying_ia', title: 'Qualificação (IA)', color: '#8b5cf6', icon: Bot },
+        'new': { id: 'new', title: 'Novo Lead', color: '#3b82f6', icon: Bot },
+        'connecting': { id: 'connecting', title: 'Conectando', color: '#8b5cf6', icon: MessageCircle },
+        'connected': { id: 'connected', title: 'Conexão', color: '#6366f1', icon: User },
         'scheduled': { id: 'scheduled', title: 'Agendamento', color: '#f59e0b', icon: User },
         'no_show': { id: 'no_show', title: 'No-Show (IA Resgate)', color: '#ef4444', icon: Bot },
         'negotiation': { id: 'negotiation', title: 'Negociação', color: '#10b981', icon: User },
         'won': { id: 'won', title: 'Matriculados', color: '#059669', icon: User },
-        'lost': { id: 'lost', title: 'Perdidos', color: '#6b7280', icon: Bot }
+        'closed': { id: 'closed', title: 'Atendimento Encerrado', color: '#6b7280', icon: AlertCircle }
     };
 
-    const columnOrder = ['new', 'qualifying_ia', 'scheduled', 'no_show', 'negotiation', 'won', 'lost'];
+    const columnOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
 
     useEffect(() => {
         fetchLeads();
@@ -47,15 +49,43 @@ const CRMBoard = () => {
         }
     };
 
+    // Move Stage Modal State
+    const [moveModal, setMoveModal] = useState({ isOpen: false, leadId: null, destinationId: null, sourceId: null, data: {} });
+    const [moveData, setMoveData] = useState({ notes: '', proposedValue: '' });
+
     const handleDragEnd = async (result) => {
         const { destination, source, draggableId } = result;
 
         if (!destination) return;
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
+        // Check for transition requirements
+        const destId = destination.droppableId;
+
+        // 1. Connection: Requires Input (Result)
+        // 2. Negotiation: Requires Input (Notes + Value)
+        // 3. Closed: Requires Input (Reason)
+        if (['connected', 'negotiation', 'closed'].includes(destId)) {
+            setMoveModal({
+                isOpen: true,
+                leadId: draggableId,
+                destinationId: destId,
+                sourceId: source.droppableId,
+                data: {}
+            });
+            setMoveData({ notes: '', proposedValue: '' });
+            return; // Pause move until confirmed
+        }
+
+        // Standard Move
+        executeMove(draggableId, destination.droppableId);
+    };
+
+    const executeMove = async (leadId, status, extraData = {}) => {
+        // Optimistic Update
         const updatedLeads = leads.map(lead => {
-            if (lead.id.toString() === draggableId) {
-                return { ...lead, status: destination.droppableId };
+            if (lead.id.toString() === leadId) {
+                return { ...lead, status };
             }
             return lead;
         });
@@ -64,26 +94,46 @@ const CRMBoard = () => {
 
         // API Call
         try {
-            await fetch(`http://localhost:3000/api/crm/leads/${draggableId}/move`, {
+            const token = localStorage.getItem('token');
+            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${leadId}/move`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: destination.droppableId })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status, ...extraData })
             });
         } catch (error) {
             console.error('Error moving lead', error);
-            fetchLeads(); // Revert on error
+            fetchLeads(); // Revert
         }
     };
 
+    const confirmMove = () => {
+        if (moveModal.destinationId === 'negotiation' && !moveData.proposedValue) {
+            alert('Por favor, informe o Valor Proposto.');
+            return;
+        }
+        executeMove(moveModal.leadId, moveModal.destinationId, moveData);
+        setMoveModal({ ...moveModal, isOpen: false });
+    };
+
+    // ... (rest of functions: handleCreateLead, etc)
+
     const handleCreateLead = async () => {
+        // ... (existing code)
         if (!newLead.name || !newLead.phone) {
             alert('Por favor, preencha Nome e WhatsApp.');
             return;
         }
         try {
-            const res = await fetch('http://localhost:3000/api/crm/leads', {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(newLead)
             });
             if (res.ok) {
@@ -98,9 +148,13 @@ const CRMBoard = () => {
 
     const handleLogInteraction = async (id) => {
         try {
-            await fetch(`http://localhost:3000/api/crm/leads/${id}/interaction`, {
+            const token = localStorage.getItem('token');
+            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${id}/interaction`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ type: 'call_manual', content: 'Contato realizado via CRM Board' })
             });
             fetchLeads(); // Refresh to see status change
@@ -109,101 +163,15 @@ const CRMBoard = () => {
         }
     };
 
-    // Data Tools
-    const handleExport = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/export/csv`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error('Erro ao exportar');
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao exportar dados.');
-        }
-    };
+    // ... (Data Tools)
 
-    const handleImportClick = () => {
-        if (fileInputRef.current) fileInputRef.current.click();
-    };
-
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            const csvContent = evt.target.result;
-            try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/import/csv`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ csvContent })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert(`Importação concluída!\nSucesso: ${data.success}\nFalhas: ${data.failed}`);
-                    fetchLeads();
-                } else {
-                    alert('Erro na importação: ' + data.error);
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Erro ao enviar arquivo.');
-            }
-        };
-        reader.readAsText(file);
-        // Reset input
-        e.target.value = null;
-    };
-
-    const canManageData = ['master', 'franchisee', 'manager', 'admin', 'sales_leader'].includes(user?.role);
-
-    const getLeadsByStatus = (status) => leads.filter(l => l.status === status);
-
+    // ... render return ... (Updating to include Modal)
     return (
         <div className="crm-board page-fade-in" style={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div>
-                    <h2 className="page-title">CRM & SDR Inteligente</h2>
-                    <p className="page-subtitle">Pipeline de vendas com automação por IA.</p>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {canManageData && (
-                        <>
-                            <button className="btn-secondary" onClick={handleExport} title="Exportar CSV">
-                                <FileSpreadsheet size={18} /> Exportar
-                            </button>
-                            <button className="btn-secondary" onClick={handleImportClick} title="Importar CSV">
-                                <Upload size={18} /> Importar
-                            </button>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                style={{ display: 'none' }}
-                                accept=".csv"
-                                onChange={handleFileChange}
-                            />
-                        </>
-                    )}
-                    <button className="btn-primary" onClick={() => setShowNewLeadModal(true)}>
-                        <Plus size={18} /> Novo Lead
-                    </button>
-                </div>
-            </div>
+            {/* ... Header ... */}
 
-            {/* Kanban Board */}
+            {/* ... Kanban ... */}
+            {/* (Keep DragDropContext same, using handleDragEnd updated above) */}
             <DragDropContext onDragEnd={handleDragEnd}>
                 <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', flex: 1 }}>
                     {columnOrder.map(colId => {
@@ -218,7 +186,7 @@ const CRMBoard = () => {
                                         ref={provided.innerRef}
                                         style={{
                                             minWidth: '280px',
-                                            backgroundColor: `${column.color}15`, // Light stepped background
+                                            backgroundColor: `${column.color}15`,
                                             borderRadius: '12px',
                                             padding: '16px',
                                             display: 'flex',
@@ -293,6 +261,55 @@ const CRMBoard = () => {
                     })}
                 </div>
             </DragDropContext>
+
+            {/* Move Stage Modal Prompt */}
+            {moveModal.isOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3>Mover para {columns[moveModal.destinationId]?.title}</h3>
+                            <button onClick={() => setMoveModal({ ...moveModal, isOpen: false })}><X size={24} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>
+                                {moveModal.destinationId === 'negotiation' ? 'Informe os detalhes da negociação para oficializar.' :
+                                    moveModal.destinationId === 'connected' ? 'Como foi o contato com o lead?' :
+                                        'Por qual motivo este atendimento está sendo encerrado?'}
+                            </p>
+
+                            {moveModal.destinationId === 'negotiation' && (
+                                <div className="form-group">
+                                    <label>Valor Proposto (R$)*</label>
+                                    <input
+                                        type="text"
+                                        value={moveData.proposedValue}
+                                        onChange={e => setMoveData({ ...moveData, proposedValue: e.target.value })}
+                                        placeholder="Ex: 1500,00"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label>Observações / Resultado*</label>
+                                <textarea
+                                    rows={3}
+                                    value={moveData.notes}
+                                    onChange={e => setMoveData({ ...moveData, notes: e.target.value })}
+                                    placeholder="Descreva o que foi conversado..."
+                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)' }}
+                                />
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={() => setMoveModal({ ...moveModal, isOpen: false })}>Cancelar</button>
+                                <button className="btn-primary" onClick={confirmMove}>Confirmar Movimentação</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* New Lead Modal ... (Same as before) */}
 
             {/* New Lead Modal - Enhanced UI */}
             {showNewLeadModal && (

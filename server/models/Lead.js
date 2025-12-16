@@ -27,7 +27,7 @@ const Lead = sequelize.define('Lead', {
     },
     status: { // Kanban Stage
         type: DataTypes.ENUM,
-        values: ['new', 'qualifying_ia', 'scheduled', 'no_show', 'negotiation', 'won', 'lost'],
+        values: ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'],
         defaultValue: 'new'
     },
     handledBy: { // Who is talking?
