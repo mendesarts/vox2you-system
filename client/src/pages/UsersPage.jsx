@@ -257,7 +257,7 @@ const UsersPage = () => {
                                 <input
                                     value={formData.password}
                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    placeholder={isEditing ? '******' : 'Padrão: Mudar123!'}
+                                    placeholder={isEditing ? '******' : 'Padrão: Mud@r123'}
                                     type="password"
                                 />
                             </div>
