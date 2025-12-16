@@ -41,27 +41,44 @@ router.post('/', auth, async (req, res) => {
         const requester = req.user;
 
         // 1. Permissões de Criação
-        // Apenas Master, Franqueado e Gestor podem criar contas
-        if (!['master', 'franchisee', 'manager'].includes(requester.role)) {
+        // Apenas Master, Diretor, Franqueado e Gestor podem criar contas
+        if (!['master', 'director', 'franchisee', 'manager'].includes(requester.role)) {
             return res.status(403).json({ error: 'Permissão negada. Você não tem permissão para criar usuários.' });
         }
 
         // 2. Restrições de Unidade e Hierarquia
         let targetUnitId = unitId;
 
-        if (requester.role !== 'master') {
-            // Se não for master, FORÇA a unidade do criador
+        if (requester.role !== 'master' && requester.role !== 'director') {
+            // Se não for master/diretor, FORÇA a unidade do criador? 
+            // User says Director creates other Directors. Directors might be global or unit bound?
+            // "O diretor pode criar outros diretores... mas não é master".
+            // If director is unit-bound, they can't create global users.
+            // Let's assume Director is effectively a Sub-Master (Global or Multi-Unit).
+            // For safety, let's say Director *can* set unitId but creates with restriction?
+            // Actually, usually Director is top-level.
+
             targetUnitId = requester.unitId;
 
-            // Hierarquia:
-            // Franqueado não cria Master
-            if (requester.role === 'franchisee' && role === 'master') {
-                return res.status(403).json({ error: 'Franqueados não podem criar contas Master.' });
+            // Hierarquia Restritiva para Franqueado e Gestor
+            if (requester.role === 'franchisee') {
+                if (['master', 'director'].includes(role)) {
+                    return res.status(403).json({ error: 'Franqueados não podem criar contas Master ou Diretor.' });
+                }
             }
-            // Gestor não cria Master nem Franqueado
-            if (requester.role === 'manager' && ['master', 'franchisee'].includes(role)) {
-                return res.status(403).json({ error: 'Gestores não podem criar contas Master ou Franqueado.' });
+            if (requester.role === 'manager') {
+                if (['master', 'director', 'franchisee'].includes(role)) {
+                    return res.status(403).json({ error: 'Gestores não podem criar contas Master, Diretor ou Franqueado.' });
+                }
             }
+        }
+
+        // Diretor Creation Rules (if Director is creating)
+        if (requester.role === 'director') {
+            if (role === 'master') {
+                return res.status(403).json({ error: 'Diretores não podem criar contas Master.' });
+            }
+            // Director CAN create other Directors.
         }
 
         // 3. Validação de Email
