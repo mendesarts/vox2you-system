@@ -1,20 +1,21 @@
-# Usa a imagem COMPLETA do Node (tem todas as ferramentas de compilacao)
-FROM node:18
+FROM node:18-alpine
 
-# Define a pasta de trabalho
+# Workspace Setup
 WORKDIR /app
 
-# Copia o package.json
-COPY package.json ./
+# Dependencies
+COPY package*.json ./
+RUN npm install --production
 
-# Instala as dependencias
-RUN npm install
-
-# Copia o resto do codigo
+# App Source
 COPY . .
 
-# Expõe a porta 3000
+# Environment Defaults
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Expose Port
 EXPOSE 3000
 
-# Inicia o servidor
-CMD ["node", "index.js"]
+# Start Command
+CMD ["npm", "start"]
