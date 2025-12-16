@@ -1,7 +1,11 @@
 FROM node:18-alpine
 
 # Workspace Setup
+# Workspace Setup
 WORKDIR /app
+
+# Install system dependencies (Git is sometimes needed for npm packages)
+RUN apk add --no-cache git
 
 # Dependencies
 COPY package*.json ./
