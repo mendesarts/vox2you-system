@@ -41,7 +41,8 @@ router.get('/main-stats', async (req, res) => {
 
         // --- TEAM PERFORMANCE ---
         // If unit selected, filter consultants by that unit. If master, show all.
-        const consultantScope = { role: 'consultant' };
+        // Adjust role to 'sales' (Consultor Comercial)
+        const consultantScope = { role: 'sales' };
         if (unitId) consultantScope.unitId = unitId;
 
         const consultants = await User.findAll({ where: consultantScope });

@@ -26,8 +26,12 @@ const Dashboard = () => {
 
             // 1. Fetch Main Stats
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${query}`);
-            const data = await res.json();
-            setStats(data);
+            if (res.ok) {
+                const data = await res.json();
+                setStats(prev => ({ ...prev, ...data })); // Merge to keep safe defaults if partial
+            } else {
+                console.error("Dashboard error:", await res.text());
+            }
 
             // 2. Fetch Top Seller (Only if authenticated properly, assuming useAuth exposes token or local storage)
             const token = localStorage.getItem('token');
