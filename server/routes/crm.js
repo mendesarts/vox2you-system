@@ -136,7 +136,7 @@ router.post('/leads', async (req, res) => {
 // PUT /api/crm/leads/:id/move - Move card in Kanban
 router.put('/leads/:id/move', async (req, res) => {
     try {
-        const { status, notes, proposedValue } = req.body;
+        const { status, notes, proposedValue, appointmentDate } = req.body;
         const lead = await Lead.findByPk(req.params.id);
 
         if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -147,17 +147,21 @@ router.put('/leads/:id/move', async (req, res) => {
         let updates = { status };
 
         // Handle Extra Data
-        if (notes) updates.notes = notes; // Or append? Let's overwrite or valid logic
-        // Value field doesn't exist on Lead yet, maybe put in notes or history for now? 
-        // Or strictly if we had a dealValue field. I'll put in history/notes.
+        if (notes) updates.notes = notes;
+        if (appointmentDate) updates.appointmentDate = new Date(appointmentDate);
 
         // Log Transition
         const history = JSON.parse(lead.history || '[]');
+        let logContent = `Moveu de ${oldStatus} para ${status}.`;
+        if (notes) logContent += ` Obs: ${notes}.`;
+        if (proposedValue) logContent += ` Valor: ${proposedValue}.`;
+        if (appointmentDate) logContent += ` Agendado para: ${new Date(appointmentDate).toLocaleString()}.`;
+
         history.push({
             date: now.toISOString(),
             actor: 'HUMAN',
             action: 'move_stage',
-            content: `Moveu de ${oldStatus} para ${status}. ${notes ? `Obs: ${notes}` : ''} ${proposedValue ? `Valor: ${proposedValue}` : ''}`
+            content: logContent
         });
 
         // Logic: Switch AI/Human based on column
@@ -178,6 +182,7 @@ router.put('/leads/:id/move', async (req, res) => {
                 status: 'pending',
                 leadId: lead.id,
                 userId: lead.consultantId || req.user.id, // Assign to consultant
+                unitId: lead.unitId,
                 category: 'commercial'
             });
         }

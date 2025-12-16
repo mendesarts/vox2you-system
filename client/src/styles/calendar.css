@@ -1,0 +1,228 @@
+/* Calendar Page Styles */
+.calendar-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-btn {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.current-date-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    width: 200px;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+/* Main Grid Container */
+.calendar-container {
+    flex: 1;
+    display: flex;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    /* Scroll inside */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.time-column {
+    width: 60px;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    background: #fdfdfd;
+}
+
+.time-header-cell {
+    height: 60px;
+    /* Header height match */
+    border-bottom: 1px solid var(--border);
+}
+
+.time-slot-label {
+    height: 60px;
+    /* Hour height */
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    padding-top: 8px;
+    /* Offset label */
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    position: relative;
+    top: -10px;
+    /* Align with line */
+}
+
+.days-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    overflow-y: auto;
+    position: relative;
+}
+
+.day-column {
+    border-right: 1px solid var(--border);
+    position: relative;
+    min-width: 120px;
+}
+
+.day-column:last-child {
+    border-right: none;
+}
+
+.day-column.today {
+    background: #fcfaff;
+    /* Subtle highlight */
+}
+
+.day-header {
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.day-column.today .day-header {
+    background: #fcfaff;
+}
+
+.day-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.day-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.day-column.today .day-number {
+    color: var(--primary);
+    background: #eef2ff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Slots Area */
+.day-slots-container {
+    position: relative;
+    height: 720px;
+    /* (20 - 8) * 60 = 12 hours * 60px = 720px */
+}
+
+.hour-guide {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: #f1f5f9;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Events */
+.calendar-event {
+    position: absolute;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+    transition: transform 0.1s;
+    border-left: 3px solid transparent;
+}
+
+.calendar-event:hover {
+    transform: scale(1.02);
+    z-index: 5;
+}
+
+.event-time {
+    font-weight: 600;
+    margin-bottom: 2px;
+    opacity: 0.9;
+}
+
+.event-title {
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Event Types */
+.calendar-event.type-appointment {
+    background: #dbeafe;
+    /* Blue 100 */
+    color: #1e40af;
+    /* Blue 800 */
+    border-color: #2563eb;
+}
+
+.calendar-event.type-task {
+    background: #f3e8ff;
+    /* Purple 100 */
+    color: #6b21a8;
+    /* Purple 800 */
+    border-color: #9333ea;
+}
+
+.calendar-event.type-block {
+    background: #f1f5f9;
+    /* Slate 100 */
+    color: #475569;
+    /* Slate 600 */
+    border-color: #94a3b8;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0, 0, 0, 0.03) 5px, rgba(0, 0, 0, 0.03) 10px);
+}

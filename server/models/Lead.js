@@ -57,6 +57,9 @@ const Lead = sequelize.define('Lead', {
     nextActionAt: { // Scheduling next cadence msg
         type: DataTypes.DATE
     },
+    appointmentDate: { // Scheduled Meeting Time
+        type: DataTypes.DATE
+    },
     notes: {
         type: DataTypes.TEXT
     },

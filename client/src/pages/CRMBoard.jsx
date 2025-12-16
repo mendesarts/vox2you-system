@@ -63,9 +63,10 @@ const CRMBoard = () => {
         const destId = destination.droppableId;
 
         // 1. Connection: Requires Input (Result)
-        // 2. Negotiation: Requires Input (Notes + Value)
-        // 3. Closed: Requires Input (Reason)
-        if (['connected', 'negotiation', 'closed'].includes(destId)) {
+        // 2. Scheduled: Requires Appointment Date
+        // 3. Negotiation: Requires Input (Notes + Value)
+        // 4. Closed: Requires Input (Reason)
+        if (['connected', 'scheduled', 'negotiation', 'closed'].includes(destId)) {
             setMoveModal({
                 isOpen: true,
                 leadId: draggableId,
@@ -73,7 +74,7 @@ const CRMBoard = () => {
                 sourceId: source.droppableId,
                 data: {}
             });
-            setMoveData({ notes: '', proposedValue: '' });
+            setMoveData({ notes: '', proposedValue: '', appointmentDate: '' });
             return; // Pause move until confirmed
         }
 
@@ -112,6 +113,10 @@ const CRMBoard = () => {
     const confirmMove = () => {
         if (moveModal.destinationId === 'negotiation' && !moveData.proposedValue) {
             alert('Por favor, informe o Valor Proposto.');
+            return;
+        }
+        if (moveModal.destinationId === 'scheduled' && !moveData.appointmentDate) {
+            alert('Por favor, selecione a Data e Hora do Agendamento.');
             return;
         }
         executeMove(moveModal.leadId, moveModal.destinationId, moveData);
@@ -273,8 +278,9 @@ const CRMBoard = () => {
                         <div className="modal-body">
                             <p style={{ marginBottom: '16px', color: 'var(--text-muted)' }}>
                                 {moveModal.destinationId === 'negotiation' ? 'Informe os detalhes da negociação para oficializar.' :
-                                    moveModal.destinationId === 'connected' ? 'Como foi o contato com o lead?' :
-                                        'Por qual motivo este atendimento está sendo encerrado?'}
+                                    moveModal.destinationId === 'scheduled' ? 'Para quando é o agendamento?' :
+                                        moveModal.destinationId === 'connected' ? 'Como foi o contato com o lead?' :
+                                            'Por qual motivo este atendimento está sendo encerrado?'}
                             </p>
 
                             {moveModal.destinationId === 'negotiation' && (
@@ -285,6 +291,17 @@ const CRMBoard = () => {
                                         value={moveData.proposedValue}
                                         onChange={e => setMoveData({ ...moveData, proposedValue: e.target.value })}
                                         placeholder="Ex: 1500,00"
+                                    />
+                                </div>
+                            )}
+
+                            {moveModal.destinationId === 'scheduled' && (
+                                <div className="form-group">
+                                    <label>Data e Hora do Agendamento*</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={moveData.appointmentDate}
+                                        onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })}
                                     />
                                 </div>
                             )}

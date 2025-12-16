@@ -1,147 +1,117 @@
 const express = require('express');
 const router = express.Router();
-const Holiday = require('../models/Holiday');
-const ClassSession = require('../models/ClassSession');
-const Class = require('../models/Class');
-const Course = require('../models/Course');
-const Module = require('../models/Module');
-const Mentorship = require('../models/Mentorship');
-const Lead = require('../models/Lead');
-const FinancialRecord = require('../models/FinancialRecord');
-const Student = require('../models/Student');
 const { Op } = require('sequelize');
+const auth = require('../middleware/auth');
+const Lead = require('../models/Lead');
+const Task = require('../models/Task');
+const CalendarBlock = require('../models/CalendarBlock');
+const UserAvailability = require('../models/UserAvailability');
 
-// GET /calendar/holidays
-router.get('/holidays', async (req, res) => {
+// GET /api/calendar/events
+router.get('/events', auth, async (req, res) => {
     try {
-        const holidays = await Holiday.findAll({ order: [['startDate', 'ASC']] });
-        res.json(holidays);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+        const { start, end } = req.query; // ISO Date Strings
+        const userId = req.user.id;
 
-// POST /calendar/holidays
-router.post('/holidays', async (req, res) => {
-    try {
-        const holiday = await Holiday.create(req.body);
-        res.status(201).json(holiday);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-});
+        // Scope: User's own calendar (unless master checking others? Let's stick to personal/unit view later)
+        // For now, simple personal calendar.
 
-// DELETE /calendar/holidays/:id
-router.delete('/holidays/:id', async (req, res) => {
-    try {
-        const holiday = await Holiday.findByPk(req.params.id);
-        if (!holiday) return res.status(404).json({ error: 'Feriado não encontrado' });
-        await holiday.destroy();
-        res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+        const startDate = start ? new Date(start) : new Date();
+        const endDate = end ? new Date(end) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-// GET /calendar/sessions
-router.get('/sessions', async (req, res) => {
-    try {
-        const sessions = await ClassSession.findAll({
-            include: [
-                { model: Class, include: [Course] },
-                { model: Module }
-            ]
-        });
-
-        const events = sessions.map(session => ({
-            id: `s-${session.id}`,
-            title: `${session.Module?.title || 'Aula sem título'} (${session.Class?.name})`,
-            start: `${session.date}T${session.startTime}`,
-            type: 'session',
-            extendedProps: {
-                moduleTitle: session.Module?.title,
-                moduleOrder: session.Module?.order,
-                className: session.Class?.name,
-                classNumber: session.Class?.classNumber,
-                courseName: session.Class?.Course?.name
-            }
-        }));
-        res.json(events);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET /calendar/mentorships
-router.get('/mentorships', async (req, res) => {
-    try {
-        const mentorships = await Mentorship.findAll({
-            // where: { status: 'scheduled' }, // Show all or just scheduled? Calendar usually shows all scheduled.
-            include: [{ model: Student, attributes: ['name'] }]
-        });
-
-        const events = mentorships.map(m => ({
-            id: `m-${m.id}`,
-            title: `Mentoria: ${m.Student?.name || 'Aluno'}`,
-            start: m.scheduledDate, // DateTime
-            type: 'mentorship',
-            color: '#10b981', // green
-            extendedProps: {
-                status: m.status,
-                notes: m.notes
-            }
-        }));
-        res.json(events);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET /calendar/crm
-router.get('/crm', async (req, res) => {
-    try {
+        // 1. Appointments (Leads)
         const leads = await Lead.findAll({
             where: {
-                scheduledAt: { [Op.ne]: null }
+                consultantId: userId,
+                appointmentDate: { [Op.between]: [startDate, endDate] },
+                status: 'scheduled'
             }
         });
 
-        const events = leads.map(l => ({
-            id: `c-${l.id}`,
-            title: `CRM: ${l.name}`,
-            start: l.scheduledAt,
-            type: 'crm',
-            color: '#f59e0b', // orange
-            extendedProps: {
-                desc: l.scheduledDesc,
-                phone: l.phone
+        // 2. Tasks
+        const tasks = await Task.findAll({
+            where: {
+                userId: userId,
+                dueDate: { [Op.between]: [startDate, endDate] }
             }
-        }));
+        });
+
+        // 3. Manual Blocks
+        const blocks = await CalendarBlock.findAll({
+            where: {
+                userId: userId,
+                startTime: { [Op.gte]: startDate }, // Simplified overlap logic
+                endTime: { [Op.lte]: endDate }
+            }
+        });
+
+        // Normalize Data for Frontend
+        // Type: 'appointment', 'task', 'block'
+        const events = [];
+
+        leads.forEach(l => {
+            events.push({
+                id: `lead_${l.id}`,
+                title: `Reunião: ${l.name}`,
+                start: l.appointmentDate,
+                end: new Date(new Date(l.appointmentDate).getTime() + 60 * 60 * 1000), // Assume 1h
+                type: 'appointment',
+                data: l
+            });
+        });
+
+        tasks.forEach(t => {
+            events.push({
+                id: `task_${t.id}`,
+                title: `Tarefa: ${t.title}`,
+                start: t.dueDate,
+                end: new Date(new Date(t.dueDate).getTime() + 30 * 60 * 1000), // Assume 30m
+                type: 'task',
+                data: t
+            });
+        });
+
+        blocks.forEach(b => {
+            events.push({
+                id: `block_${b.id}`,
+                title: `Bloqueio: ${b.reason || 'Ocupado'}`,
+                start: b.startTime,
+                end: b.endTime,
+                type: 'block',
+                data: b
+            });
+        });
+
         res.json(events);
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// GET /calendar/financial
-router.get('/financial', async (req, res) => {
+// POST /api/calendar/blocks
+router.post('/blocks', auth, async (req, res) => {
     try {
-        const records = await FinancialRecord.findAll({
-            where: {
-                dueDate: { [Op.ne]: null },
-                status: 'pending' // Only show pending bills/invoices? Or all? Usually pending.
-            }
+        const { startTime, endTime, reason } = req.body;
+        const block = await CalendarBlock.create({
+            userId: req.user.id,
+            startTime,
+            endTime,
+            reason
         });
+        res.json(block);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-        const events = records.map(r => ({
-            id: `f-${r.id}`,
-            title: `${r.type === 'income' ? 'Receber' : 'Pagar'}: R$ ${r.amount}`,
-            start: r.dueDate, // DateOnly usually
-            type: 'financial',
-            color: r.type === 'income' ? '#3b82f6' : '#ef4444',
-            allDay: true
-        }));
-        res.json(events);
+// DELETE /api/calendar/blocks/:id
+router.delete('/blocks/:id', auth, async (req, res) => {
+    try {
+        const block = await CalendarBlock.findOne({ where: { id: req.params.id, userId: req.user.id } });
+        if (!block) return res.status(404).json({ error: 'Block not found' });
+        await block.destroy();
+        res.json({ message: 'Deleted' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

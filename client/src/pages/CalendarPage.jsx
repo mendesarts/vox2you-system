@@ -1,269 +1,251 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar as CalIcon, Filter, Layers } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, MoreHorizontal, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import './calendar.css';
+import '../styles/calendar.css';
+
+const WORK_START = 8; // 8 AM
+const WORK_END = 20; // 8 PM
+const DAYS_OF_WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 const CalendarPage = () => {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const { user } = useAuth();
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showBlockModal, setShowBlockModal] = useState(false);
+    const [newBlock, setNewBlock] = useState({ date: '', startTime: '', endTime: '', reason: '' });
 
-    // Get allowed types based on role
-    const getAllowedTypes = () => {
-        const role = user?.role;
-        if (!role) return ['sessions', 'holidays']; // Default safe
-        if (['admin', 'sales_leader', 'franqueado', 'manager'].includes(role)) return ['sessions', 'mentorships', 'crm', 'financial', 'holidays'];
-        if (role === 'pedagogical') return ['sessions', 'mentorships', 'holidays'];
-        if (role === 'consultant') return ['crm', 'sessions', 'holidays'];
-        if (role === 'admin_staff') return ['financial', 'sessions', 'holidays'];
-        return ['sessions', 'holidays'];
+    // Navigate Weeks
+    const nextWeek = () => {
+        const next = new Date(currentDate);
+        next.setDate(next.getDate() + 7);
+        setCurrentDate(next);
     };
 
-    const allowedTypes = getAllowedTypes();
+    const prevWeek = () => {
+        const prev = new Date(currentDate);
+        prev.setDate(prev.getDate() - 7);
+        setCurrentDate(prev);
+    };
 
-    // Data States
-    const [events, setEvents] = useState({
-        sessions: [],
-        holidays: [],
-        mentorships: [],
-        crm: [],
-        financial: []
-    });
+    // Get current week range
+    const getWeekRange = () => {
+        const curr = new Date(currentDate);
+        const day = curr.getDay(); // 0-6
+        // Set to Sunday of this week
+        const first = curr.getDate() - day;
 
-    // Filter States
-    const [visibleTypes, setVisibleTypes] = useState({
-        sessions: true,
-        holidays: true,
-        mentorships: true,
-        crm: true,
-        financial: true
-    });
+        const start = new Date(curr.setDate(first));
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+
+        return { start, end };
+    };
 
     useEffect(() => {
-        fetchAllData();
-    }, [currentMonth]);
+        fetchEvents();
+    }, [currentDate]);
 
-    const fetchAllData = async () => {
+    const fetchEvents = async () => {
         setLoading(true);
         try {
-            const [resSessions, resHolidays, resMentorships, resCRM, resFinancial] = await Promise.all([
-                fetch('http://localhost:3000/api/calendar/sessions'),
-                fetch('http://localhost:3000/api/calendar/holidays'),
-                fetch('http://localhost:3000/api/calendar/mentorships'),
-                fetch('http://localhost:3000/api/calendar/crm'),
-                fetch('http://localhost:3000/api/calendar/financial')
-            ]);
-
-            const holidaysRaw = await resHolidays.json();
-
-            const newEvents = {
-                sessions: await resSessions.json(),
-                holidays: holidaysRaw.map(h => ({
-                    id: `h-${h.id}`,
-                    title: h.name,
-                    start: h.startDate,
-                    end: h.endDate || h.startDate,
-                    type: 'holiday'
-                })),
-                mentorships: await resMentorships.json(),
-                crm: await resCRM.json(),
-                financial: await resFinancial.json()
-            };
-
-            setEvents(newEvents);
+            const { start, end } = getWeekRange();
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/events?start=${start.toISOString()}&end=${end.toISOString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setEvents(data);
         } catch (error) {
-            console.error("Error fetching calendar data", error);
+            console.error("Calendar fetch error:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-    const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-    const goToToday = () => setCurrentMonth(new Date());
+    const handleCreateBlock = async () => {
+        if (!newBlock.date || !newBlock.startTime || !newBlock.endTime || !newBlock.reason) {
+            alert("Preencha todos os campos");
+            return;
+        }
 
-    const toggleFilter = (type) => {
-        setVisibleTypes(prev => ({ ...prev, [type]: !prev[type] }));
-    };
+        try {
+            // Combine Date + Time
+            const start = new Date(`${newBlock.date}T${newBlock.startTime}:00`);
+            const end = new Date(`${newBlock.date}T${newBlock.endTime}:00`);
 
-    const handleEventClick = (event) => {
-        if (event.type === 'session') {
-            navigate('/pedagogical', { state: { subTab: 'attendance' } });
-        } else if (event.type === 'mentorship') {
-            navigate('/pedagogical', { state: { subTab: 'mentorships' } });
-        } else if (event.type === 'crm') {
-            navigate('/crm');
-        } else if (event.type === 'financial') {
-            navigate('/administrative', { state: { tab: 'financial' } });
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/blocks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ startTime: start, endTime: end, reason: newBlock.reason })
+            });
+
+            if (res.ok) {
+                setShowBlockModal(false);
+                setNewBlock({ date: '', startTime: '', endTime: '', reason: '' });
+                fetchEvents();
+            } else {
+                alert("Erro ao criar bloqueio.");
+            }
+        } catch (error) {
+            console.error(error);
         }
     };
 
-    // Helper to flatten visible events for a specific day
-    const getEventsForDay = (date) => {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        let dayEvents = [];
+    // Helpers to render grid
+    const weekStart = getWeekRange().start;
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(d.getDate() + i);
+        return d;
+    });
 
-        if (visibleTypes.holidays) {
-            dayEvents = dayEvents.concat(events.holidays.filter(h =>
-                dateStr >= h.start && dateStr <= h.end
-            ));
-        }
-        if (visibleTypes.sessions) {
-            dayEvents = dayEvents.concat(events.sessions.filter(s => s.start.startsWith(dateStr)));
-        }
-        if (visibleTypes.mentorships) {
-            dayEvents = dayEvents.concat(events.mentorships.filter(m => m.start.startsWith(dateStr)));
-        }
-        if (visibleTypes.crm) {
-            dayEvents = dayEvents.concat(events.crm.filter(c => c.start.startsWith(dateStr)));
-        }
-        if (visibleTypes.financial) {
-            dayEvents = dayEvents.concat(events.financial.filter(f => f.start === dateStr));
-        }
+    // Determine event position
+    const getEventStyle = (event) => {
+        const start = new Date(event.start);
+        const end = new Date(event.end);
 
-        return dayEvents;
-    };
+        // Vertical Position (Time)
+        // Relative to WORK_START (e.g. 8am)
+        // Each hour = 60px height
+        const startHour = start.getHours() + (start.getMinutes() / 60);
+        const endHour = end.getHours() + (end.getMinutes() / 60);
 
-    const renderHeader = () => {
-        const dateFormat = "MMMM yyyy";
-        return (
-            <div className="calendar-controls">
-                <button className="icon-btn" onClick={prevMonth}><ChevronLeft size={20} /></button>
-                <span style={{ textTransform: 'capitalize', width: '150px', textAlign: 'center', fontWeight: 600, fontSize: '1.2rem' }}>
-                    {format(currentMonth, dateFormat, { locale: ptBR })}
-                </span>
-                <button className="icon-btn" onClick={nextMonth}><ChevronRight size={20} /></button>
-                <div style={{ width: '1px', height: '20px', background: 'var(--border)', margin: '0 10px' }}></div>
-                <button className="btn-today" onClick={goToToday}>Hoje</button>
-            </div>
-        );
-    };
+        const top = (startHour - WORK_START) * 60;
+        const height = Math.max((endHour - startHour) * 60, 25); // Min height 25px
 
-    const renderFilters = () => (
-        <div style={{ display: 'flex', gap: '10px', padding: '10px 0', flexWrap: 'wrap' }}>
-            {allowedTypes.includes('sessions') && <FilterButton label="Aulas" color="#8b5cf6" active={visibleTypes.sessions} onClick={() => toggleFilter('sessions')} />}
-            {allowedTypes.includes('mentorships') && <FilterButton label="Mentorias" color="#10b981" active={visibleTypes.mentorships} onClick={() => toggleFilter('mentorships')} />}
-            {allowedTypes.includes('crm') && <FilterButton label="CRM" color="#f59e0b" active={visibleTypes.crm} onClick={() => toggleFilter('crm')} />}
-            {allowedTypes.includes('financial') && <FilterButton label="Financeiro" color="#3b82f6" active={visibleTypes.financial} onClick={() => toggleFilter('financial')} />}
-            {allowedTypes.includes('holidays') && <FilterButton label="Feriados" color="#ec4899" active={visibleTypes.holidays} onClick={() => toggleFilter('holidays')} />}
-        </div>
-    );
+        // Determine weekday overlap if needed? 
+        // We render separate columns, so we just check "is this event in this day?"
 
-    const FilterButton = ({ label, color, active, onClick }) => (
-        <button
-            onClick={onClick}
-            style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', borderRadius: '20px',
-                border: `1px solid ${active ? color : 'var(--border)'}`,
-                background: active ? `${color}20` : 'transparent',
-                color: active ? color : 'var(--text-muted)',
-                cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500,
-                transition: 'all 0.2s'
-            }}
-        >
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, opacity: active ? 1 : 0.5 }}></div>
-            {label}
-        </button>
-    );
-
-    const renderCells = () => {
-        const monthStart = startOfMonth(currentMonth);
-        const monthEnd = endOfMonth(monthStart);
-        const startDate = startOfWeek(monthStart);
-        const endDate = endOfWeek(monthEnd);
-
-        const allCells = [];
-        let day = startDate;
-
-        while (day <= endDate) {
-            const dayData = getEventsForDay(day);
-            const isCurrentMonth = isSameMonth(day, monthStart);
-            const formattedDate = format(day, "d");
-
-            allCells.push(
-                <div
-                    className={`day-cell ${!isCurrentMonth ? "disabled" : isSameDay(day, new Date()) ? "today" : ""}`}
-                    key={day.toString()}
-                >
-                    <span className="day-number">{formattedDate}</span>
-                    <div className="events-container">
-                        {dayData.map((event, idx) => (
-                            <EventItem
-                                key={`${event.id}-${idx}`}
-                                event={event}
-                                onClick={() => handleEventClick(event)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            );
-            day = addDays(day, 1);
-        }
-
-        return <div className="calendar-content">{allCells}</div>;
-    };
-
-    const EventItem = ({ event, onClick }) => {
-        let style = {
-            borderLeft: '4px solid',
-            fontSize: '0.75rem',
-            padding: '4px 6px',
-            marginBottom: '4px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface)',
-            whiteSpace: 'normal',
-            wordBreak: 'break-word',
-            overflow: 'hidden',
-            cursor: 'pointer',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            lineHeight: '1.2'
+        return {
+            top: `${top}px`,
+            height: `${height}px`,
+            left: '4px',
+            right: '4px'
         };
-
-        // Colors
-        if (event.type === 'session') { style.borderColor = '#8b5cf6'; style.background = '#8b5cf615'; }
-        if (event.type === 'mentorship') { style.borderColor = '#10b981'; style.background = '#10b98115'; }
-        if (event.type === 'crm') { style.borderColor = '#f59e0b'; style.background = '#f59e0b15'; }
-        if (event.type === 'financial') { style.borderColor = event.color; style.background = event.color + '15'; }
-        if (event.type === 'holiday') { style.borderColor = '#ec4899'; style.background = '#ec489915'; style.fontWeight = 'bold'; }
-
-        const time = event.start.includes('T') ? event.start.split('T')[1].substring(0, 5) : null;
-
-        return (
-            <div style={style} title={event.title} onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}>
-                {time && <span style={{ marginRight: '4px', opacity: 0.8, fontWeight: 'bold' }}>{time}</span>}
-                {event.title}
-            </div>
-        );
     };
+
+    const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
     return (
         <div className="calendar-page page-fade-in">
-            <header className="page-header" style={{ marginBottom: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <h2 className="page-title">Calendário</h2>
-                        </div>
-                        <p className="page-subtitle">Visão geral de todas as atividades.</p>
-                    </div>
-                    {renderHeader()}
+            {/* Header */}
+            <div className="calendar-header">
+                <div>
+                    <h2 className="page-title">Minha Agenda</h2>
+                    <p className="page-subtitle">Gerencie compromissos, tarefas e horários de bloqueio.</p>
                 </div>
-                {renderFilters()}
-            </header>
 
-            <div className="calendar-grid-wrapper">
-                <div className="days-header">
-                    {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(d => (
-                        <div key={d} className="col-header">{d}</div>
+                <div className="calendar-controls">
+                    <button className="nav-btn" onClick={prevWeek}><ChevronLeft size={20} /></button>
+                    <span className="current-date-label">
+                        {weekStart.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button className="nav-btn" onClick={nextWeek}><ChevronRight size={20} /></button>
+
+                    <button className="btn-primary" style={{ marginLeft: '16px' }} onClick={() => setShowBlockModal(true)}>
+                        <Plus size={18} /> Novo Bloqueio
+                    </button>
+                    <div className="btn-secondary" style={{ pointerEvents: 'none', background: '#f1f5f9', border: 'none' }}>
+                        Hoje: {new Date().toLocaleDateString('pt-BR')}
+                    </div>
+                </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="calendar-container">
+                {/* Time Column */}
+                <div className="time-column">
+                    <div className="time-header-cell"></div>
+                    {Array.from({ length: WORK_END - WORK_START + 1 }, (_, i) => (
+                        <div key={i} className="time-slot-label">
+                            {WORK_START + i}:00
+                        </div>
                     ))}
                 </div>
-                {renderCells()}
+
+                {/* Days Columns */}
+                <div className="days-grid">
+                    {weekDays.map((day, dayIndex) => {
+                        const isToday = new Date().toDateString() === day.toDateString();
+
+                        // Filter events for this day
+                        const dayEvents = events.filter(ev => {
+                            const eDate = new Date(ev.start);
+                            return eDate.toDateString() === day.toDateString();
+                        });
+
+                        return (
+                            <div key={dayIndex} className={`day-column ${isToday ? 'today' : ''}`}>
+                                <div className="day-header">
+                                    <span className="day-name">{DAYS_OF_WEEK[day.getDay()]}</span>
+                                    <span className="day-number">{day.getDate()}</span>
+                                </div>
+
+                                <div className="day-slots-container">
+                                    {/* Grid Lines for Hours */}
+                                    {Array.from({ length: WORK_END - WORK_START }, (_, i) => (
+                                        <div key={i} className="hour-guide" style={{ top: `${i * 60}px` }}></div>
+                                    ))}
+
+                                    {/* Events */}
+                                    {dayEvents.map(ev => (
+                                        <div
+                                            key={ev.id}
+                                            className={`calendar-event type-${ev.type}`}
+                                            style={getEventStyle(ev)}
+                                            title={`${ev.title} (${new Date(ev.start).toLocaleTimeString().slice(0, 5)} - ${new Date(ev.end).toLocaleTimeString().slice(0, 5)})`}
+                                        >
+                                            <div className="event-time">{new Date(ev.start).toLocaleTimeString().slice(0, 5)}</div>
+                                            <div className="event-title">{ev.title}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
+
+            {/* Modal for Manual Block */}
+            {showBlockModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3>Bloquear Horário</h3>
+                            <button onClick={() => setShowBlockModal(false)}><MoreHorizontal size={24} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Data</label>
+                                <input type="date" value={newBlock.date} onChange={e => setNewBlock({ ...newBlock, date: e.target.value })} />
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Início</label>
+                                    <input type="time" value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Fim</label>
+                                    <input type="time" value={newBlock.endTime} onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Motivo</label>
+                                <input type="text" placeholder="Ex: Almoço, Intervalo" value={newBlock.reason} onChange={e => setNewBlock({ ...newBlock, reason: e.target.value })} />
+                            </div>
+                            <button className="btn-primary" onClick={handleCreateBlock} style={{ width: '100%', marginTop: '16px' }}>Criar Bloqueio</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
