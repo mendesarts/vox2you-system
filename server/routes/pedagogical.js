@@ -23,17 +23,17 @@ router.get('/stats', async (req, res) => {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
         // Mentorships Stats
-        const mentorshipsMonthScheduled = await Mentorship.count({ 
-            where: { 
+        const mentorshipsMonthScheduled = await Mentorship.count({
+            where: {
                 status: 'scheduled',
                 scheduledDate: { [Op.between]: [startOfMonth, endOfMonth] }
-            } 
+            }
         });
-        const mentorshipsMonthCompleted = await Mentorship.count({ 
-            where: { 
+        const mentorshipsMonthCompleted = await Mentorship.count({
+            where: {
                 status: 'completed', // Assuming 'completed' is the status for done
                 scheduledDate: { [Op.between]: [startOfMonth, endOfMonth] }
-            } 
+            }
         });
 
         // Student Stats
@@ -187,6 +187,100 @@ router.put('/mentorship/:id', async (req, res) => {
         });
 
         res.json(mentorship);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+const auth = require('../middleware/auth');
+
+// --- Data Tools Middleware ---
+const checkDataToolsAccess = (req, res, next) => {
+    const allowed = ['master', 'franchisee', 'manager', 'admin', 'sales_leader', 'pedagogical_leader', 'admin_financial_manager'];
+    if (!allowed.includes(req.user.role)) {
+        return res.status(403).json({ error: 'Acesso negado.' });
+    }
+    next();
+};
+
+// GET /pedagogical/export/csv
+router.get('/export/csv', auth, checkDataToolsAccess, async (req, res) => {
+    try {
+        const { unitId, role } = req.user;
+        const where = {};
+        if (role !== 'master') where.unitId = unitId;
+
+        const students = await Student.findAll({ where, raw: true });
+
+        const fields = ['name', 'email', 'mobile', 'cpf', 'status', 'createdAt'];
+        let csv = fields.join(',') + '\n';
+
+        students.forEach(s => {
+            const row = fields.map(field => {
+                let val = s[field] || '';
+                if (field === 'createdAt') val = new Date(val).toLocaleDateString('pt-BR');
+                val = String(val).replace(/"/g, '""');
+                if (val.includes(',') || val.includes('"')) val = `"${val}"`;
+                return val;
+            });
+            csv += row.join(',') + '\n';
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`students_export_${new Date().getTime()}.csv`);
+        res.send(csv);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /pedagogical/import/csv
+router.post('/import/csv', auth, checkDataToolsAccess, async (req, res) => {
+    try {
+        const { csvContent } = req.body;
+        const { unitId, role } = req.user;
+
+        if (!csvContent) return res.status(400).json({ error: 'CSV Inválido' });
+
+        const lines = csvContent.split(/\r?\n/);
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+        let success = 0;
+        let failed = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const values = lines[i].split(',');
+            if (values.length < 2) { failed++; continue; }
+
+            const data = {};
+            headers.forEach((h, index) => {
+                let val = values[index] ? values[index].trim() : '';
+                if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+                if (['name', 'email', 'mobile', 'cpf'].includes(h)) data[h] = val;
+            });
+
+            if (!data.name) { failed++; continue; }
+
+            const exists = await Student.findOne({
+                where: {
+                    [Op.or]: [{ email: data.email || 'x' }, { cpf: data.cpf || 'y' }]
+                }
+            });
+
+            if (!exists) {
+                await Student.create({
+                    ...data,
+                    unitId: role === 'master' ? null : unitId,
+                    status: 'active'
+                });
+                success++;
+            } else {
+                failed++;
+            }
+        }
+        res.json({ message: 'Importado', success, failed });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Search, CheckCircle, ChevronDown, ChevronUp, X, Plus, Filter, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, CheckCircle, ChevronDown, ChevronUp, X, Plus, Filter, ArrowUpCircle, ArrowDownCircle, FileSpreadsheet, Upload } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const FinancialManager = () => {
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [financialRecords, setFinancialRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'grouped'
+    const fileInputRef = useRef(null);
 
     // Modals
     const [showSettleModal, setShowSettleModal] = useState(false);
@@ -38,7 +41,10 @@ const FinancialManager = () => {
     const fetchFinancialRecords = async () => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/financial');
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             setFinancialRecords(data);
         } catch (error) {
@@ -48,9 +54,70 @@ const FinancialManager = () => {
         }
     };
 
+    // Data Tools
+    const handleExport = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/export/csv`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Erro ao exportar');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `financial_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao exportar dados.');
+        }
+    };
+
+    const handleImportClick = () => {
+        if (fileInputRef.current) fileInputRef.current.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const csvContent = evt.target.result;
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/import/csv`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ csvContent })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Importação concluída!\nSucesso: ${data.success}\nFalhas: ${data.failed}`);
+                    fetchFinancialRecords();
+                } else {
+                    alert('Erro na importação: ' + data.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao enviar arquivo.');
+            }
+        };
+        reader.readAsText(file);
+        // Reset input
+        e.target.value = null;
+    };
+
+    const canManageData = ['master', 'franchisee', 'manager', 'admin', 'admin_financial_manager'].includes(user?.role);
+
     // --- Actions ---
 
     const handleCreateRecord = async () => {
+        // ... handled in component but uses fetch directly, might update to use ENV URL later
         try {
             const res = await fetch('http://localhost:3000/api/financial/record', {
                 method: 'POST',
@@ -140,6 +207,23 @@ const FinancialManager = () => {
                     <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Receitas, Despesas e Histórico</p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
+                    {canManageData && (
+                        <>
+                            <button className="btn-secondary" onClick={handleExport} title="Exportar CSV">
+                                <FileSpreadsheet size={18} />
+                            </button>
+                            <button className="btn-secondary" onClick={handleImportClick} title="Importar CSV">
+                                <Upload size={18} />
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                accept=".csv"
+                                onChange={handleFileChange}
+                            />
+                        </>
+                    )}
                     <button
                         className={`btn-secondary ${viewMode === 'list' ? 'active' : ''}`}
                         onClick={() => setViewMode('list')}

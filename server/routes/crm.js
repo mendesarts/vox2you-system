@@ -280,4 +280,120 @@ router.post('/leads/:id/interaction', async (req, res) => {
     }
 });
 
+// --- Data Tools: Export/Import ---
+
+// Allowed Roles Middleware for Data Tools
+const checkDataToolsAccess = (req, res, next) => {
+    const allowed = ['master', 'franchisee', 'manager', 'admin', 'sales_leader', 'pedagogical_leader', 'admin_financial_manager'];
+    if (!allowed.includes(req.user.role)) {
+        return res.status(403).json({ error: 'Acesso negado. Apenas Liderança tem acesso a ferramentas de dados.' });
+    }
+    next();
+};
+
+// GET /api/crm/export/csv
+router.get('/export/csv', auth, checkDataToolsAccess, async (req, res) => {
+    try {
+        const { unitId, role } = req.user;
+        const where = {};
+        if (role !== 'master') where.unitId = unitId;
+
+        const leads = await Lead.findAll({ where, raw: true });
+
+        // CSV Header
+        const fields = ['name', 'email', 'phone', 'status', 'source', 'campaign', 'createdAt'];
+        let csv = fields.join(',') + '\n';
+
+        // CSV Rows
+        leads.forEach(lead => {
+            const row = fields.map(field => {
+                let val = lead[field] || '';
+                if (field === 'createdAt') val = new Date(val).toLocaleDateString('pt-BR');
+                // Escape commas and quotes
+                val = String(val).replace(/"/g, '""');
+                if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                    val = `"${val}"`;
+                }
+                return val;
+            });
+            csv += row.join(',') + '\n';
+        });
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`leads_export_${new Date().getTime()}.csv`);
+        res.send(csv);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /api/crm/import/csv
+router.post('/import/csv', auth, checkDataToolsAccess, async (req, res) => {
+    try {
+        const { csvContent } = req.body; // Expect raw CSV string
+        const { unitId, role } = req.user;
+
+        if (!csvContent) return res.status(400).json({ error: 'Conteúdo CSV inválido.' });
+
+        const lines = csvContent.split(/\r?\n/);
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+
+        // Basic map of expected headers
+        // Just assuming consistent order or simple mapping if header matches field name
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+
+            // Simple CSV split (not robust for commas inside quotes, but lightweight)
+            // For robust parsing, we'd need a library. Assuming simple "Save As CSV" from valid Excel.
+            const values = lines[i].split(',');
+
+            if (values.length < 2) { failCount++; continue; } // Need at least name/phone
+
+            const leadData = {};
+            headers.forEach((h, index) => {
+                let val = values[index] ? values[index].trim() : '';
+                // Remove quotes
+                if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+
+                if (['name', 'email', 'phone', 'source', 'campaign'].includes(h)) {
+                    leadData[h] = val;
+                }
+            });
+
+            if (!leadData.name || !leadData.phone) { failCount++; continue; }
+
+            // Create Only if not exists (by email or phone)
+            const exists = await Lead.findOne({
+                where: {
+                    [Op.or]: [
+                        { email: leadData.email || 'invalid@email.com' },
+                        { phone: leadData.phone }
+                    ]
+                }
+            });
+
+            if (!exists) {
+                await Lead.create({
+                    ...leadData,
+                    unitId: role === 'master' ? null : unitId, // Assign to current unit
+                    status: 'new',
+                    handledBy: 'AI'
+                });
+                successCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        res.json({ message: 'Importação concluída', success: successCount, failed: failCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;

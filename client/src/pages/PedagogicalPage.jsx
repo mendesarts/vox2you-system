@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     BookOpen,
     Users,
     CheckCircle,
     AlertCircle,
-    ArrowUpRight
+    ArrowUpRight,
+    FileSpreadsheet,
+    Upload
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import AttendanceManager from './pedagogical/AttendanceManager';
 import MentorshipsManager from './pedagogical/MentorshipsManager';
@@ -32,6 +35,7 @@ const StatCard = ({ title, value, icon: Icon, color, desc, onClick }) => (
 );
 
 const PedagogicalPage = () => {
+    const { user } = useAuth();
     const location = useLocation();
     const [subTab, setSubTab] = useState('dashboard');
     const [statsData, setStatsData] = useState({
@@ -42,6 +46,7 @@ const PedagogicalPage = () => {
         scheduledMentorships: 0,
         completedMentorships: 0
     });
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (location.state?.subTab) {
@@ -64,6 +69,65 @@ const PedagogicalPage = () => {
             console.error('Error fetching pedagogical stats:', error);
         }
     };
+
+    // Data Tools
+    const handleExport = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/export/csv`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Erro ao exportar');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao exportar dados.');
+        }
+    };
+
+    const handleImportClick = () => {
+        if (fileInputRef.current) fileInputRef.current.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const csvContent = evt.target.result;
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/import/csv`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ csvContent })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Importação concluída!\nSucesso: ${data.success}\nFalhas: ${data.failed}`);
+                    fetchStats();
+                } else {
+                    alert('Erro na importação: ' + data.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao enviar arquivo.');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = null;
+    };
+
+    const canManageData = ['master', 'franchisee', 'manager', 'admin', 'pedagogical_leader'].includes(user?.role);
 
     const stats = [
         { title: 'Meus Alunos', value: statsData.activeStudents, icon: Users, color: '#3b82f6', desc: 'Matrículas vigentes', onClick: () => setSubTab('students') },
@@ -175,6 +239,23 @@ const PedagogicalPage = () => {
                     <h2 className="page-title">Pedagógico</h2>
                     <p className="page-subtitle">Gestão de Alunos, Turmas e Frequência.</p>
                 </div>
+                {canManageData && (
+                    <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', marginRight: '16px' }}>
+                        <button className="btn-secondary" onClick={handleExport} title="Exportar Alunos">
+                            <FileSpreadsheet size={18} />
+                        </button>
+                        <button className="btn-secondary" onClick={handleImportClick} title="Importar Alunos">
+                            <Upload size={18} />
+                        </button>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            accept=".csv"
+                            onChange={handleFileChange}
+                        />
+                    </div>
+                )}
                 {subTab !== 'dashboard' && (
                     <button onClick={() => setSubTab('dashboard')} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <span>←</span> Voltar ao Painel

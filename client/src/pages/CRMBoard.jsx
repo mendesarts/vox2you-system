@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
+import { useAuth } from '../context/AuthContext';
 
 const CRMBoard = () => {
+    const { user } = useAuth();
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showNewLeadModal, setShowNewLeadModal] = useState(false);
     const [selectedLead, setSelectedLead] = useState(null);
+    const fileInputRef = useRef(null);
 
     // New Lead Form
     const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', source: 'Instagram', campaign: '' });
@@ -31,7 +34,10 @@ const CRMBoard = () => {
 
     const fetchLeads = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/crm/leads');
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             setLeads(data);
         } catch (error) {
@@ -103,6 +109,66 @@ const CRMBoard = () => {
         }
     };
 
+    // Data Tools
+    const handleExport = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/export/csv`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Erro ao exportar');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao exportar dados.');
+        }
+    };
+
+    const handleImportClick = () => {
+        if (fileInputRef.current) fileInputRef.current.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+            const csvContent = evt.target.result;
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/import/csv`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ csvContent })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Importação concluída!\nSucesso: ${data.success}\nFalhas: ${data.failed}`);
+                    fetchLeads();
+                } else {
+                    alert('Erro na importação: ' + data.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao enviar arquivo.');
+            }
+        };
+        reader.readAsText(file);
+        // Reset input
+        e.target.value = null;
+    };
+
+    const canManageData = ['master', 'franchisee', 'manager', 'admin', 'sales_leader'].includes(user?.role);
+
     const getLeadsByStatus = (status) => leads.filter(l => l.status === status);
 
     return (
@@ -113,9 +179,28 @@ const CRMBoard = () => {
                     <h2 className="page-title">CRM & SDR Inteligente</h2>
                     <p className="page-subtitle">Pipeline de vendas com automação por IA.</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowNewLeadModal(true)}>
-                    <Plus size={18} /> Novo Lead
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {canManageData && (
+                        <>
+                            <button className="btn-secondary" onClick={handleExport} title="Exportar CSV">
+                                <FileSpreadsheet size={18} /> Exportar
+                            </button>
+                            <button className="btn-secondary" onClick={handleImportClick} title="Importar CSV">
+                                <Upload size={18} /> Importar
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                style={{ display: 'none' }}
+                                accept=".csv"
+                                onChange={handleFileChange}
+                            />
+                        </>
+                    )}
+                    <button className="btn-primary" onClick={() => setShowNewLeadModal(true)}>
+                        <Plus size={18} /> Novo Lead
+                    </button>
+                </div>
             </div>
 
             {/* Kanban Board */}
