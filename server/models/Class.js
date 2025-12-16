@@ -42,6 +42,10 @@ const Class = sequelize.define('Class', {
     endDate: {
         type: DataTypes.DATEONLY
     },
+    courseId: {
+        type: DataTypes.UUID,
+        allowNull: true
+    },
     professorId: {
         type: DataTypes.UUID,
         allowNull: true
