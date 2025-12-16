@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = 'https://vox2you-system-978034491078.us-central1.run.app/api';
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');
