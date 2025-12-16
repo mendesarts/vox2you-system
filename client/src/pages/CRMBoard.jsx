@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -403,7 +403,6 @@ const CRMBoard = () => {
     );
 };
 
-// Simple Mock X for modal since I may not have imported it
-const X = ({ size }) => <span style={{ fontSize: size, fontWeight: 'bold', cursor: 'pointer' }}>✕</span>;
+// X removed (imported from lucide-react)
 
 export default CRMBoard;
