@@ -98,6 +98,23 @@ function defineAssociations() {
 
     CashRegister.hasMany(FinancialRecord, { foreignKey: 'cashRegisterId' });
     FinancialRecord.belongsTo(CashRegister, { foreignKey: 'cashRegisterId' });
+
+    // Calendar & Tasks
+    const UserAvailability = require('./UserAvailability');
+    const CalendarBlock = require('./CalendarBlock');
+    const Task = require('./Task');
+
+    User.hasMany(UserAvailability, { foreignKey: 'userId' });
+    UserAvailability.belongsTo(User, { foreignKey: 'userId' });
+
+    User.hasMany(CalendarBlock, { foreignKey: 'userId' });
+    CalendarBlock.belongsTo(User, { foreignKey: 'userId' });
+
+    User.hasMany(Task, { foreignKey: 'userId' });
+    Task.belongsTo(User, { foreignKey: 'userId' });
+
+    Lead.hasMany(Task, { foreignKey: 'leadId' });
+    Task.belongsTo(Lead, { foreignKey: 'leadId' });
 }
 
 module.exports = defineAssociations;
