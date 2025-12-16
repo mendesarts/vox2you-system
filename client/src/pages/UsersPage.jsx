@@ -5,16 +5,16 @@ import { api } from '../services/api';
 import '../styles/users.css'; // We will create this
 
 const ROLES = {
-    master: 'Diretor / Franqueadora',
+    master: 'Diretor',
     franchisee: 'Franqueado',
     manager: 'Gestor',
     sales_leader: 'Líder Comercial',
-    sales: 'Comercial',
+    sales: 'Consultor Comercial',
     pedagogical_leader: 'Líder Pedagógico',
-    pedagogical: 'Pedagógico',
-    admin_financial_manager: 'Gerente Adm/Fin',
-    admin: 'Administrativo',
-    financial: 'Financeiro'
+    pedagogical: 'Professor / Pedagógico',
+    admin_financial_manager: 'Líder Administrativo / Financeiro',
+    admin: 'Assistente Administrativo',
+    financial: 'Assistente Financeiro'
 };
 
 const UsersPage = () => {
@@ -328,22 +328,62 @@ Você será solicitado a criar uma nova senha no primeiro acesso.
                         </div>
                         <form onSubmit={handleSubmit} className="modal-body">
 
-                            {/* Image Upload */}
+                            {/* Image Upload - Explicit UI */}
                             <div className="form-group" style={{ textAlign: 'center', marginBottom: '20px' }}>
-                                <div className="image-upload-wrapper" style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto', borderRadius: '50%', overflow: 'hidden', background: '#f1f5f9', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-main)', fontWeight: 500 }}>Foto de Perfil</label>
+                                <div
+                                    className="image-upload-wrapper"
+                                    onClick={() => document.getElementById('fileInput').click()}
+                                    style={{
+                                        position: 'relative',
+                                        width: '120px',
+                                        height: '120px',
+                                        margin: '0 auto',
+                                        borderRadius: '50%',
+                                        overflow: 'hidden',
+                                        background: '#f1f5f9',
+                                        border: '2px dashed #cbd5e1',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                                >
                                     {previewImage ? (
                                         <img src={previewImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <Camera size={32} color="#94a3b8" />
+                                        <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                            <Camera size={32} />
+                                            <p style={{ fontSize: '0.7rem', margin: 0 }}>Adicionar</p>
+                                        </div>
                                     )}
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                                    />
+
+                                    {/* Hover Overlay */}
+                                    <div style={{
+                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                        background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        opacity: 0, transition: 'opacity 0.2s'
+                                    }}
+                                        className="upload-overlay"
+                                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                                        onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                                    >
+                                        <Edit size={24} color="#fff" />
+                                    </div>
                                 </div>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>Clique para alterar foto</p>
+                                <input
+                                    id="fileInput"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    style={{ display: 'none' }}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                                    {isEditing ? 'Clique na imagem para alterar' : 'Clique para adicionar foto'}
+                                </p>
                             </div>
 
                             <div className="form-row">
