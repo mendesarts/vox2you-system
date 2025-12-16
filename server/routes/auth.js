@@ -21,6 +21,7 @@ router.post('/login', async (req, res) => {
 
         const bcrypt = require('bcryptjs');
 
+
         // 2. Verificar senha (Suporte Híbrido: Hash ou Texto Plano)
         let isValidId = false;
 
