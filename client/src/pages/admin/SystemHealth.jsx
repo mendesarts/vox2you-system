@@ -13,7 +13,7 @@ const SystemHealth = () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await api.checkSystemHealth();
+            const data = await api.verificarSaudeDoSistema();
             setHealthData(data);
         } catch (err) {
             setError(err.message || 'Falha ao conectar com o servidor');

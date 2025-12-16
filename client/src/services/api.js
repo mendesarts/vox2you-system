@@ -83,9 +83,10 @@ export const api = {
         });
         if (!response.ok) throw new Error('Falha ao deletar usuário');
         return response.json();
-    }
+    },
+
     // System Health
-    checkSystemHealth: async () => {
+    verificarSaudeDoSistema: async () => {
         const response = await fetch(`${API_URL}/health/full`, { headers: getHeaders() });
         if (!response.ok) throw new Error('Falha no Health Check');
         return response.json();
