@@ -1,0 +1,19 @@
+const express = require('express');
+const router = express.Router();
+const healthController = require('../controllers/healthController');
+const auth = require('../middleware/auth');
+
+// Middleware to ensure user is Master
+const verifyMaster = (req, res, next) => {
+    // req.user is populated by 'auth' middleware
+    if (!req.user || req.user.role !== 'master') {
+        // Including 'franchisee' as they might need to see status too, or restrict strictly as requested.
+        // User requested: "EXCLUSIVAMENTE MASTER".
+        return res.status(403).json({ message: 'Acesso negado. Requer permissão MASTER.' });
+    }
+    next();
+};
+
+router.get('/full', auth, verifyMaster, healthController.getSystemHealth);
+
+module.exports = router;

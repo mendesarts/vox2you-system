@@ -11,6 +11,7 @@ import Settings from './pages/Settings';
 import TasksPage from './pages/TasksPage';
 import Login from './pages/Login';
 import UsersPage from './pages/UsersPage';
+import SystemHealth from './pages/admin/SystemHealth';
 import './app.css';
 
 const ProtectedRoute = () => {
@@ -64,6 +65,7 @@ function App() {
                             <Route path="/pedagogical" element={<PedagogicalPage />} />
                             <Route path="/calendar" element={<CalendarPage />} />
                             <Route path="/users" element={<UsersPage />} />
+                            <Route path="/admin/system-status" element={<SystemHealth />} />
                             <Route path="/settings" element={<Settings isLightMode={isLightMode} toggleTheme={toggleTheme} />} />
                         </Route>
                     </Route>

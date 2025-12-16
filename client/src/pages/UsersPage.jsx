@@ -6,20 +6,18 @@ import '../styles/users.css'; // We will create this
 
 const ROLES = {
     master: 'Master / Owner',
-    director: 'Diretor',
     franchisee: 'Franqueado',
     manager: 'Gestor',
+    pedagogical_leader: 'Líder Pedagógico',
     sales_leader: 'Líder Comercial',
     sales: 'Consultor Comercial',
-    pedagogical_leader: 'Líder Pedagógico',
     pedagogical: 'Professor / Pedagógico',
-    admin_financial_manager: 'Líder Administrativo / Financeiro',
-    admin: 'Assistente Administrativo',
-    financial: 'Assistente Financeiro'
+    // admin_financial_manager: 'Líder Administrativo / Financeiro', // Reduced complexity as requested
+    admin: 'Administrativo e Financeiro'
 };
 
 const UsersPage = () => {
-    // ... (keep state)
+    // ...
     // ...
 
     const getAvailableRoles = () => {
@@ -28,19 +26,12 @@ const UsersPage = () => {
         // Master sees everything
         if (currentUser.role === 'master') return roles;
 
-        // Director cannot create Master, but can create other Directors and below
-        if (currentUser.role === 'director') {
-            return roles.filter(([key]) => key !== 'master');
-        }
+        // Director logic removed as per new request focusing on Franchisee/Manager parity
 
-        // Franchisee cannot create Master or Director
-        if (currentUser.role === 'franchisee') {
-            return roles.filter(([key]) => !['master', 'director'].includes(key));
-        }
-
-        // Manager cannot create Master, Director or Franchisee
-        if (currentUser.role === 'manager') {
-            return roles.filter(([key]) => !['master', 'director', 'franchisee'].includes(key));
+        // Franchisee & Manager: Same Level
+        // Can create anything EXCEPTS Master, Franchisee, Manager
+        if (['franchisee', 'manager'].includes(currentUser.role)) {
+            return roles.filter(([key]) => !['master', 'franchisee', 'manager', 'director'].includes(key));
         }
 
         // Others (should not be here if canCreateUsers logic is sound)

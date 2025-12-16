@@ -35,6 +35,7 @@ try {
     app.use('/api/leads', require('./routes/leads'));
     app.use('/api/pedagogical', require('./routes/pedagogical'));
     app.use('/api/calendar', require('./routes/calendar'));
+    app.use('/api/health', require('./routes/health'));
     app.use('/api/units', require('./routes/units'));
 } catch (e) { console.log('Erro ao carregar rotas:', e); }
 

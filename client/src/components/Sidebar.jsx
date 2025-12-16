@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, MessageSquare, Settings, ShieldCheck, LogOut, Briefcase, BookOpen, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, MessageSquare, Settings, ShieldCheck, LogOut, Briefcase, BookOpen, CheckSquare, Activity } from 'lucide-react';
 import './sidebar.css';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +20,10 @@ const Sidebar = () => {
 
     if (user && ['master', 'franchisee', 'manager', 'admin_financial_manager'].includes(user.role)) {
         navItems.push({ icon: ShieldCheck, label: 'Gestão Usuários', path: '/users' });
+    }
+
+    if (user && user.role === 'master') {
+        navItems.push({ icon: Activity, label: 'Monitoramento', path: '/admin/system-status' });
     }
 
     return (

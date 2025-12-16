@@ -60,15 +60,13 @@ router.post('/', auth, async (req, res) => {
 
             targetUnitId = requester.unitId;
 
+            targetUnitId = requester.unitId;
+
             // Hierarquia Restritiva para Franqueado e Gestor
-            if (requester.role === 'franchisee') {
-                if (['master', 'director'].includes(role)) {
-                    return res.status(403).json({ error: 'Franqueados não podem criar contas Master ou Diretor.' });
-                }
-            }
-            if (requester.role === 'manager') {
-                if (['master', 'director', 'franchisee'].includes(role)) {
-                    return res.status(403).json({ error: 'Gestores não podem criar contas Master, Diretor ou Franqueado.' });
+            if (['franchisee', 'manager'].includes(requester.role)) {
+                // Não podem criar: Master, Diretor, Franqueado, Gestor
+                if (['master', 'director', 'franchisee', 'manager'].includes(role)) {
+                    return res.status(403).json({ error: 'Permissão negada. Você não pode criar cargos de nível gerencial ou superior.' });
                 }
             }
         }

@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
         let isValidId = false;
 
         // Tenta verificar se é hash
-        if (user.password.startsWith('$2')) {
+        if (user.password && user.password.startsWith('$2')) {
             isValidId = await bcrypt.compare(cleanPassword, user.password);
         } else {
             // Fallback para legado (texto plano)
