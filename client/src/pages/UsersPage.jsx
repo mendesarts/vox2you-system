@@ -111,7 +111,7 @@ const UsersPage = () => {
 
         try {
             if (isEditing) {
-                await fetch(`${api.API_URL || 'https://vox2you-system-978034491078.us-central1.run.app/api'}/users/${formData.id}`, {
+                const res = await fetch(`${api.API_URL || 'https://vox2you-system-978034491078.us-central1.run.app/api'}/users/${formData.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -119,6 +119,10 @@ const UsersPage = () => {
                     },
                     body: JSON.stringify(formData)
                 });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Falha ao atualizar usuário');
+                }
             } else {
                 const newUser = await api.createUser(formData);
                 setSuccessData({ ...newUser, password: formData.password });
