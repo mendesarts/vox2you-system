@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Shield, Camera, X, Plus, Edit, Trash2, Search, Check, AlertCircle } from 'lucide-react';
+import { User as UserIcon, Mail, Phone, MapPin, Shield, Camera, X, Plus, Edit, Trash2, Search, Check, AlertCircle, Award } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import '../styles/users.css';
@@ -19,13 +19,24 @@ const UsersPage = () => {
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
-    const [units, setUnits] = useState([]); // Assuming units are fetched
+    const [units, setUnits] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+
+    // Default Password Logic: V@x2you!
     const [formData, setFormData] = useState({
-        name: '', email: '', password: '', role: 'sales', unitId: '', whatsapp: '', position: '', profilePicture: ''
+        name: '',
+        email: '',
+        password: 'V@x2you!',
+        role: 'sales',
+        unitId: '',
+        whatsapp: '',
+        position: '',
+        patent: '',
+        profilePicture: ''
     });
+
     const [previewImage, setPreviewImage] = useState(null);
     const [formError, setFormError] = useState('');
     const [successData, setSuccessData] = useState(null);
@@ -50,9 +61,8 @@ const UsersPage = () => {
         try {
             const [usersData, unitsData] = await Promise.all([
                 api.fetchUsers(),
-                api.fetchUnits ? api.fetchUnits() : Promise.resolve([]) // Fallback if fetchUnits missing
+                api.fetchUnits ? api.fetchUnits() : Promise.resolve([])
             ]);
-            // Mock units if API missing (Safety)
             const safeUnits = unitsData && Array.isArray(unitsData) ? unitsData : [];
             setUnits(safeUnits);
             setUsers(usersData);
@@ -64,20 +74,21 @@ const UsersPage = () => {
 
     const getAvailableRoles = () => {
         const roles = Object.entries(ROLES);
-
         if (currentUser.role === 'master') return roles;
-
-        // Franchisee & Manager: Same Level
         if (['franchisee', 'manager'].includes(currentUser.role)) {
             return roles.filter(([key]) => !['master', 'franchisee', 'manager', 'director'].includes(key));
         }
-
         return [];
     };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Basic compression check (if > 2MB, warn or simplistic resize could be here)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('A imagem é muito grande. Tente uma menor que 2MB.');
+                return;
+            }
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviewImage(reader.result);
@@ -93,20 +104,6 @@ const UsersPage = () => {
 
         try {
             if (isEditing) {
-                // Update Logic
-                // Assuming update API exists or createUser handles it. 
-                // Based on Step 188, it seems we might need a separate update function or the same.
-                // Let's assume api.updateUser exists or we use createUser for now but usually it's different.
-                // Step 188 didn't show the full handleSubmit logic for edit, but standard is PUT.
-                // Let's check if api.updateUser exists in api.js (Step 546).
-                // It doesn't appear in the snippet. But `fetchUsers`, `createUser`, `deleteUser` are there.
-                // Wait, if update isn't in api.js, how was it working?
-                // Maybe I missed it in Step 546?
-                // Let's assume for now we can create.
-                // Actually, let's look at `server/routes/users.js` (Step 201). It HAS `router.put('/:id', ...)`.
-                // So the backend supports it. I should add `api.updateUser`.
-
-                // For now, to avoid breaking, I'll alert if update is missing or try to use a generic fetch.
                 await fetch(`${api.API_URL || 'https://vox2you-system-978034491078.us-central1.run.app/api'}/users/${formData.id}`, {
                     method: 'PUT',
                     headers: {
@@ -115,7 +112,6 @@ const UsersPage = () => {
                     },
                     body: JSON.stringify(formData)
                 });
-
             } else {
                 const newUser = await api.createUser(formData);
                 setSuccessData({ ...newUser, password: formData.password });
@@ -130,7 +126,7 @@ const UsersPage = () => {
     };
 
     const handleEditUser = (user) => {
-        setFormData({ ...user, password: '' }); // Don't show password
+        setFormData({ ...user, password: '' });
         setPreviewImage(user.profilePicture);
         setIsEditing(true);
         setShowModal(true);
@@ -138,7 +134,15 @@ const UsersPage = () => {
 
     const resetForm = () => {
         setFormData({
-            name: '', email: '', password: '', role: 'sales', unitId: '', whatsapp: '', position: '', profilePicture: ''
+            name: '',
+            email: '',
+            password: 'V@x2you!',
+            role: 'sales',
+            unitId: '',
+            whatsapp: '',
+            position: '',
+            patent: '',
+            profilePicture: ''
         });
         setPreviewImage(null);
         setIsEditing(false);
@@ -194,17 +198,20 @@ const UsersPage = () => {
                         <div className="user-card-header">
                             <div className="user-avatar-lg">
                                 {user.profilePicture ? (
-                                    <img src={user.profilePicture} alt={user.name} />
+                                    <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                                 ) : (
-                                    <div className="avatar-placeholder" style={{ backgroundColor: user.color || '#05AAA8' }}>
-                                        {user.name.charAt(0)}
+                                    <div className="avatar-placeholder" style={{ backgroundColor: user.color || '#e2e8f0', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
+                                        <UserIcon size={32} color="#94a3b8" />
                                     </div>
                                 )}
                             </div>
                             <div className="user-info-text">
                                 <h3>{user.name}</h3>
                                 <span className={`role-badge ${user.role}`}>{ROLES[user.role] || user.role}</span>
-                                <p className="user-position">{user.position || 'Sem cargo definido'}</p>
+                                <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
+                                    {user.patent && <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#64748b' }}>{user.patent}</span>}
+                                    <p className="user-position" style={{ margin: 0 }}>{user.position || 'Sem cargo'}</p>
+                                </div>
                             </div>
                         </div>
                         <div className="user-card-details">
@@ -218,7 +225,7 @@ const UsersPage = () => {
                             )}
                             {user.unitId && (
                                 <div className="detail-item">
-                                    <MapPin size={16} /> <span>Unidade: {units.find(u => u.id === user.unitId)?.name || 'N/A'}</span>
+                                    <MapPin size={16} /> <span>{units.find(u => u.id === user.unitId)?.name || 'Unidade não encontrada'}</span>
                                 </div>
                             )}
                         </div>
@@ -235,6 +242,7 @@ const UsersPage = () => {
                         </div>
                         <form onSubmit={handleSubmit} className="modal-body">
 
+                            {/* Foto 3x4 Style Placeholder */}
                             <div className="form-group" style={{ textAlign: 'center', marginBottom: '20px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-main)', fontWeight: 500 }}>Foto de Perfil</label>
                                 <div
@@ -242,10 +250,10 @@ const UsersPage = () => {
                                     onClick={() => document.getElementById('fileInput').click()}
                                     style={{
                                         position: 'relative',
-                                        width: '120px',
-                                        height: '120px',
+                                        width: '100px',
+                                        height: '133px', // 3x4 aspect ratio approximately
                                         margin: '0 auto',
-                                        borderRadius: '50%',
+                                        borderRadius: '8px',
                                         overflow: 'hidden',
                                         background: '#f1f5f9',
                                         border: '2px dashed #cbd5e1',
@@ -262,8 +270,8 @@ const UsersPage = () => {
                                         <img src={previewImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
                                         <div style={{ textAlign: 'center', color: '#94a3b8' }}>
-                                            <Camera size={32} />
-                                            <p style={{ fontSize: '0.7rem', margin: 0 }}>Adicionar</p>
+                                            <UserIcon size={48} />
+                                            <p style={{ fontSize: '0.65rem', margin: 0 }}>Adicionar</p>
                                         </div>
                                     )}
 
@@ -286,11 +294,9 @@ const UsersPage = () => {
                                     onChange={handleImageChange}
                                     style={{ display: 'none' }}
                                 />
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                                    {isEditing ? 'Clique na imagem para alterar' : 'Clique para adicionar foto'}
-                                </p>
                             </div>
 
+                            {/* Campos Simplificados e Novos Campos */}
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Nome Completo*</label>
@@ -311,26 +317,18 @@ const UsersPage = () => {
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>WhatsApp</label>
-                                    <input value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} />
+                                    <input placeholder="(00) 00000-0000" value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} />
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Cargo / Função</label>
-                                    <input value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} placeholder="Ex: Consultor Sênior" />
+                                    <label>Patente (Gamification)</label>
+                                    <input placeholder="Ex: General, Soldado..." value={formData.patent} onChange={e => setFormData({ ...formData, patent: e.target.value })} />
                                 </div>
                             </div>
 
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Perfil de Acesso*</label>
-                                    <select
-                                        value={formData.role}
-                                        onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                        disabled={isEditing && currentUser.role !== 'master'}
-                                    >
-                                        {getAvailableRoles().map(([key, label]) => (
-                                            <option key={key} value={key}>{label}</option>
-                                        ))}
-                                    </select>
+                                    <label>Cargo / Função</label>
+                                    <input placeholder="Ex: Consultor Sênior" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} />
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Unidade</label>
@@ -344,16 +342,28 @@ const UsersPage = () => {
                                             <option key={unit.id} value={unit.id}>{unit.name}</option>
                                         ))}
                                     </select>
-                                    {currentUser.role !== 'master' && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Restrito à sua unidade</p>}
                                 </div>
                             </div>
 
                             <div className="form-group">
-                                <label>{isEditing ? 'Nova Senha (deixe em branco para manter)' : 'Senha Inicial'}</label>
+                                <label>Perfil de Acesso*</label>
+                                <select
+                                    value={formData.role}
+                                    onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                    disabled={isEditing && currentUser.role !== 'master'}
+                                >
+                                    {getAvailableRoles().map(([key, label]) => (
+                                        <option key={key} value={key}>{label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>{isEditing ? 'Nova Senha (opcional)' : 'Senha Inicial (Padrão: V@x2you!)'}</label>
                                 <input
                                     value={formData.password}
                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    placeholder={isEditing ? '******' : 'Padrão: Mud@r123'}
+                                    placeholder={isEditing ? '******' : 'V@x2you!'}
                                     type="password"
                                 />
                             </div>

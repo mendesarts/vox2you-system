@@ -30,6 +30,10 @@ const CRMBoard = () => {
 
     const columnOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
 
+    const getLeadsByStatus = (status) => {
+        return leads.filter(lead => lead.status === status);
+    };
+
     useEffect(() => {
         fetchLeads();
     }, []);

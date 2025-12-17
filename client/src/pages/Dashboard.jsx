@@ -260,7 +260,38 @@ const Dashboard = () => {
                 </div>
 
             </div>
-        </div>
+
+
+            {/* Security Modal - First Access */}
+            {
+                user?.forcePasswordChange && (
+                    <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', zIndex: 9999 }}>
+                        <div className="modal-content" style={{ maxWidth: '450px', textAlign: 'center', padding: '40px' }}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <Shield size={64} className="text-warning" style={{ color: '#f59e0b' }} />
+                            </div>
+                            <h2 style={{ fontSize: '1.5rem', marginBottom: '10px', color: 'var(--text-main)' }}>Ação Necessária</h2>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
+                                Detectamos que você está usando uma senha temporária ou padrão. Para garantir a segurança da sua conta e dos dados da escola, é obrigatório criar uma nova senha agora.
+                            </p>
+
+                            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', border: '1px solid #e2e8f0' }}>
+                                <strong style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Como alterar:</strong>
+                                <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '0.9rem', color: '#475569' }}>
+                                    <li>Clique no botão abaixo para ir às Configurações.</li>
+                                    <li>Acesse a aba <strong>Segurança</strong> ou <strong>Meu Perfil</strong>.</li>
+                                    <li>Digite uma nova senha segura.</li>
+                                </ol>
+                            </div>
+
+                            <a href="/settings" className="btn-primary" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
+                                Ir para Configurações e Alterar Senha
+                            </a>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

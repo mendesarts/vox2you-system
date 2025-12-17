@@ -32,6 +32,10 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true
     },
+    patent: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     forcePasswordChange: {
         type: DataTypes.BOOLEAN,
         defaultValue: true // Usuários novos devem mudar a senha

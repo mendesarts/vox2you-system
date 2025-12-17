@@ -277,13 +277,13 @@ const FinancialManager = () => {
                                 </thead>
                                 <tbody>
                                     {filteredRecords.map(record => (
-                                        <tr key={record.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                        <tr key={record?.id || Math.random()} style={{ borderBottom: '1px solid var(--border)' }}>
                                             <td style={{ padding: '12px' }}>
-                                                {new Date(record.dueDate).toLocaleDateString('pt-BR')}
+                                                {record?.dueDate ? new Date(record.dueDate).toLocaleDateString('pt-BR') : '-'}
                                             </td>
                                             <td style={{ padding: '12px' }}>
-                                                <div style={{ fontWeight: 500 }}>{record.description || record.Student?.name || 'Sem Descrição'}</div>
-                                                {record.Student && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Aluno: {record.Student.name}</div>}
+                                                <div style={{ fontWeight: 500 }}>{record?.description || record?.Student?.name || 'Sem Descrição'}</div>
+                                                {record?.Student && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Aluno: {record.Student.name}</div>}
                                             </td>
                                             <td style={{ padding: '12px' }}>
                                                 {record.category}
