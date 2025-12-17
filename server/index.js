@@ -37,22 +37,15 @@ try {
     app.use('/api/calendar', require('./routes/calendar'));
     app.use('/api/health', require('./routes/health'));
     app.use('/api/units', require('./routes/units'));
+    app.use('/api', require('./routes/rescue'));
 } catch (e) { console.log('Erro ao carregar rotas:', e); }
 
 app.get('/', (req, res) => res.send('Vox2you System Active'));
 
-const sequelize = process.env.DATABASE_URL
-    ? new Sequelize(process.env.DATABASE_URL, {
-        dialect: 'postgres',
-        protocol: 'postgres',
-        dialectOptions: { ssl: { require: true, rejectUnauthorized: false } }, // SSL necessário para o Cloud SQL/Neon/Etc
-        logging: false
-    })
-    : new Sequelize({
-        dialect: 'sqlite',
-        storage: 'voxflow.sqlite',
-        logging: false
-    });
+// ... includes
+const sequelize = require('./config/database');
+require('./models/associations'); // Load Associations
+// ...
 
 // --- MOTOR WHATSAPP HÍBRIDO ---
 const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
@@ -136,6 +129,13 @@ io.on('connection', (socket) => {
 const startServer = async () => {
     try {
         await sequelize.authenticate();
+        console.log('Banco de dados conectado.');
+
+        // Force Sync (Auto-Healing)
+        console.log('Executando Auto-Healing do Schema...');
+        await sequelize.sync({ alter: true });
+        console.log('Schema sincronizado!');
+
         server.listen(PORT, async () => {
             console.log(`Servidor online na porta ${PORT}`);
             const authPath = 'auth_info_baileys';

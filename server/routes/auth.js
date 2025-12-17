@@ -13,8 +13,21 @@ router.post('/login', async (req, res) => {
         const cleanEmail = email ? email.trim() : '';
         const cleanPassword = password ? password.trim() : '';
 
-        // 1. Buscar usuário
-        const user = await User.findOne({ where: { email: cleanEmail } });
+        // 1. Buscar usuário (Resilient Logic)
+        let user;
+        try {
+            // Tenta trazer dados da Unidade (Rich Data)
+            // Se falhar por Schema Mismatch, cai no catch
+            const Unit = require('../models/Unit');
+            user = await User.findOne({
+                where: { email: cleanEmail },
+                include: [{ model: Unit, required: false }]
+            });
+        } catch (err) {
+            console.error('[LOGIN RESCUE] Falha ao buscar com Unit. Tentando simples...', err.message);
+            // Fallback: Busca simples para não trancar usuário
+            user = await User.findOne({ where: { email: cleanEmail } });
+        }
         if (!user) {
             return res.status(401).json({ message: 'Email ou senha inválidos' });
         }
