@@ -104,8 +104,8 @@ const Dashboard = () => {
                         <div className="stat-icon" style={{ background: '#eff6ff', color: '#1d4ed8' }}><Users size={24} /></div>
                         <span className="stat-change positive">Novos Leads</span>
                     </div>
-                    <div className="stat-value">{stats.commercial.newLeadsMonth}</div>
-                    <div className="stat-label">{stats.commercial.salesMonth} Matrículas este mês</div>
+                    <div className="stat-value">{stats.commercial?.newLeadsMonth || 0}</div>
+                    <div className="stat-label">{stats.commercial?.salesMonth || 0} Matrículas este mês</div>
                 </div>
 
                 {/* Metric 2 - Pedagogical */}
@@ -114,8 +114,8 @@ const Dashboard = () => {
                         <div className="stat-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}><CalendarCheck size={24} /></div>
                         <span className="stat-change positive">Alunos Ativos</span>
                     </div>
-                    <div className="stat-value">{stats.pedagogical.activeStudents}</div>
-                    <div className="stat-label">{stats.pedagogical.activeClasses} Turmas em andamento</div>
+                    <div className="stat-value">{stats.pedagogical?.activeStudents || 0}</div>
+                    <div className="stat-label">{stats.pedagogical?.activeClasses || 0} Turmas em andamento</div>
                 </div>
 
                 {/* Metric 3 - Financial */}
@@ -124,8 +124,8 @@ const Dashboard = () => {
                         <div className="stat-icon" style={{ background: '#ecfdf5', color: '#047857' }}><DollarSign size={24} /></div>
                         <span className="stat-change positive">Faturamento</span>
                     </div>
-                    <div className="stat-value">{formatMoney(stats.financial.revenue)}</div>
-                    <div className="stat-label">Saldo: {formatMoney(stats.financial.balance)}</div>
+                    <div className="stat-value">{formatMoney(stats.financial?.revenue || 0)}</div>
+                    <div className="stat-label">Saldo: {formatMoney(stats.financial?.balance || 0)}</div>
                 </div>
             </div>
 
@@ -135,7 +135,7 @@ const Dashboard = () => {
                     <Users size={20} /> Desempenho da Equipe (Metas)
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                    {stats.commercial.teamPerformance && stats.commercial.teamPerformance.length > 0 ? (
+                    {stats.commercial?.teamPerformance && stats.commercial.teamPerformance.length > 0 ? (
                         stats.commercial.teamPerformance.map(member => (
                             <div key={member.id} className="dashboard-card" style={{ padding: '20px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -145,7 +145,7 @@ const Dashboard = () => {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontWeight: 'bold'
                                     }}>
-                                        {member.name.charAt(0)}
+                                        {member.name?.charAt(0) || 'U'}
                                     </div>
                                     <div>
                                         <div style={{ fontWeight: 600 }}>{member.name}</div>
@@ -155,22 +155,22 @@ const Dashboard = () => {
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                                     <span style={{ color: 'var(--text-muted)' }}>Vendas</span>
-                                    <strong style={{ color: member.sales >= member.goal ? '#16a34a' : '#3b82f6' }}>
-                                        {member.sales} / {member.goal}
+                                    <strong style={{ color: (member.sales || 0) >= (member.goal || 1) ? '#16a34a' : '#3b82f6' }}>
+                                        {member.sales || 0} / {member.goal || 0}
                                     </strong>
                                 </div>
 
                                 {/* Progress Bar */}
                                 <div style={{ width: '100%', height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
                                     <div style={{
-                                        width: `${member.progress}%`,
+                                        width: `${member.progress || 0}%`,
                                         height: '100%',
-                                        background: member.progress >= 100 ? '#16a34a' : '#3b82f6',
+                                        background: (member.progress || 0) >= 100 ? '#16a34a' : '#3b82f6',
                                         transition: 'width 0.5s ease'
                                     }}></div>
                                 </div>
                                 <div style={{ textAlign: 'right', fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-muted)' }}>
-                                    {member.progress}% da meta
+                                    {member.progress || 0}% da meta
                                 </div>
                             </div>
                         ))
@@ -202,16 +202,16 @@ const Dashboard = () => {
                                 {topSeller.profilePicture ? (
                                     <img src={topSeller.profilePicture} alt={topSeller.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#FDB931' }}>{topSeller.name.charAt(0)}</span>
+                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#FDB931' }}>{topSeller.name?.charAt(0) || 'U'}</span>
                                 )}
                             </div>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{topSeller.name}</div>
-                            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>{topSeller.month}</div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{topSeller.name || 'Usuário'}</div>
+                            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>{topSeller.month || '-'}</div>
                             <div style={{
                                 marginTop: '12px', background: 'rgba(255,255,255,0.3)',
                                 padding: '4px 12px', borderRadius: '20px', fontWeight: 'bold'
                             }}>
-                                {topSeller.salesCount} Vendas
+                                {topSeller.salesCount || 0} Vendas
                             </div>
                         </div>
                     ) : (
@@ -229,16 +229,16 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px', gap: '12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text-muted)' }}>Receita</span>
-                            <span style={{ fontWeight: 700, color: '#059669' }}>{formatMoney(stats.financial.revenue)}</span>
+                            <span style={{ fontWeight: 700, color: '#059669' }}>{formatMoney(stats.financial?.revenue || 0)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text-muted)' }}>Despesa</span>
-                            <span style={{ fontWeight: 700, color: '#ef4444' }}>{formatMoney(stats.financial.expense)}</span>
+                            <span style={{ fontWeight: 700, color: '#ef4444' }}>{formatMoney(stats.financial?.expense || 0)}</span>
                         </div>
                         <div style={{ padding: '8px 0', borderTop: '1px solid var(--border)', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontWeight: 600 }}>Saldo</span>
-                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: stats.financial.balance >= 0 ? '#3b82f6' : '#ef4444' }}>
-                                {formatMoney(stats.financial.balance)}
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: (stats.financial?.balance || 0) >= 0 ? '#3b82f6' : '#ef4444' }}>
+                                {formatMoney(stats.financial?.balance || 0)}
                             </span>
                         </div>
                     </div>
@@ -251,7 +251,7 @@ const Dashboard = () => {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', height: '100%' }}>
                         <div style={{ fontSize: '3rem', fontWeight: 800, color: '#3b82f6', lineHeight: 1 }}>
-                            {stats.commercial.conversionRate}%
+                            {stats.commercial?.conversionRate || 0}%
                         </div>
                         <p style={{ color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
                             Dos leads tornaram-se alunos este mês.
