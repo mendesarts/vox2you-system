@@ -34,6 +34,7 @@ const UsersPage = () => {
         whatsapp: '',
         position: '',
         patent: '',
+        unitName: '',
         profilePicture: ''
     });
 
@@ -79,6 +80,12 @@ const UsersPage = () => {
             return roles.filter(([key]) => !['master', 'franchisee', 'manager', 'director'].includes(key));
         }
         return [];
+    };
+
+    const formatPhone = (v) => {
+        v = v.replace(/\D/g, "");
+        if (v.length > 11) v = v.slice(0, 11);
+        return v.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
     };
 
     const handleImageChange = (e) => {
@@ -142,6 +149,7 @@ const UsersPage = () => {
             whatsapp: '',
             position: '',
             patent: '',
+            unitName: '',
             profilePicture: ''
         });
         setPreviewImage(null);
@@ -317,7 +325,12 @@ const UsersPage = () => {
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>WhatsApp</label>
-                                    <input placeholder="(00) 00000-0000" value={formData.whatsapp} onChange={e => setFormData({ ...formData, whatsapp: e.target.value })} />
+                                    <input
+                                        placeholder="(99) 99999-9999"
+                                        value={formData.whatsapp}
+                                        onChange={e => setFormData({ ...formData, whatsapp: formatPhone(e.target.value) })}
+                                        maxLength={15}
+                                    />
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Patente (Gamification)</label>
@@ -332,21 +345,24 @@ const UsersPage = () => {
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Unidade*</label>
-                                    <select
-                                        value={formData.unitId}
-                                        onChange={e => setFormData({ ...formData, unitId: e.target.value })}
-                                        disabled={!['master', 'director'].includes(currentUser.role)}
-                                        required
-                                    >
-                                        <option value="">Selecione...</option>
-                                        {units.map(unit => (
-                                            <option key={unit.id} value={unit.id}>{unit.name}</option>
-                                        ))}
-                                    </select>
-                                    {!['master', 'director'].includes(currentUser.role) && (
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                            Vinculado à sua unidade atual.
-                                        </p>
+                                    {['master', 'director'].includes(currentUser.role) ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Ex: Brasília.ÁguasClaras"
+                                                value={formData.unitName || (formData.unitId ? units.find(u => u.id === formData.unitId)?.name : '')}
+                                                onChange={e => setFormData({ ...formData, unitName: e.target.value, unitId: null })}
+                                                required={!formData.unitId}
+                                            />
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.7em' }}>Digite Cidade.Bairro para criar/vincular.</small>
+                                        </div>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={units.find(u => u.id === currentUser.unitId)?.name || 'Minha Unidade'}
+                                            disabled
+                                            style={{ background: 'var(--bg-app)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                                        />
                                     )}
                                 </div>
                             </div>

@@ -109,20 +109,12 @@ const CalendarSettings = () => {
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0 }}>Gerenciar Feriados</h3>
-                <button
-                    onClick={importNationalHolidays}
-                    disabled={importing}
-                    className="btn-secondary"
-                    style={{ gap: '8px' }}
-                >
-                    <Download size={18} />
-                    {importing ? 'Importando...' : 'Importar Feriados Nacionais (2 Anos)'}
-                </button>
+                <h3 style={{ margin: 0 }}>Gerenciar Calendário Escolar</h3>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px' }}>
                 <div>
+                    <p style={{ color: 'var(--text-muted)', marginBottom: '10px' }}>Lista de feriados nacionais e exceções cadastradas.</p>
                     <div className="holidays-list">
                         {holidays.map(h => (
                             <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-app)', marginBottom: '8px', borderRadius: '6px', borderLeft: `4px solid ${h.type === 'holiday' ? '#ef4444' : '#f59e0b'}` }}>
@@ -149,7 +141,7 @@ const CalendarSettings = () => {
                 </div>
 
                 <div className="add-holiday-form" style={{ background: 'var(--bg-app)', padding: '20px', borderRadius: '8px', height: 'fit-content', border: '1px solid var(--border)' }}>
-                    <h4 style={{ marginBottom: '15px' }}>Adicionar Manualmente</h4>
+                    <h4 style={{ marginBottom: '15px' }}>Adicionar Exceção / Recesso</h4>
                     <form onSubmit={handleCreateHoliday} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Nome do Evento</label>

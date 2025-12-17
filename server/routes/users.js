@@ -49,6 +49,24 @@ router.post('/', auth, async (req, res) => {
         // 2. Restrições de Unidade e Hierarquia
         let targetUnitId = unitId;
 
+        // Se for Master e enviou unitName ao invés de unitId => Buscar ou Criar Unidade
+        const { unitName } = req.body;
+        if (requester.role === 'master' && !targetUnitId && unitName) {
+            // Check if unit exists
+            const existingUnit = await Unit.findOne({ where: { name: unitName } });
+            if (existingUnit) {
+                targetUnitId = existingUnit.id;
+            } else {
+                // Create new Unit on the fly
+                const newUnit = await Unit.create({
+                    name: unitName,
+                    city: unitName.split('.')[0] || 'Matriz', // Simple inference
+                    active: true
+                });
+                targetUnitId = newUnit.id;
+            }
+        }
+
         if (requester.role !== 'master' && requester.role !== 'director') {
             // Se não for master/diretor, FORÇA a unidade do criador? 
             // User says Director creates other Directors. Directors might be global or unit bound?
