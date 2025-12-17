@@ -64,9 +64,9 @@ const Login = () => {
             try {
                 const userData = await login(email, password);
 
-                if (userData.user.forcePasswordChange) {
+                if (userData?.user?.forcePasswordChange) {
                     setForceChangeMode(true);
-                    setTempUserId(userData.user.id);
+                    setTempUserId(userData?.user?.id);
                     // Clear auth from context/storage because we want them to re-login or at least not be fully "in" yet?
                     // Actually login() sets the token. We can keep it or revoke it.
                     // For security, strict implementations might require a temp token.
