@@ -42,7 +42,8 @@ const User = sequelize.define('User', {
     },
     role: {
         type: DataTypes.ENUM(
-            'master', // Diretor / Franqueadora (Acesso Total)
+            'master', // Franqueadora (Acesso Total)
+            'director', // Diretor de Unidade (Master Local)
             'franchisee', // Franqueado (Acesso Total Unidade)
             'manager', // Gestor (Acesso Total Unidade)
             'sales_leader', // Lider Comercial

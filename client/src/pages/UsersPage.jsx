@@ -5,7 +5,8 @@ import { api } from '../services/api';
 import '../styles/users.css';
 
 const ROLES = {
-    master: 'Master / Owner',
+    master: 'Master',
+    director: 'Diretor',
     franchisee: 'Franqueado',
     manager: 'Gestor',
     pedagogical_leader: 'Líder Pedagógico',

@@ -30,6 +30,7 @@ const Sidebar = () => {
     const getRoleLabel = (role) => {
         const map = {
             'master': 'Master',
+            'director': 'Diretor',
             'franchisee': 'Franqueado',
             'manager': 'Gerente Geral',
             'admin_financial_manager': 'Gerente Financeiro',
@@ -90,10 +91,11 @@ const Sidebar = () => {
                         border: '2px solid rgba(255,255,255,0.2)'
                     }}>
                         {user?.profilePicture ? (
-                            <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', aspectRatio: '1/1' }} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerText = user?.name?.charAt(0) || 'U' }} />
-                        ) : (
-                            user?.name?.charAt(0) || 'U'
-                        )}
+                            <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', aspectRatio: '1/1' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                        ) : null}
+                        <div style={{ display: user?.profilePicture ? 'none' : 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', background: '#94a3b8', color: '#f1f5f9' }}>
+                            <Users size={28} />
+                        </div>
                     </div>
                     <div className="user-info" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <span className="user-name" style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white' }}>{user?.name || 'Usuário'}</span>

@@ -163,8 +163,12 @@ router.put('/:id', auth, async (req, res) => {
 
         // Verificação de Permissão para Editar
         let canEdit = false;
-        if (requester.role === 'master') canEdit = true;
+        if (requester.role === 'master' || requester.role === 'director') canEdit = true;
         else if (requester.unitId === userToUpdate.unitId && ['franchisee', 'manager'].includes(requester.role)) canEdit = true;
+        else if (requester.id === userToUpdate.id) canEdit = true; // Próprio usuário
+
+        // Director cannot edit Master
+        if (requester.role === 'director' && userToUpdate.role === 'master') canEdit = false;
         else if (requester.id === userToUpdate.id) canEdit = true; // Próprio usuário
 
         if (!canEdit) return res.status(403).json({ error: 'Sem permissão para editar este usuário.' });
@@ -177,10 +181,15 @@ router.put('/:id', auth, async (req, res) => {
             delete updates.password; // Remove field to prevent overwriting with empty
         }
 
-        // Proteção: Não deixar mudar unitId ou role se não for Master (ou regras especificas)
-        if (requester.role !== 'master') {
+        // Proteção: Não deixar mudar unitId ou role se não for Master/Director
+        if (!['master', 'director'].includes(requester.role)) {
             delete updates.unitId;
             delete updates.role; // Evitar escalação de privilégio
+        }
+
+        // Director cannot promote to Master
+        if (requester.role === 'director' && updates.role === 'master') {
+            delete updates.role;
         }
 
         await userToUpdate.update(updates);
