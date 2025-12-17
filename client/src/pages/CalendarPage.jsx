@@ -178,8 +178,9 @@ const CalendarPage = () => {
 
                         // Filter events for this day
                         const dayEvents = events.filter(ev => {
+                            if (!ev.start) return false;
                             const eDate = new Date(ev.start);
-                            return eDate.toDateString() === day.toDateString();
+                            return !isNaN(eDate) && eDate.toDateString() === day.toDateString();
                         });
 
                         return (

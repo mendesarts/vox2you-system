@@ -58,15 +58,47 @@ const Sidebar = () => {
                     <Settings size={20} />
                     <span>Configurações</span>
                 </NavLink>
-                <div className="user-profile">
-                    <div className="avatar-sm" style={{ background: user?.color || '#10b981', color: '#fff', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
-                        {user?.name?.charAt(0) || 'U'}
+                <div className="user-profile" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px' }}>
+                    <div className="avatar-lg" style={{
+                        background: user?.color || '#10b981',
+                        color: '#fff',
+                        width: '48px',
+                        height: '48px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        overflow: 'hidden'
+                    }}>
+                        {user?.profilePicture ? (
+                            <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            user?.name?.charAt(0) || 'U'
+                        )}
                     </div>
-                    <div className="user-info">
-                        <span className="user-name">{user?.name || 'Usuário'}</span>
-                        <span className="user-role" style={{ textTransform: 'capitalize' }}>{user?.role || 'Visitante'}</span>
+                    <div className="user-info" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span className="user-name" style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white' }}>{user?.name || 'Usuário'}</span>
+                        <span className="user-role" style={{ fontSize: '0.8rem', opacity: 0.8, textTransform: 'none' }}>
+                            {{
+                                'master': 'Master / Diretor',
+                                'franchisee': 'Franqueado',
+                                'manager': 'Gerente Geral',
+                                'admin_financial_manager': 'Gerente Financeiro',
+                                'pedagogical_leader': 'Coord. Pedagógico',
+                                'sales_leader': 'Líder Comercial',
+                                'consultant': 'Consultor',
+                                'instructor': 'Instrutor',
+                                'secretary': 'Secretaria'
+                            }[user?.role] || 'Colaborador'}
+                        </span>
                     </div>
-                    <LogOut size={16} className="logout-icon" onClick={logout} title="Sair" />
+                    <div style={{ width: '100%', marginTop: '4px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px', display: 'flex', justifyContent: 'center' }}>
+                        <button onClick={logout} className="logout-btn" style={{ background: 'transparent', border: 'none', color: '#f87171', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                            <LogOut size={14} /> Sair do Sistema
+                        </button>
+                    </div>
                 </div>
             </div>
         </aside>

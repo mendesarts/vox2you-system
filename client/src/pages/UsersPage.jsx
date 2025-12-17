@@ -138,7 +138,7 @@ const UsersPage = () => {
             email: '',
             password: 'V@x2you!',
             role: 'sales',
-            unitId: '',
+            unitId: !['master', 'director'].includes(currentUser.role) ? currentUser.unitId : '',
             whatsapp: '',
             position: '',
             patent: '',
@@ -331,17 +331,23 @@ const UsersPage = () => {
                                     <input placeholder="Ex: Consultor Sênior" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} />
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Unidade</label>
+                                    <label>Unidade*</label>
                                     <select
                                         value={formData.unitId}
                                         onChange={e => setFormData({ ...formData, unitId: e.target.value })}
-                                        disabled={currentUser.role !== 'master' || (isEditing && currentUser.role !== 'master')}
+                                        disabled={!['master', 'director'].includes(currentUser.role)}
+                                        required
                                     >
                                         <option value="">Selecione...</option>
                                         {units.map(unit => (
                                             <option key={unit.id} value={unit.id}>{unit.name}</option>
                                         ))}
                                     </select>
+                                    {!['master', 'director'].includes(currentUser.role) && (
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                            Vinculado à sua unidade atual.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -380,48 +386,50 @@ const UsersPage = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div >
             )}
 
-            {successData && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
-                            <div style={{ background: '#dcfce7', padding: '15px', borderRadius: '50%', color: '#16a34a' }}>
-                                <Check size={32} />
+            {
+                successData && (
+                    <div className="modal-overlay">
+                        <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+                                <div style={{ background: '#dcfce7', padding: '15px', borderRadius: '50%', color: '#16a34a' }}>
+                                    <Check size={32} />
+                                </div>
+                            </div>
+                            <h3>Usuário Criado com Sucesso!</h3>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Envie as informações abaixo para o novo colaborador.</p>
+
+                            <div style={{
+                                background: 'var(--bg-app)',
+                                padding: '20px',
+                                borderRadius: 'var(--radius-md)',
+                                textAlign: 'left',
+                                border: '1px solid var(--border)',
+                                marginBottom: '20px'
+                            }}>
+                                <p><strong>Olá, {successData.name}!</strong></p>
+                                <p>Seu acesso ao sistema Vox2you foi criado.</p>
+                                <br />
+                                <p>🔗 <strong>Link:</strong> https://meuvoxflow.vercel.app/</p>
+                                <p>📧 <strong>Login:</strong> {successData.email}</p>
+                                <p>🔑 <strong>Senha Provisória:</strong> {successData.password}</p>
+                                <br />
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Você será solicitado a criar uma nova senha no primeiro acesso.</p>
+                            </div>
+
+                            <div className="modal-footer" style={{ justifyContent: 'center', gap: '15px' }}>
+                                <button className="btn-secondary" onClick={() => setSuccessData(null)}>Fechar</button>
+                                <button className="btn-primary" onClick={handleCopyMessage}>
+                                    <Check size={18} style={{ marginRight: '5px' }} /> Copiar Mensagem
+                                </button>
                             </div>
                         </div>
-                        <h3>Usuário Criado com Sucesso!</h3>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Envie as informações abaixo para o novo colaborador.</p>
-
-                        <div style={{
-                            background: 'var(--bg-app)',
-                            padding: '20px',
-                            borderRadius: 'var(--radius-md)',
-                            textAlign: 'left',
-                            border: '1px solid var(--border)',
-                            marginBottom: '20px'
-                        }}>
-                            <p><strong>Olá, {successData.name}!</strong></p>
-                            <p>Seu acesso ao sistema Vox2you foi criado.</p>
-                            <br />
-                            <p>🔗 <strong>Link:</strong> https://meuvoxflow.vercel.app/</p>
-                            <p>📧 <strong>Login:</strong> {successData.email}</p>
-                            <p>🔑 <strong>Senha Provisória:</strong> {successData.password}</p>
-                            <br />
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Você será solicitado a criar uma nova senha no primeiro acesso.</p>
-                        </div>
-
-                        <div className="modal-footer" style={{ justifyContent: 'center', gap: '15px' }}>
-                            <button className="btn-secondary" onClick={() => setSuccessData(null)}>Fechar</button>
-                            <button className="btn-primary" onClick={handleCopyMessage}>
-                                <Check size={18} style={{ marginRight: '5px' }} /> Copiar Mensagem
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
