@@ -276,243 +276,255 @@ const FinancialManager = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredRecords.map(record => (
-                                        <tr key={record?.id || Math.random()} style={{ borderBottom: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '12px' }}>
-                                                {record?.dueDate && !isNaN(new Date(record.dueDate)) ? new Date(record.dueDate).toLocaleDateString('pt-BR') : '-'}
-                                            </td>
-                                            <td style={{ padding: '12px' }}>
-                                                <div style={{ fontWeight: 500 }}>{record?.description || record?.Student?.name || 'Sem Descrição'}</div>
-                                                {record?.Student && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Aluno: {record.Student.name}</div>}
-                                            </td>
-                                            <td style={{ padding: '12px' }}>
-                                                {record.category}
-                                            </td>
-                                            <td style={{ padding: '12px' }}>
-                                                {record.direction === 'income' ? (
-                                                    <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}><ArrowUpCircle size={14} /> Receita</span>
-                                                ) : (
-                                                    <span style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}><ArrowDownCircle size={14} /> Despesa</span>
-                                                )}
-                                            </td>
-                                            <td style={{ padding: '12px', fontWeight: 600 }}>
-                                                {formatCurrency(record.amount)}
-                                            </td>
-                                            <td style={{ padding: '12px' }}>
-                                                {getStatusBadge(record.status)}
-                                            </td>
-                                            <td style={{ padding: '12px' }}>
-                                                {record.status !== 'paid' && (
-                                                    <button
-                                                        onClick={() => openSettleModal(record)}
-                                                        className="icon-btn"
-                                                        title="Quitar"
-                                                        style={{ color: 'var(--success)', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                    >
-                                                        <CheckCircle size={18} />
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {filteredRecords.map(record => {
+                                        try {
+                                            if (!record) return null;
+                                            return (
+                                                <tr key={record?.id || Math.random()} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                    <td style={{ padding: '12px' }}>
+                                                        {record?.dueDate && !isNaN(new Date(record.dueDate)) ? new Date(record.dueDate).toLocaleDateString('pt-BR') : '-'}
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <div style={{ fontWeight: 500 }}>{record?.description || record?.Student?.name || 'Sem Descrição'}</div>
+                                                        {record?.Student && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Aluno: {record.Student.name}</div>}
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        {record?.category}
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        {record?.direction === 'income' ?
+                                                            <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}><ArrowUpCircle size={14} /> Receita</span> :
+                                                            <span style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}><ArrowDownCircle size={14} /> Despesa</span>
+                                                        }
+                                                    </td>
+                                                    <td style={{ padding: '12px', fontWeight: 600 }}>
+                                                        {formatCurrency(record.amount || 0)}
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        {getStatusBadge(record?.status)}
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        {record?.status !== 'paid' && (
+                                                            <button
+                                                                onClick={() => openSettleModal(record)}
+                                                                className="icon-btn"
+                                                                title="Quitar"
+                                                                style={{ color: 'var(--success)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                            >
+                                                                <CheckCircle size={18} />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        } catch (err) {
+                                            console.error("Row render error", err);
+                                            return <tr key={Math.random()}><td colSpan="7" style={{ color: 'red', padding: '12px' }}>Erro no registro</td></tr>;
+                                        }
+                                    })}
                                 </tbody>
                             </table>
                         </div>
                     )}
                 </div>
-            )}
+            )
+            }
 
             {/* Modal Novo Lançamento */}
-            {showNewRecordModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '500px' }}>
-                        <div className="modal-header">
-                            <h3>Novo Lançamento</h3>
-                            <button onClick={() => setShowNewRecordModal(false)}><X size={20} /></button>
-                        </div>
-                        <div style={{ padding: '20px' }}>
-                            <div className="form-group">
-                                <label>Tipo de Movimentação</label>
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
-                                    <button
-                                        onClick={() => setNewRecordData({ ...newRecordData, direction: 'income' })}
-                                        className={`btn-${newRecordData.direction === 'income' ? 'primary' : 'secondary'}`}
-                                        style={{ flex: 1, backgroundColor: newRecordData.direction === 'income' ? 'var(--success)' : '' }}
-                                    >
-                                        Entrada (Receita)
-                                    </button>
-                                    <button
-                                        onClick={() => setNewRecordData({ ...newRecordData, direction: 'expense' })}
-                                        className={`btn-${newRecordData.direction === 'expense' ? 'primary' : 'secondary'}`}
-                                        style={{ flex: 1, backgroundColor: newRecordData.direction === 'expense' ? 'var(--danger)' : '' }}
-                                    >
-                                        Saída (Despesa)
-                                    </button>
-                                </div>
+            {
+                showNewRecordModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content" style={{ maxWidth: '500px' }}>
+                            <div className="modal-header">
+                                <h3>Novo Lançamento</h3>
+                                <button onClick={() => setShowNewRecordModal(false)}><X size={20} /></button>
                             </div>
-
-                            <div className="form-row">
-                                <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Descrição</label>
-                                    <input
-                                        type="text"
-                                        className="input-field"
-                                        placeholder="Ex: Mensalidade, Conta de Luz"
-                                        value={newRecordData.description}
-                                        onChange={(e) => setNewRecordData({ ...newRecordData, description: e.target.value })}
-                                    />
+                            <div style={{ padding: '20px' }}>
+                                <div className="form-group">
+                                    <label>Tipo de Movimentação</label>
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                                        <button
+                                            onClick={() => setNewRecordData({ ...newRecordData, direction: 'income' })}
+                                            className={`btn-${newRecordData.direction === 'income' ? 'primary' : 'secondary'}`}
+                                            style={{ flex: 1, backgroundColor: newRecordData.direction === 'income' ? 'var(--success)' : '' }}
+                                        >
+                                            Entrada (Receita)
+                                        </button>
+                                        <button
+                                            onClick={() => setNewRecordData({ ...newRecordData, direction: 'expense' })}
+                                            className={`btn-${newRecordData.direction === 'expense' ? 'primary' : 'secondary'}`}
+                                            style={{ flex: 1, backgroundColor: newRecordData.direction === 'expense' ? 'var(--danger)' : '' }}
+                                        >
+                                            Saída (Despesa)
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Valor (R$)</label>
-                                    <input
-                                        type="number"
-                                        className="input-field"
-                                        placeholder="0.00"
-                                        value={newRecordData.amount}
-                                        onChange={(e) => setNewRecordData({ ...newRecordData, amount: e.target.value })}
-                                    />
-                                </div>
-                            </div>
 
-                            <div className="form-row">
-                                <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Categoria</label>
+                                <div className="form-row">
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label>Descrição</label>
+                                        <input
+                                            type="text"
+                                            className="input-field"
+                                            placeholder="Ex: Mensalidade, Conta de Luz"
+                                            value={newRecordData.description}
+                                            onChange={(e) => setNewRecordData({ ...newRecordData, description: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label>Valor (R$)</label>
+                                        <input
+                                            type="number"
+                                            className="input-field"
+                                            placeholder="0.00"
+                                            value={newRecordData.amount}
+                                            onChange={(e) => setNewRecordData({ ...newRecordData, amount: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label>Categoria</label>
+                                        <select
+                                            className="input-field"
+                                            value={newRecordData.category}
+                                            onChange={(e) => setNewRecordData({ ...newRecordData, category: e.target.value })}
+                                        >
+                                            <option value="">Selecione...</option>
+
+                                            <optgroup label="Receitas">
+                                                <option value="Mensalidade">Mensalidade</option>
+                                                <option value="Matrícula">Matrícula</option>
+                                                <option value="Material Didático">Material Didático (Venda)</option>
+                                                <option value="Eventos">Receita de Eventos</option>
+                                                <option value="Outras Receitas">Outras Receitas</option>
+                                            </optgroup>
+
+                                            <optgroup label="Infraestrutura">
+                                                <option value="Aluguel">Aluguel do Imóvel</option>
+                                                <option value="Energia">Energia Elétrica</option>
+                                                <option value="Água">Água / Esgoto</option>
+                                                <option value="Internet">Internet / Telefone</option>
+                                                <option value="Limpeza">Material de Limpeza</option>
+                                                <option value="Manutenção Predial">Manutenção Predial</option>
+                                            </optgroup>
+
+                                            <optgroup label="Rh & Pessoal">
+                                                <option value="Salários Adm">Salários (Administrativo)</option>
+                                                <option value="Salários Prof">Salários (Professores)</option>
+                                                <option value="Encargos">Encargos Trabalhistas (FGTS/INSS)</option>
+                                                <option value="Benefícios">Benefícios (VT/VR)</option>
+                                                <option value="Adiantamentos">Adiantamentos</option>
+                                            </optgroup>
+
+                                            <optgroup label="Pedagógico">
+                                                <option value="Material Consumo">Material de Consumo (Papelaria/Xerox)</option>
+                                                <option value="Licenças">Licenças de Software/Sistemas</option>
+                                                <option value="Treinamentos">Treinamentos e Cursos</option>
+                                            </optgroup>
+
+                                            <optgroup label="Marketing">
+                                                <option value="Publicidade Online">Ads (Google/Meta)</option>
+                                                <option value="Panfletagem">Panfletagem / Divulgação Offline</option>
+                                                <option value="Brindes">Brindes e Prêmios</option>
+                                            </optgroup>
+
+                                            <optgroup label="Administrativo">
+                                                <option value="Contabilidade">Contabilidade / Jurídico</option>
+                                                <option value="Taxas Bancárias">Taxas Bancárias</option>
+                                                <option value="Impostos">Impostos (DAS/ISS)</option>
+                                                <option value="Software Gestão">Sistema de Gestão</option>
+                                            </optgroup>
+
+                                            <option value="Outros">Outros</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label>Data Vencimento</label>
+                                        <input
+                                            type="date"
+                                            className="input-field"
+                                            value={newRecordData.dueDate}
+                                            onChange={(e) => setNewRecordData({ ...newRecordData, dueDate: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Status</label>
                                     <select
                                         className="input-field"
-                                        value={newRecordData.category}
-                                        onChange={(e) => setNewRecordData({ ...newRecordData, category: e.target.value })}
+                                        value={newRecordData.status}
+                                        onChange={(e) => setNewRecordData({ ...newRecordData, status: e.target.value })}
                                     >
-                                        <option value="">Selecione...</option>
-
-                                        <optgroup label="Receitas">
-                                            <option value="Mensalidade">Mensalidade</option>
-                                            <option value="Matrícula">Matrícula</option>
-                                            <option value="Material Didático">Material Didático (Venda)</option>
-                                            <option value="Eventos">Receita de Eventos</option>
-                                            <option value="Outras Receitas">Outras Receitas</option>
-                                        </optgroup>
-
-                                        <optgroup label="Infraestrutura">
-                                            <option value="Aluguel">Aluguel do Imóvel</option>
-                                            <option value="Energia">Energia Elétrica</option>
-                                            <option value="Água">Água / Esgoto</option>
-                                            <option value="Internet">Internet / Telefone</option>
-                                            <option value="Limpeza">Material de Limpeza</option>
-                                            <option value="Manutenção Predial">Manutenção Predial</option>
-                                        </optgroup>
-
-                                        <optgroup label="Rh & Pessoal">
-                                            <option value="Salários Adm">Salários (Administrativo)</option>
-                                            <option value="Salários Prof">Salários (Professores)</option>
-                                            <option value="Encargos">Encargos Trabalhistas (FGTS/INSS)</option>
-                                            <option value="Benefícios">Benefícios (VT/VR)</option>
-                                            <option value="Adiantamentos">Adiantamentos</option>
-                                        </optgroup>
-
-                                        <optgroup label="Pedagógico">
-                                            <option value="Material Consumo">Material de Consumo (Papelaria/Xerox)</option>
-                                            <option value="Licenças">Licenças de Software/Sistemas</option>
-                                            <option value="Treinamentos">Treinamentos e Cursos</option>
-                                        </optgroup>
-
-                                        <optgroup label="Marketing">
-                                            <option value="Publicidade Online">Ads (Google/Meta)</option>
-                                            <option value="Panfletagem">Panfletagem / Divulgação Offline</option>
-                                            <option value="Brindes">Brindes e Prêmios</option>
-                                        </optgroup>
-
-                                        <optgroup label="Administrativo">
-                                            <option value="Contabilidade">Contabilidade / Jurídico</option>
-                                            <option value="Taxas Bancárias">Taxas Bancárias</option>
-                                            <option value="Impostos">Impostos (DAS/ISS)</option>
-                                            <option value="Software Gestão">Sistema de Gestão</option>
-                                        </optgroup>
-
-                                        <option value="Outros">Outros</option>
+                                        <option value="pending">Pendente (Agendar)</option>
+                                        <option value="paid">Pago / Recebido (Imediato)</option>
                                     </select>
                                 </div>
-                                <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Data Vencimento</label>
+
+                                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                                    <button className="btn-secondary" onClick={() => setShowNewRecordModal(false)}>Cancelar</button>
+                                    <button className="btn-primary" onClick={handleCreateRecord}>Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Modal de Quitação Exibido */}
+            {
+                showSettleModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content" style={{ maxWidth: '400px' }}>
+                            <div className="modal-header">
+                                <h3>Quitar Lançamento</h3>
+                                <button onClick={() => setShowSettleModal(false)}><X size={20} /></button>
+                            </div>
+                            <div style={{ padding: '20px' }}>
+                                <p style={{ marginBottom: '15px' }}>
+                                    Confirmar baixa de <strong>{formatCurrency(selectedRecord?.amount)}</strong>?
+                                </p>
+
+                                <div className="form-group">
+                                    <label>Data da Baixa</label>
                                     <input
                                         type="date"
                                         className="input-field"
-                                        value={newRecordData.dueDate}
-                                        onChange={(e) => setNewRecordData({ ...newRecordData, dueDate: e.target.value })}
+                                        value={settleData.paymentDate}
+                                        onChange={e => setSettleData({ ...settleData, paymentDate: e.target.value })}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-group">
-                                <label>Status</label>
-                                <select
-                                    className="input-field"
-                                    value={newRecordData.status}
-                                    onChange={(e) => setNewRecordData({ ...newRecordData, status: e.target.value })}
-                                >
-                                    <option value="pending">Pendente (Agendar)</option>
-                                    <option value="paid">Pago / Recebido (Imediato)</option>
-                                </select>
-                            </div>
+                                <div className="form-group">
+                                    <label>Forma de Pagamento</label>
+                                    <select
+                                        className="input-field"
+                                        value={settleData.paymentMethod}
+                                        onChange={e => setSettleData({ ...settleData, paymentMethod: e.target.value })}
+                                    >
+                                        <option value="pix">Pix</option>
+                                        <option value="boleto">Boleto</option>
+                                        <option value="credit">Cartão Crédito</option>
+                                        <option value="debit">Cartão Débito</option>
+                                        <option value="money">Dinheiro</option>
+                                        <option value="cheque">Cheque</option>
+                                    </select>
+                                </div>
 
-                            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                <button className="btn-secondary" onClick={() => setShowNewRecordModal(false)}>Cancelar</button>
-                                <button className="btn-primary" onClick={handleCreateRecord}>Salvar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal de Quitação Exibido */}
-            {showSettleModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content" style={{ maxWidth: '400px' }}>
-                        <div className="modal-header">
-                            <h3>Quitar Lançamento</h3>
-                            <button onClick={() => setShowSettleModal(false)}><X size={20} /></button>
-                        </div>
-                        <div style={{ padding: '20px' }}>
-                            <p style={{ marginBottom: '15px' }}>
-                                Confirmar baixa de <strong>{formatCurrency(selectedRecord?.amount)}</strong>?
-                            </p>
-
-                            <div className="form-group">
-                                <label>Data da Baixa</label>
-                                <input
-                                    type="date"
-                                    className="input-field"
-                                    value={settleData.paymentDate}
-                                    onChange={e => setSettleData({ ...settleData, paymentDate: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Forma de Pagamento</label>
-                                <select
-                                    className="input-field"
-                                    value={settleData.paymentMethod}
-                                    onChange={e => setSettleData({ ...settleData, paymentMethod: e.target.value })}
-                                >
-                                    <option value="pix">Pix</option>
-                                    <option value="boleto">Boleto</option>
-                                    <option value="credit">Cartão Crédito</option>
-                                    <option value="debit">Cartão Débito</option>
-                                    <option value="money">Dinheiro</option>
-                                    <option value="cheque">Cheque</option>
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                                <button className="btn-secondary" onClick={() => setShowSettleModal(false)}>Cancelar</button>
-                                <button className="btn-primary" onClick={confirmSettlePayment} style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)' }}>
-                                    Confirmar
-                                </button>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                                    <button className="btn-secondary" onClick={() => setShowSettleModal(false)}>Cancelar</button>
+                                    <button className="btn-primary" onClick={confirmSettlePayment} style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)' }}>
+                                        Confirmar
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

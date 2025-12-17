@@ -64,6 +64,8 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                unitId: user.unitId,
+                profilePicture: user.profilePicture,
                 color: user.color,
                 forcePasswordChange: user.forcePasswordChange
             }

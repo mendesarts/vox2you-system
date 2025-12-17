@@ -155,7 +155,8 @@ router.put('/:id', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const requester = req.user;
-        const updates = req.body;
+        // Clone body to manipulate
+        const updates = { ...req.body };
 
         const userToUpdate = await User.findByPk(id);
         if (!userToUpdate) return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -168,10 +169,12 @@ router.put('/:id', auth, async (req, res) => {
 
         if (!canEdit) return res.status(403).json({ error: 'Sem permissão para editar este usuário.' });
 
-        // Se for atualizar senha, hashear
-        if (updates.password) {
+        // Se for atualizar senha (e não for vazia)
+        if (updates.password && updates.password.trim() !== '') {
             const salt = await bcrypt.genSalt(10);
             updates.password = await bcrypt.hash(updates.password, salt);
+        } else {
+            delete updates.password; // Remove field to prevent overwriting with empty
         }
 
         // Proteção: Não deixar mudar unitId ou role se não for Master (ou regras especificas)

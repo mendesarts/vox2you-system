@@ -90,7 +90,7 @@ const Sidebar = () => {
                         border: '2px solid rgba(255,255,255,0.2)'
                     }}>
                         {user?.profilePicture ? (
-                            <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerText = user?.name?.charAt(0) || 'U' }} />
+                            <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', aspectRatio: '1/1' }} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerText = user?.name?.charAt(0) || 'U' }} />
                         ) : (
                             user?.name?.charAt(0) || 'U'
                         )}
