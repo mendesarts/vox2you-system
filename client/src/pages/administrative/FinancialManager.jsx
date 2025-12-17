@@ -279,7 +279,7 @@ const FinancialManager = () => {
                                     {filteredRecords.map(record => (
                                         <tr key={record?.id || Math.random()} style={{ borderBottom: '1px solid var(--border)' }}>
                                             <td style={{ padding: '12px' }}>
-                                                {record?.dueDate ? new Date(record.dueDate).toLocaleDateString('pt-BR') : '-'}
+                                                {record?.dueDate && !isNaN(new Date(record.dueDate)) ? new Date(record.dueDate).toLocaleDateString('pt-BR') : '-'}
                                             </td>
                                             <td style={{ padding: '12px' }}>
                                                 <div style={{ fontWeight: 500 }}>{record?.description || record?.Student?.name || 'Sem Descrição'}</div>

@@ -192,3 +192,11 @@ label {
     color: #ffffff !important; /* Force white text for readability */
     font-weight: 600;
 }
+
+.btn-primary {
+    color: #ffffff !important;
+}
+
+.status-badge {
+    color: #fff !important; /* Ensure badges are readable if they use dark mode colors incorrectly */
+}

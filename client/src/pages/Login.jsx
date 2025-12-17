@@ -119,7 +119,7 @@ const Login = () => {
                 <div style={{ padding: '40px' }}>
                     <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                         <h2 style={{ color: 'var(--text-main)', marginBottom: '10px', fontSize: '1.5rem' }}>
-                            {forceChangeMode ? 'Criar Nova Senha' : 'Bem-vindo ao Vox2you V2'}
+                            {forceChangeMode ? 'Criar Nova Senha' : 'Bem-vindo ao Vox2you'}
                         </h2>
                         <p style={{ color: 'var(--text-muted)' }}>
                             {forceChangeMode

@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, Shield, Book, Sun, Moon, Database, Users, Building, Bot, Calendar } from 'lucide-react';
+import { Palette, Shield, Book, Sun, Moon, Database, Users, Building, Bot, Calendar, Activity } from 'lucide-react';
 import CoursesSettings from './CoursesSettings';
 import CalendarSettings from './administrative/CalendarSettings';
 import UnitManagement from './administrative/UnitManagement';
 import AITrainingSettings from './administrative/AITrainingSettings';
 import WhatsAppConnection from './administrative/WhatsAppConnection';
 import ChangePasswordForm from '../components/ChangePasswordForm';
+import UsersPage from './UsersPage';
+import SystemHealth from './admin/SystemHealth';
+import { useAuth } from '../context/AuthContext';
 import './settings.css';
 
 import { useLocation } from 'react-router-dom';
 
 const Settings = ({ isLightMode, toggleTheme }) => {
     const location = useLocation();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('appearance');
 
     useEffect(() => {
@@ -33,9 +37,16 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                     <div className={`settings-nav-item ${activeTab === 'appearance' ? 'active' : ''}`} onClick={() => setActiveTab('appearance')}>
                         <Palette size={18} /> Aparência
                     </div>
+                    {/* Access Control for Users Tab */}
+                    {user && ['master', 'franchisee', 'manager', 'admin_financial_manager'].includes(user.role) && (
+                        <div className={`settings-nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+                            <Users size={18} /> Gestão Usuários
+                        </div>
+                    )}
                     <div className={`settings-nav-item ${activeTab === 'whatsapp' ? 'active' : ''}`} onClick={() => setActiveTab('whatsapp')}>
                         <Bot size={18} /> Conexão WhatsApp
                     </div>
+                    {/* ... other tabs ... */}
                     <div className={`settings-nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
                         <Book size={18} /> Cadastro de Treinamentos
                     </div>
@@ -48,6 +59,11 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                     <div className={`settings-nav-item ${activeTab === 'unit' ? 'active' : ''}`} onClick={() => setActiveTab('unit')}>
                         <Building size={18} /> Dados da Unidade
                     </div>
+                    {user && user.role === 'master' && (
+                        <div className={`settings-nav-item ${activeTab === 'monitoring' ? 'active' : ''}`} onClick={() => setActiveTab('monitoring')}>
+                            <Activity size={18} /> Monitoramento
+                        </div>
+                    )}
                     <div className={`settings-nav-item ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
                         <Shield size={18} /> Segurança
                     </div>
@@ -69,6 +85,8 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                         </div>
                     )}
 
+                    {activeTab === 'users' && <UsersPage />}
+
                     {activeTab === 'whatsapp' && <WhatsAppConnection />}
 
                     {activeTab === 'calendar' && <CalendarSettings />}
@@ -78,6 +96,8 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                     {activeTab === 'ai-training' && <AITrainingSettings />}
 
                     {activeTab === 'unit' && <UnitManagement />}
+
+                    {activeTab === 'monitoring' && <SystemHealth />}
 
                     {activeTab === 'security' && (
                         <div>
