@@ -45,7 +45,7 @@ const CRMBoard = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            setLeads(data);
+            setLeads(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error(error);
         } finally {

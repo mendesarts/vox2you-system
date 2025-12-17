@@ -58,7 +58,7 @@ const CalendarPage = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            setEvents(data);
+            setEvents(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Calendar fetch error:", error);
         } finally {

@@ -90,10 +90,12 @@ const Secretary = () => {
     const fetchAdminData = async () => {
         try {
             const resStats = await fetch('http://localhost:3000/api/dashboard/admin-stats');
-            if (resStats.ok) setStats(await resStats.json());
+            const statsData = await resStats.json();
+            if (resStats.ok && statsData) setStats(statsData);
 
             const resCharts = await fetch('http://localhost:3000/api/dashboard/admin-charts');
-            if (resCharts.ok) setCharts(await resCharts.json());
+            const chartsData = await resCharts.json();
+            if (resCharts.ok && chartsData) setCharts(chartsData);
 
         } catch (error) {
             console.error('Error loading admin data:', error);

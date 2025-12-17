@@ -28,7 +28,7 @@ const Dashboard = () => {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${query}`);
             if (res.ok) {
                 const data = await res.json();
-                setStats(prev => ({ ...prev, ...data })); // Merge to keep safe defaults if partial
+                if (data) setStats(prev => ({ ...prev, ...data }));
             } else {
                 console.error("Dashboard error:", await res.text());
             }

@@ -46,7 +46,7 @@ const FinancialManager = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            setFinancialRecords(data);
+            setFinancialRecords(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Erro ao buscar registros financeiros:', error);
         } finally {
