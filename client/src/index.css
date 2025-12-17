@@ -142,7 +142,9 @@ button {
 }
 
 /* Global Form Styles */
-input, select, textarea {
+input,
+select,
+textarea {
   width: 100%;
   padding: 10px 14px;
   background-color: var(--bg-surface);
@@ -155,12 +157,15 @@ input, select, textarea {
   outline: none;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-light);
 }
 
-input::placeholder, textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--text-muted);
   opacity: 0.7;
 }
@@ -175,28 +180,104 @@ label {
 
 /* Fix Sidebar Profile Text in Light Mode */
 .light-mode .user-profile .user-name {
-    color: #ffffff !important;
+  color: #ffffff !important;
 }
+
 .light-mode .user-profile .user-role {
-    color: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
 }
+
 .light-mode .logout-icon {
-    color: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
 }
+
 .light-mode .logout-icon:hover {
-    color: #ffffff !important;
+  color: #ffffff !important;
 }
 
-/* Button & Badge Tweaks */
-.btn-ai-analysis {
-    color: #ffffff !important; /* Force white text for readability */
-    font-weight: 600;
-}
-
+/* Button Styles */
 .btn-primary {
-    color: #ffffff !important;
+  background-color: var(--primary);
+  color: #ffffff !important;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--trans-fast);
+  border: 1px solid transparent;
 }
 
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--trans-fast);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--text-muted);
+}
+
+.btn-icon {
+  padding: 8px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: all var(--trans-fast);
+}
+
+.btn-icon:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+/* Specific Light Mode Overrides if needed */
+.light-mode .btn-secondary {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.light-mode .btn-secondary:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Badge Tweaks */
 .status-badge {
-    color: #fff !important; /* Ensure badges are readable if they use dark mode colors incorrectly */
+  color: #fff !important;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.status-badge.paid {
+  background-color: var(--success);
+}
+
+.status-badge.pending {
+  background-color: var(--warning);
+}
+
+.status-badge.overdue {
+  background-color: var(--danger);
 }
