@@ -11,15 +11,66 @@ const SidebarSlim = () => {
 
     const closeMobile = () => setIsMobileOpen(false);
 
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
-        { icon: Briefcase, label: 'Administrativo', path: '/administrative' },
-        { icon: Users, label: 'Comercial', path: '/crm' },
-        { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
-        { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
-        { icon: Calendar, label: 'Calendário', path: '/calendar' },
-    ];
+    const ADMIN_ROLES = ['master', 'director', 'franchisee', 'manager', 'admin_financial_manager'];
+    const COMMERCIAL_ROLES = ['sales_leader', 'consultant'];
+    const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary'];
+
+    const getFilteredNavItems = () => {
+        if (!user) return [];
+        const role = user.role;
+
+        // Common items for everyone
+        const commonItems = [
+            { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+            { icon: Calendar, label: 'Calendário', path: '/calendar' },
+            { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
+            { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' }
+        ];
+
+        // Admin sees everything
+        if (ADMIN_ROLES.includes(role)) {
+            return [
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+                { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
+                { icon: Briefcase, label: 'Administrativo', path: '/administrative' },
+                { icon: Users, label: 'Comercial', path: '/crm' },
+                { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
+                { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
+                { icon: Calendar, label: 'Calendário', path: '/calendar' },
+            ];
+        }
+
+        let items = [...commonItems];
+
+        // Commercial Specific
+        if (COMMERCIAL_ROLES.includes(role)) {
+            // Commercial needs CRM, already have others in common
+            // Check if CRM is already in common (it is not)
+            // Order: Dashboard, Tasks, CRM, Whatsapp, Calendar
+            return [
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+                { icon: Users, label: 'Comercial', path: '/crm' },
+                { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
+                { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
+                { icon: Calendar, label: 'Calendário', path: '/calendar' },
+            ];
+        }
+
+        // Pedagogical Specific
+        if (PEDAGOGICAL_ROLES.includes(role)) {
+            return [
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+                { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
+                { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
+                { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
+                { icon: Calendar, label: 'Calendário', path: '/calendar' },
+            ];
+        }
+
+        return commonItems;
+    };
+
+    const navItems = getFilteredNavItems();
 
     const getRoleLabel = (role) => {
         const map = {
@@ -95,7 +146,7 @@ const SidebarSlim = () => {
                         <span>Controles</span>
                     </NavLink>
 
-                    <div className="user-profile">
+                    <div className="user-profile" title={`${user?.name || 'Usuário'} (${getRoleLabel(user?.role)})`}>
                         <div className="avatar-lg" style={{
                             background: user?.color || '#10b981',
                             color: '#fff',
@@ -107,21 +158,29 @@ const SidebarSlim = () => {
                             borderRadius: '50%',
                             fontSize: '1rem',
                             fontWeight: 'bold',
-                            border: '2px solid rgba(255,255,255,0.2)'
+                            border: '2px solid rgba(255,255,255,0.2)',
+                            cursor: 'help'
                         }}>
                             {user?.profilePicture ? (
                                 <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                            ) : <Users size={20} />}
+                            ) : (
+                                <span>{user?.name?.charAt(0) || <Users size={20} />}</span>
+                            )}
                         </div>
 
+                        {/* Hidden on desktop, shown on mobile */}
                         <div className="user-info">
                             <span className="user-name">{user?.name}</span>
                             <span className="user-role">{getRoleLabel(user?.role)}</span>
                         </div>
 
-                        <button className="logout-btn" onClick={logout} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* LogOut is now better placed or integrated differently, lets keep it beside avatar on mobile or similar, 
+                           but for slim sidebar, we might need a separate logout button if space permits.
+                           However, requested design is compact. Let's keep logout button but ensure it fits.
+                        */}
+                        <button className="logout-btn" onClick={logout} title="Sair do Sistema" style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}>
                             <LogOut size={20} />
-                            <span>Sair</span>
+                            <span className="mobile-only" style={{ marginLeft: '8px', display: 'none' }}>Sair</span>
                         </button>
                     </div>
                 </div>
