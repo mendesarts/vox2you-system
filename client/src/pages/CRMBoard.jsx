@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import WhatsAppMarketing from './commercial/WhatsAppMarketing';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { useAuth } from '../context/AuthContext';
 
 const CRMBoard = () => {
@@ -230,7 +231,11 @@ const CRMBoard = () => {
             </div>
 
             {activeTab === 'whatsapp' ? (
-                <WhatsAppMarketing />
+                <div style={{ padding: '0 24px' }}>
+                    <ErrorBoundary>
+                        <WhatsAppMarketing />
+                    </ErrorBoundary>
+                </div>
             ) : (
                 <>
                     {/* Header Actions for Pipeline */}
