@@ -364,3 +364,48 @@ input:-webkit-autofill:active {
     transform: translateY(0);
   }
 }
+
+/* --- MOBILE RESPONSIVE GLOBALS --- */
+@media (max-width: 768px) {
+
+  /* Allow tables to scroll horizontally */
+  .report-table-container,
+  .table-container,
+  .finance-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  table {
+    min-width: 600px;
+    /* Force min width to trigger scroll */
+  }
+
+  /* Adjust padding for main content area */
+  .main-content {
+    padding: 16px !important;
+  }
+
+  /* Stack flex containers that are row by default usually */
+  .control-card {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  /* Adjust inputs in control cards to full width */
+  .control-card .input-field,
+  .control-card select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Hide print headers explicitly */
+  .print-header {
+    display: none !important;
+  }
+}

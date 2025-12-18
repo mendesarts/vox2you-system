@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, AlertCircle, DollarSign, ArrowDown, ArrowUp, Briefcase, Layers } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import FinancialManager from './FinancialManager';
 import CashFlowManager from './CashFlowManager';
 import DREReport from './DREReport';
@@ -98,7 +99,7 @@ const FinancialDashboard = () => {
                     />
                     <StatCard
                         title="Receita (Últimos 6 meses)"
-                        value={formatCurrency(stats.revenueData.reduce((acc, curr) => acc + curr.value, 0))}
+                        value={formatCurrency((stats?.revenueData || []).reduce((acc, curr) => acc + (curr.value || 0), 0))}
                         icon={DollarSign}
                         color="#10b981"
                         desc="Total baixado no período"
@@ -154,4 +155,10 @@ const FinancialDashboard = () => {
     );
 };
 
-export default FinancialDashboard;
+export default function FinancialDashboardWithBoundary() {
+    return (
+        <ErrorBoundary>
+            <FinancialDashboard />
+        </ErrorBoundary>
+    );
+}

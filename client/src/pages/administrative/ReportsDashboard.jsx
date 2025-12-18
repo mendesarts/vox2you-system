@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { FileText, Download, Filter, Printer } from 'lucide-react';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 const ReportsDashboard = () => {
     const [activeReport, setActiveReport] = useState('classes'); // classes, students, financial
@@ -140,7 +141,7 @@ const ReportsDashboard = () => {
                             <td>{c.name}</td>
                             <td>{c.Course?.name}</td>
                             <td>{c.professor?.name || 'N/A'}</td>
-                            <td>{c.Students?.length || 0}/{c.capacity}</td>
+                            <td>{c.Students?.length || 0}/{c.capacity || 0}</td>
                             <td>{c.startDate ? new Date(c.startDate).toLocaleDateString() : '-'}</td>
                             <td>{c.endDate ? new Date(c.endDate).toLocaleDateString() : '-'}</td>
                             <td>
@@ -364,4 +365,10 @@ const ReportsDashboard = () => {
     );
 };
 
-export default ReportsDashboard;
+export default function ReportsDashboardWithBoundary() {
+    return (
+        <ErrorBoundary>
+            <ReportsDashboard />
+        </ErrorBoundary>
+    );
+}

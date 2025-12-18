@@ -9,4 +9,15 @@
     overflow-y: auto;
     padding: var(--space-lg);
     background-color: var(--bg-app);
+    margin-left: 80px;
+    /* Fixed Sidebar Width */
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding-top: 60px;
+        /* Space for Mobile Header/Button */
+    }
 }

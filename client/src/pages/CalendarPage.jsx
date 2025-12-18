@@ -54,13 +54,36 @@ const CalendarPage = () => {
         try {
             const { start, end } = getWeekRange();
             const token = localStorage.getItem('token');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/events?start=${start.toISOString()}&end=${end.toISOString()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setEvents(Array.isArray(data) ? data : []);
+            const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+            // Parallel fetch
+            const [eventsRes, holidaysRes] = await Promise.all([
+                fetch(`${apiBase}/calendar/events?start=${start.toISOString()}&end=${end.toISOString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`${apiBase}/calendar/holidays`)
+            ]);
+
+            const eventsData = eventsRes.ok ? await eventsRes.json() : [];
+            const holidaysData = holidaysRes.ok ? await holidaysRes.json() : [];
+
+            // Map holidays to event structure
+            const mappedHolidays = Array.isArray(holidaysData) ? holidaysData.map(h => ({
+                id: `holiday-${h.id}`,
+                title: `🇧🇷 ${h.name}`,
+                start: `${h.startDate}T00:00:00`,
+                end: `${h.startDate}T23:59:59`,
+                type: 'holiday', // Needs CSS for this
+                allDay: true
+            })) : [];
+
+            // Ensure eventsData is array
+            const validEvents = Array.isArray(eventsData) ? eventsData : [];
+
+            setEvents([...validEvents, ...mappedHolidays]);
         } catch (error) {
             console.error("Calendar fetch error:", error);
+            setEvents([]);
         } finally {
             setLoading(false);
         }
@@ -111,6 +134,21 @@ const CalendarPage = () => {
     const getEventStyle = (event) => {
         const start = new Date(event.start);
         const end = new Date(event.end);
+
+        // Handle All Day (Holidays)
+        if (event.allDay) {
+            return {
+                top: '0px',
+                height: '24px',
+                left: '2px',
+                right: '2px',
+                zIndex: 20,
+                background: '#fee2e2',
+                color: '#b91c1c',
+                border: '1px solid #fca5a5',
+                fontSize: '0.75rem'
+            };
+        }
 
         // Vertical Position (Time)
         // Relative to WORK_START (e.g. 8am)

@@ -165,3 +165,29 @@
     font-size: 0.75rem;
     color: var(--text-muted);
 }
+
+/* --- MOBILE RESPONSIVE --- */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+        margin-top: 50px;
+        /* Space for Hamburger */
+    }
+
+    .charts-section {
+        grid-template-columns: 1fr;
+        /* Stack charts */
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        /* Stack cards */
+    }
+
+    /* Adjust font sizes for mobile */
+    .page-title {
+        font-size: 1.5rem;
+    }
+}

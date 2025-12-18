@@ -20,17 +20,19 @@
     gap: 12px;
 }
 
-.nav-btn {
-    background: white;
-    border: 1px solid var(--border);
+.nav-btn,
+.fc-button {
+    background-color: #f3f4f6 !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
     border-radius: 8px;
-    padding: 8px;
+    padding: 8px 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-main);
     transition: all 0.2s;
+    font-weight: 500;
 }
 
 .nav-btn:hover {
@@ -225,4 +227,44 @@
     /* Slate 600 */
     border-color: #94a3b8;
     background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0, 0, 0, 0.03) 5px, rgba(0, 0, 0, 0.03) 10px);
+}
+
+/* --- MOBILE RESPONSIVE --- */
+@media (max-width: 768px) {
+    .calendar-page {
+        padding: 12px;
+        padding-top: 60px;
+        /* Space for hamburger */
+        height: auto;
+        /* Allow natural scroll if needed */
+        min-height: 100vh;
+    }
+
+    .calendar-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .calendar-controls {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .current-date-label {
+        width: auto;
+        font-size: 1rem;
+    }
+
+    /* Enable horizontal scroll for calendar grid */
+    .calendar-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Keep columns wide enough to be readable */
+    .days-grid {
+        min-width: 700px;
+    }
 }

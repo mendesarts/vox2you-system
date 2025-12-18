@@ -77,7 +77,18 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                                     <h4 style={{ color: 'var(--text-main)', marginBottom: 4 }}>Tema do Sistema</h4>
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Alternar entre modo claro e escuro.</p>
                                 </div>
-                                <button onClick={toggleTheme} className="btn-primary" style={{ background: isLightMode ? '#0f172a' : '#f8fafc', color: isLightMode ? '#fff' : '#000', border: '1px solid var(--border)' }}>
+                                <button onClick={toggleTheme} style={{
+                                    background: isLightMode ? '#374151' : '#f3f4f6',
+                                    color: isLightMode ? '#ffffff' : '#1f2937',
+                                    border: '1px solid var(--border)',
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s'
+                                }}>
                                     {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
                                     <span style={{ marginLeft: 8 }}>{isLightMode ? 'Ativar Modo Escuro' : 'Ativar Modo Claro'}</span>
                                 </button>

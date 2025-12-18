@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, CalendarCheck, DollarSign, ArrowUpRight, Store, Award } from 'lucide-react';
+import { TrendingUp, Users, CalendarCheck, DollarSign, ArrowUpRight, Store, Award, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 import './dashboard.css';
 
 const Dashboard = () => {
@@ -60,6 +61,8 @@ const Dashboard = () => {
     };
 
     if (loading) return <div>Carregando dashboard...</div>;
+    // Safety check for stats to prevent crashes
+    if (!stats) return <div className="p-4 text-center">Nenhum dado disponível. Recarregue a página.</div>;
 
     const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
@@ -104,8 +107,8 @@ const Dashboard = () => {
                         <div className="stat-icon" style={{ background: '#eff6ff', color: '#1d4ed8' }}><Users size={24} /></div>
                         <span className="stat-change positive">Novos Leads</span>
                     </div>
-                    <div className="stat-value">{stats.commercial?.newLeadsMonth || 0}</div>
-                    <div className="stat-label">{stats.commercial?.salesMonth || 0} Matrículas este mês</div>
+                    <div className="stat-value">{stats?.commercial?.newLeadsMonth || 0}</div>
+                    <div className="stat-label">{stats?.commercial?.salesMonth || 0} Matrículas este mês</div>
                 </div>
 
                 {/* Metric 2 - Pedagogical */}
@@ -114,8 +117,8 @@ const Dashboard = () => {
                         <div className="stat-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}><CalendarCheck size={24} /></div>
                         <span className="stat-change positive">Alunos Ativos</span>
                     </div>
-                    <div className="stat-value">{stats.pedagogical?.activeStudents || 0}</div>
-                    <div className="stat-label">{stats.pedagogical?.activeClasses || 0} Turmas em andamento</div>
+                    <div className="stat-value">{stats?.pedagogical?.activeStudents || 0}</div>
+                    <div className="stat-label">{stats?.pedagogical?.activeClasses || 0} Turmas em andamento</div>
                 </div>
 
                 {/* Metric 3 - Financial */}
@@ -124,8 +127,8 @@ const Dashboard = () => {
                         <div className="stat-icon" style={{ background: '#ecfdf5', color: '#047857' }}><DollarSign size={24} /></div>
                         <span className="stat-change positive">Faturamento</span>
                     </div>
-                    <div className="stat-value">{formatMoney(stats.financial?.revenue || 0)}</div>
-                    <div className="stat-label">Saldo: {formatMoney(stats.financial?.balance || 0)}</div>
+                    <div className="stat-value">{formatMoney(stats?.financial?.revenue || 0)}</div>
+                    <div className="stat-label">Saldo: {formatMoney(stats?.financial?.balance || 0)}</div>
                 </div>
             </div>
 
@@ -295,4 +298,10 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+const DashboardWithBoundary = () => (
+    <ErrorBoundary>
+        <Dashboard />
+    </ErrorBoundary>
+);
+
+export default DashboardWithBoundary;
