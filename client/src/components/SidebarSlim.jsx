@@ -16,6 +16,7 @@ const SidebarSlim = () => {
         { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
         { icon: Briefcase, label: 'Administrativo', path: '/administrative' },
         { icon: Users, label: 'Comercial', path: '/crm' },
+        { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
         { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
         { icon: Calendar, label: 'Calendário', path: '/calendar' },
     ];
