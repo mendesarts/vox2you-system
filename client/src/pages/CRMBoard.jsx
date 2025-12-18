@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
+import WhatsAppMarketing from './commercial/WhatsAppMarketing';
 import { useAuth } from '../context/AuthContext';
 
 const CRMBoard = () => {
     const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('pipeline');
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showNewLeadModal, setShowNewLeadModal] = useState(false);
@@ -177,101 +179,168 @@ const CRMBoard = () => {
     // ... render return ... (Updating to include Modal)
     return (
         <div className="crm-board page-fade-in" style={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
-            {/* ... Header ... */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '24px',
+                borderBottom: '1px solid var(--border)',
+                marginBottom: '24px',
+                paddingBottom: '0px'
+            }}>
+                <button
+                    onClick={() => setActiveTab('pipeline')}
+                    style={{
+                        padding: '12px 16px',
+                        fontWeight: 600,
+                        borderBottom: activeTab === 'pipeline' ? '2px solid var(--primary)' : '2px solid transparent',
+                        color: activeTab === 'pipeline' ? 'var(--primary)' : 'var(--text-muted)',
+                        background: 'none',
+                        borderTop: 'none',
+                        borderLeft: 'none',
+                        borderRight: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <Users size={18} /> Pipeline de Vendas
+                </button>
+                <button
+                    onClick={() => setActiveTab('whatsapp')}
+                    style={{
+                        padding: '12px 16px',
+                        fontWeight: 600,
+                        borderBottom: activeTab === 'whatsapp' ? '2px solid var(--primary)' : '2px solid transparent',
+                        color: activeTab === 'whatsapp' ? 'var(--primary)' : 'var(--text-muted)',
+                        background: 'none',
+                        borderTop: 'none',
+                        borderLeft: 'none',
+                        borderRight: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <MessageCircle size={18} /> Campanhas WhatsApp
+                </button>
+            </div>
 
-            {/* ... Kanban ... */}
-            {/* (Keep DragDropContext same, using handleDragEnd updated above) */}
-            <DragDropContext onDragEnd={handleDragEnd}>
-                <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', flex: 1 }}>
-                    {columnOrder.map(colId => {
-                        const column = columns[colId];
-                        const colLeads = getLeadsByStatus(colId);
+            {activeTab === 'whatsapp' ? (
+                <WhatsAppMarketing />
+            ) : (
+                <>
+                    {/* Header Actions for Pipeline */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <div>
+                            <h2 className="page-title">Gestão Comercial</h2>
+                            <p className="page-subtitle">Gerencie seus leads e oportunidades.</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button className="btn-primary" onClick={() => setShowNewLeadModal(true)}>
+                                <Plus size={18} /> Novo Lead
+                            </button>
+                        </div>
+                    </div>
 
-                        return (
-                            <Droppable droppableId={colId} key={colId}>
-                                {(provided) => (
-                                    <div
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                        style={{
-                                            minWidth: '280px',
-                                            backgroundColor: `${column.color}15`,
-                                            borderRadius: '12px',
-                                            padding: '16px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            borderTop: `4px solid ${column.color}`
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: column.color, fontWeight: 700 }}>
-                                            <column.icon size={18} />
-                                            {column.title}
-                                            <span style={{ marginLeft: 'auto', background: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', color: '#64748b' }}>
-                                                {colLeads.length}
-                                            </span>
-                                        </div>
+                    {/* ... Kanban ... */}
+                    {/* (Keep DragDropContext same, using handleDragEnd updated above) */}
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                        <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', flex: 1 }}>
+                            {columnOrder.map(colId => {
+                                const column = columns[colId];
+                                const colLeads = getLeadsByStatus(colId);
 
-                                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            {Array.isArray(colLeads) && colLeads.map((lead, index) => (
-                                                lead && (
-                                                    <Draggable key={lead.id} draggableId={lead.id ? lead.id.toString() : `lead-${index}`} index={index}>
-                                                        {(provided) => (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                                {...provided.dragHandleProps}
-                                                                style={{
-                                                                    userSelect: 'none',
-                                                                    padding: '16px',
-                                                                    backgroundColor: 'white',
-                                                                    borderRadius: '8px',
-                                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                                                    borderLeft: `4px solid ${column.color}`,
-                                                                    cursor: 'pointer',
-                                                                    ...provided.draggableProps.style
-                                                                }}
-                                                                onClick={() => setSelectedLead(lead)}
-                                                            >
-                                                                <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{lead.name}</div>
-                                                                <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    <MessageCircle size={12} /> {lead.source}
-                                                                </div>
+                                return (
+                                    <Droppable droppableId={colId} key={colId}>
+                                        {(provided) => (
+                                            <div
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
+                                                style={{
+                                                    minWidth: '280px',
+                                                    backgroundColor: `${column.color}15`,
+                                                    borderRadius: '12px',
+                                                    padding: '16px',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    borderTop: `4px solid ${column.color}`
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: column.color, fontWeight: 700 }}>
+                                                    <column.icon size={18} />
+                                                    {column.title}
+                                                    <span style={{ marginLeft: 'auto', background: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', color: '#64748b' }}>
+                                                        {colLeads.length}
+                                                    </span>
+                                                </div>
 
-                                                                {lead.lastContactAt && (
-                                                                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px' }}>
-                                                                        Último contato: {new Date(lead.lastContactAt).toLocaleDateString()}
-                                                                    </div>
-                                                                )}
-
-                                                                {lead.handledBy === 'AI' && (
-                                                                    <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#8b5cf6', background: '#f3e8ff', padding: '4px', borderRadius: '4px', textAlign: 'center' }}>
-                                                                        🤖 Em atendimento IA
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Quick Action for Automation */}
-                                                                {(lead.status === 'new' || lead.status === 'no_show') && (
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handleLogInteraction(lead.id); }}
-                                                                        style={{ marginTop: '8px', width: '100%', border: '1px solid #e2e8f0', background: 'transparent', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', padding: '4px', color: '#64748b' }}
+                                                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                    {Array.isArray(colLeads) && colLeads.map((lead, index) => (
+                                                        lead && (
+                                                            <Draggable key={lead.id} draggableId={lead.id ? lead.id.toString() : `lead-${index}`} index={index}>
+                                                                {(provided) => (
+                                                                    <div
+                                                                        ref={provided.innerRef}
+                                                                        {...provided.draggableProps}
+                                                                        {...provided.dragHandleProps}
+                                                                        style={{
+                                                                            userSelect: 'none',
+                                                                            padding: '16px',
+                                                                            backgroundColor: 'white',
+                                                                            borderRadius: '8px',
+                                                                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                                                            borderLeft: `4px solid ${column.color}`,
+                                                                            cursor: 'pointer',
+                                                                            ...provided.draggableProps.style
+                                                                        }}
+                                                                        onClick={() => setSelectedLead(lead)}
                                                                     >
-                                                                        📞 Marcar Contato Feito
-                                                                    </button>
+                                                                        <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{lead.name}</div>
+                                                                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                            <MessageCircle size={12} /> {lead.source}
+                                                                        </div>
+
+                                                                        {lead.lastContactAt && (
+                                                                            <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px' }}>
+                                                                                Último contato: {new Date(lead.lastContactAt).toLocaleDateString()}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {lead.handledBy === 'AI' && (
+                                                                            <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#8b5cf6', background: '#f3e8ff', padding: '4px', borderRadius: '4px', textAlign: 'center' }}>
+                                                                                🤖 Em atendimento IA
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Quick Action for Automation */}
+                                                                        {(lead.status === 'new' || lead.status === 'no_show') && (
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); handleLogInteraction(lead.id); }}
+                                                                                style={{ marginTop: '8px', width: '100%', border: '1px solid #e2e8f0', background: 'transparent', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', padding: '4px', color: '#64748b' }}
+                                                                            >
+                                                                                📞 Marcar Contato Feito
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 )}
-                                                            </div>
-                                                        )}
-                                                    </Draggable>
-                                                )
-                                            ))}
-                                            {provided.placeholder}
-                                        </div>
-                                    </div>
-                                )}
-                            </Droppable>
-                        );
-                    })}
-                </div>
-            </DragDropContext>
+                                                            </Draggable>
+                                                        )
+                                                    ))}
+                                                    {provided.placeholder}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                );
+                            })}
+                        </div>
+                    </DragDropContext>
+                </>
+            )}
 
             {/* Move Stage Modal Prompt */}
             {moveModal.isOpen && (

@@ -16,7 +16,6 @@ const SidebarSlim = () => {
         { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
         { icon: Briefcase, label: 'Administrativo', path: '/administrative' },
         { icon: Users, label: 'Comercial', path: '/crm' },
-        { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
         { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
         { icon: Calendar, label: 'Calendário', path: '/calendar' },
     ];
@@ -54,7 +53,6 @@ const SidebarSlim = () => {
             )}
 
             <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
-                <div style={{ background: '#18181b', color: '#4ade80', fontSize: '10px', fontWeight: 'bold', padding: '4px', textAlign: 'center', borderBottom: '1px solid #3f3f46' }}>VERSÃO SLIM</div>
                 {/* Mobile Close Button */}
                 {isMobileOpen && (
                     <button className="mobile-close-btn" onClick={closeMobile} style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', color: 'var(--text-muted)' }}>

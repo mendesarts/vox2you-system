@@ -7,7 +7,8 @@
 .main-content {
     flex: 1;
     overflow-y: auto;
-    padding: var(--space-lg);
+    padding: 32px;
+    /* Increased padding */
     background-color: var(--bg-app);
     margin-left: 80px;
     /* Fixed Sidebar Width */
