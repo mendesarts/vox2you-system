@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Smartphone, QrCode, Upload, Play, Pause, AlertTriangle, Check, MessageSquare, Terminal } from 'lucide-react';
+import { Smartphone, QrCode, Upload, Play, Pause, AlertTriangle, Check, MessageSquare, Terminal, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const WhatsAppMarketing = () => {
@@ -41,7 +41,25 @@ const WhatsAppMarketing = () => {
             localStorage.setItem('wa_daily_count', '0');
             setSentCount(0);
         }
+
+        loadLeadsMock();
     }, []);
+
+    const loadLeadsMock = () => {
+        // Fallback Mock Data as requested by user
+        const MOCK_LEADS = [
+            { nome: 'Cliente Teste 1', telefone: '5511999999999', tags: 'Interesse, Frio' },
+            { nome: 'Cliente Teste 2', telefone: '5511888888888', tags: 'Novo' },
+            { nome: 'Cliente Teste 3', telefone: '5511777777777', tags: 'Retorno' }
+        ];
+        // Only load mock if empty to allow CSV override
+        if (csvData.length === 0) {
+            setCsvData(MOCK_LEADS);
+            addLog('Lista de leads carregada automaticamente (Mock).');
+        } else {
+            addLog('Lista atualizada.');
+        }
+    };
 
     // Update Preview when template changes
     useEffect(() => {
@@ -110,7 +128,7 @@ const WhatsAppMarketing = () => {
     // Sending Engine
     const startQueue = () => {
         if (connectionStatus !== 'connected') {
-            alert('Conecte o WhatsApp primeiro!');
+            alert('Conecte o WhatsApp primeiro! (Simulação: clique em Gerar QR Code)');
             return;
         }
         if (sentCount >= dailyLimit) {
@@ -262,7 +280,12 @@ const WhatsAppMarketing = () => {
                 <div className="wa-col-right">
                     {/* STEP 1: IMPORT */}
                     <div className="card">
-                        <h3>1. Lista de Contatos</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <h3>1. Lista de Contatos</h3>
+                            <button onClick={loadLeadsMock} title="Recarregar Lista" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)' }}>
+                                <RefreshCw size={18} />
+                            </button>
+                        </div>
                         <div className="upload-area">
                             <input
                                 type="file"

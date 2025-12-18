@@ -11,13 +11,13 @@ const SidebarSlim = () => {
 
     const closeMobile = () => setIsMobileOpen(false);
 
-    const ADMIN_ROLES = ['master', 'director', 'franchisee', 'manager', 'admin_financial_manager'];
-    const COMMERCIAL_ROLES = ['sales_leader', 'consultant'];
-    const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary'];
+    const ADMIN_ROLES = ['master', 'director', 'franchisee', 'manager', 'admin_financial_manager', 'admin'];
+    const COMMERCIAL_ROLES = ['sales_leader', 'consultant', 'comercial', 'consultor', 'vendedor', 'gestor'];
+    const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary', 'pedagogico', 'professor'];
 
     const getFilteredNavItems = () => {
         if (!user) return [];
-        const role = user.role;
+        const role = user.role ? user.role.toLowerCase() : '';
 
         // Common items for everyone
         const commonItems = [
