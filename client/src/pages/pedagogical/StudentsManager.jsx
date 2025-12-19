@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, UserX, UserCheck, MoreVertical, Filter, Delete, Trash2, FileText, UploadCloud, Download } from 'lucide-react';
+import { Search, Plus, Edit, UserX, UserCheck, MoreVertical, Filter, Delete, Trash2, FileText, Upload, Download } from 'lucide-react';
 import StudentRegistrationWizard from './StudentRegistrationWizard';
 
 const StudentsManager = ({ initialFilters }) => {
@@ -92,10 +92,29 @@ const StudentsManager = ({ initialFilters }) => {
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target.result;
-            console.log("Students CSV Imported:", text);
-            alert(`Arquivo "${file.name}" importado com sucesso! (Simulação)`);
+            const lines = text.split('\n');
+
+            const newStudents = lines.slice(1).filter(line => line.trim() !== '').map((line, index) => {
+                const values = line.split(',');
+                return {
+                    id: Date.now() + index, // Temp ID
+                    name: values[0] || 'Sem Nome',
+                    email: values[1] || '',
+                    cpf: values[2] || '',
+                    courseName: values[3] || '',
+                    registrationNumber: values[4] || '',
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                };
+            });
+
+            if (newStudents.length > 0) {
+                setStudents(prev => [...prev, ...newStudents]);
+                alert(`${newStudents.length} Alunos importados com sucesso!`);
+            }
         };
         reader.readAsText(file);
+        e.target.value = null; // Reset
     };
 
     return (
@@ -105,12 +124,12 @@ const StudentsManager = ({ initialFilters }) => {
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <div style={{ display: 'flex', gap: '5px', marginRight: '10px' }}>
                         <button onClick={downloadTemplate} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <FileText size={16} /> Modelo CSV
+                            <Download size={16} /> Modelo CSV
                         </button>
                         <div style={{ position: 'relative' }}>
                             <input type="file" accept=".csv" onChange={handleImport} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
                             <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <UploadCloud size={16} /> Importar
+                                <Upload size={16} /> Importar
                             </button>
                         </div>
                     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, UploadCloud } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -189,14 +189,38 @@ const CRMBoard = () => {
     const handleImport = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target.result;
-            console.log("CSV Imported:", text);
-            alert(`Arquivo "${file.name}" importado com sucesso! (Simulação)\nVerifique o console para os dados.`);
-            // Here we would parse and save to DB
+            const lines = text.split('\n');
+            const headers = lines[0].split(',');
+
+            const newLeads = lines.slice(1).filter(line => line.trim() !== '').map((line, index) => {
+                const values = line.split(',');
+                // Simple CSV mapping based on template: Name, Phone, Email, Source, Campaign, Status
+                return {
+                    id: Date.now() + index, // Temp ID
+                    name: values[0] || 'Sem Nome',
+                    phone: values[1] || '',
+                    email: values[2] || '',
+                    source: values[3] || 'Importado',
+                    campaign: values[4] || '',
+                    status: 'new', // Always start at 'new'
+                    createdAt: new Date().toISOString()
+                };
+            });
+
+            if (newLeads.length > 0) {
+                setLeads(prev => [...prev, ...newLeads]);
+                alert(`${newLeads.length} Leads importados com sucesso para a coluna 'Novo Lead'!`);
+            } else {
+                alert('Nenhum dado válido encontrado no CSV.');
+            }
         };
         reader.readAsText(file);
+        // Reset input
+        e.target.value = null;
     };
 
     // ... render return ... (Updating to include Modal)
@@ -211,12 +235,12 @@ const CRMBoard = () => {
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <div style={{ display: 'flex', gap: '5px', marginRight: '10px' }}>
                         <button onClick={downloadTemplate} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }} title="Baixar Modelo CSV">
-                            <FileText size={16} /> Modelo
+                            <Download size={16} /> Modelo
                         </button>
                         <div style={{ position: 'relative' }}>
                             <input type="file" accept=".csv" onChange={handleImport} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
                             <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>
-                                <UploadCloud size={16} /> Importar
+                                <Upload size={16} /> Importar
                             </button>
                         </div>
                     </div>
