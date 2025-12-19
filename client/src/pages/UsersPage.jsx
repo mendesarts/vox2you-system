@@ -362,9 +362,18 @@ const UsersPage = () => {
                                     {/* Cargo Traduzido */}
                                     <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
                                         {{
-                                            'master': 'Master', 'director': 'Diretor', 'diretor': 'Diretor',
-                                            'franqueado': 'Franqueado', 'admin': 'Franqueado',
-                                            'manager': 'Gestor', 'sales': 'Consultor'
+                                            // MAPEAMENTO COMPLETO (PT/EN -> Visual)
+                                            'master': 'Master',
+                                            'director': 'Diretor', 'diretor': 'Diretor',
+                                            'franqueado': 'Franqueado', 'franchisee': 'Franqueado',
+                                            'admin': 'Admin',
+                                            'manager': 'Gestor', 'gestor': 'Gestor',
+                                            'lider_comercial': 'Líder Comercial', 'sales_leader': 'Líder Comercial',
+                                            'lider_pedagogico': 'Líder Pedagógico', 'pedagogical_leader': 'Líder Pedagógico',
+                                            'admin_financeiro': 'Financeiro', 'admin_financial_manager': 'Financeiro',
+                                            'sales': 'Consultor', 'consultor': 'Consultor',
+                                            'pedagogico': 'Pedagógico', 'pedagogical': 'Pedagógico',
+                                            'financial': 'Financeiro'
                                         }[user.role] || user.role}
                                     </span>
 
