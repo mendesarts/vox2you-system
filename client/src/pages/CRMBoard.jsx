@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign, Trash2 } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -137,38 +137,83 @@ const CRMBoard = () => {
         setMoveModal({ ...moveModal, isOpen: false });
     };
 
-    // ... (rest of functions: handleCreateLead, etc)
+    const handleOpenNewLead = () => {
+        setNewLead({ title: '', value: '', name: '', phone: '', email: '', company: '', source: 'Instagram', tags: '' });
+        setSelectedLead(null);
+        setShowNewLeadModal(true);
+    };
+
+    const handleOpenEditLead = (lead) => {
+        setSelectedLead(lead);
+        setNewLead({
+            title: lead.title || '',
+            value: lead.value || '',
+            name: lead.contact?.name || lead.name || '',
+            phone: lead.contact?.phone || lead.phone || '',
+            email: lead.contact?.email || lead.email || '',
+            company: lead.company || '',
+            source: lead.source || 'Instagram',
+            tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : (lead.tags || '')
+        });
+        setShowNewLeadModal(true);
+    };
+
+    const handleDeleteLead = async () => {
+        if (!selectedLead || !window.confirm('Tem certeza que deseja excluir este lead?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${selectedLead.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            fetchLeads();
+            setShowNewLeadModal(false);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const handleCreateLead = async () => {
-        // ... (existing code)
-        if (!newLead.title) newLead.title = newLead.name + ' - Negócio'; // Default Title
+        // Validation
         if (!newLead.name || !newLead.phone) {
             alert('Por favor, preencha Nome do Contato e WhatsApp.');
             return;
         }
-        // Normalize tags if string
+
+        // Default Title Logic
+        let leadTitle = newLead.title;
+        if (!leadTitle.trim()) {
+            leadTitle = `Negócio - ${newLead.name}`;
+        }
+
+        // Prepare Payload
         const leadPayload = {
             ...newLead,
-            tags: typeof newLead.tags === 'string' ? newLead.tags.split(',').map(t => t.trim()) : newLead.tags,
+            title: leadTitle,
+            tags: typeof newLead.tags === 'string' ? newLead.tags.split(',').map(t => t.trim()).filter(t => t) : newLead.tags,
             contact: { name: newLead.name, phone: newLead.phone, email: newLead.email }
         };
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`, {
-                method: 'POST',
+            const url = selectedLead
+                ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${selectedLead.id}`
+                : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`;
+
+            const method = selectedLead ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(leadPayload) // Send structured payload
+                body: JSON.stringify(leadPayload)
             });
+
             if (res.ok) {
-                // If backend is not yet ready for structure, we might need adjustments, 
-                // but since this is frontend-first upgrade, valid JSON is good.
                 fetchLeads();
                 setShowNewLeadModal(false);
-                setNewLead({ title: '', value: '', name: '', phone: '', email: '', company: '', source: 'Instagram', tags: '' });
             }
         } catch (error) {
             console.error(error);
@@ -301,7 +346,7 @@ const CRMBoard = () => {
                             </button>
                         </div>
                     </div>
-                    <button className="btn-primary" onClick={() => setShowNewLeadModal(true)}>
+                    <button className="btn-primary" onClick={handleOpenNewLead}>
                         <Plus size={18} /> Novo Lead
                     </button>
                 </div>
@@ -350,77 +395,61 @@ const CRMBoard = () => {
                                                                 {...provided.dragHandleProps}
                                                                 style={{
                                                                     userSelect: 'none',
-                                                                    padding: '16px',
+                                                                    padding: '12px',
                                                                     backgroundColor: 'white',
                                                                     borderRadius: '8px',
-                                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                                                                     borderLeft: `4px solid ${column.color}`,
                                                                     cursor: 'pointer',
+                                                                    transition: 'all 0.2s',
                                                                     ...provided.draggableProps.style
                                                                 }}
-                                                                onClick={() => setSelectedLead(lead)}
+                                                                onClick={() => handleOpenEditLead(lead)}
+                                                                className="hover:shadow-md"
                                                             >
-                                                                <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px', color: '#1e293b' }}>
-                                                                    {lead.title || lead.name || 'Sem Título'}
+                                                                {/* Compact Header: Name + Value */}
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b', lineHeight: '1.2' }}>
+                                                                        {lead.title || lead.contact?.name || lead.name || 'Sem Título'}
+                                                                    </div>
+                                                                    {(lead.value > 0 || lead.budget) && (
+                                                                        <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                                                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(lead.value || lead.budget || 0)}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
 
-                                                                {/* Value Badge */}
-                                                                {(lead.value > 0 || lead.budget) && (
-                                                                    <div style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                        <DollarSign size={12} strokeWidth={3} />
-                                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.value || lead.budget || 0)}
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Contact Info Compact */}
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
-                                                                    {(lead.contact?.name || lead.name) && (
-                                                                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                            <User size={12} /> {lead.contact?.name || lead.name}
+                                                                {/* Row 2: Phone + Icons */}
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                            <Phone size={10} />
+                                                                            <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                                {lead.contact?.phone || lead.phone || 'Sem telefone'}
+                                                                            </span>
                                                                         </div>
-                                                                    )}
-                                                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                                                        {(lead.contact?.phone || lead.phone) && <div title={lead.contact?.phone || lead.phone} style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center' }}><Phone size={12} style={{ marginRight: 4 }} /></div>}
-                                                                        {(lead.contact?.email || lead.email) && <div title={lead.contact?.email || lead.email} style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center' }}><Mail size={12} style={{ marginRight: 4 }} /></div>}
-                                                                        {(lead.company) && <div title={lead.company} style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center' }}><Building size={12} style={{ marginRight: 4 }} /></div>}
+                                                                    </div>
+
+                                                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                                                        {lead.handledBy === 'AI' && (
+                                                                            <span style={{ fontSize: '0.65rem', color: '#8b5cf6', background: '#f3e8ff', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                                                                                IA
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Tags */}
-                                                                {(lead.tags && lead.tags.length > 0) && (
-                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-                                                                        {(Array.isArray(lead.tags) ? lead.tags : [lead.tags]).slice(0, 3).map((tag, i) => (
-                                                                            <span key={i} style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{tag}</span>
-                                                                        ))}
+                                                                {/* Footer: Responsible (Mini) */}
+                                                                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#64748b' }}>
+                                                                            <User size={8} />
+                                                                        </div>
+                                                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                                                            {user?.name?.split(' ')[0] || 'Eu'}
+                                                                        </span>
                                                                     </div>
-                                                                )}
-
-                                                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '4px' }}>
-                                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                        <MessageCircle size={10} /> {lead.source || 'Direct'}
-                                                                    </span>
-
-                                                                    {lead.lastContactAt && (
-                                                                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px' }}>
-                                                                            Último contato: {new Date(lead.lastContactAt).toLocaleDateString()}
-                                                                        </div>
-                                                                    )}
-
-                                                                    {lead.handledBy === 'AI' && (
-                                                                        <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#8b5cf6', background: '#f3e8ff', padding: '4px', borderRadius: '4px', textAlign: 'center' }}>
-                                                                            🤖 Em atendimento IA
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* Quick Action for Automation */}
-                                                                    {(lead.status === 'new' || lead.status === 'no_show') && (
-                                                                        <button
-                                                                            onClick={(e) => { e.stopPropagation(); handleLogInteraction(lead.id); }}
-                                                                            style={{ marginTop: '8px', width: '100%', border: '1px solid #e2e8f0', background: 'transparent', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', padding: '4px', color: '#64748b' }}
-                                                                        >
-                                                                            📞 Marcar Contato Feito
-                                                                        </button>
-                                                                    )}
+                                                                    {lead.source && <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>{lead.source}</span>}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -504,8 +533,8 @@ const CRMBoard = () => {
                     <div className="modal-content" style={{ maxWidth: '450px', padding: '0', overflow: 'hidden', border: 'none', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                         <div className="modal-header" style={{ background: 'linear-gradient(to right, #4f46e5, #8b5cf6)', padding: '20px 24px', color: 'white' }}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'white' }}>Novo Lead</h3>
-                                <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.875rem' }}>Adicione um potencial cliente ao CRM.</p>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'white' }}>{selectedLead ? 'Editar Lead' : 'Novo Lead'}</h3>
+                                <p style={{ margin: '4px 0 0', opacity: 0.9, fontSize: '0.875rem' }}>{selectedLead ? 'Atualize as informações do lead.' : 'Adicione um potencial cliente ao CRM.'}</p>
                             </div>
                             <button onClick={() => setShowNewLeadModal(false)} style={{ color: 'white', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', padding: '4px' }}><X size={20} /></button>
                         </div>
@@ -513,7 +542,7 @@ const CRMBoard = () => {
                         <div style={{ padding: '24px' }}>
                             <div className="form-group">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <FileText size={16} /> Título do Negócio <span style={{ color: 'red' }}>*</span>
+                                    <FileText size={16} /> Título do Negócio <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Opcional)</span>
                                 </label>
                                 <input
                                     className="input-field"
@@ -618,8 +647,15 @@ const CRMBoard = () => {
 
                             <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={handleCreateLead}>
-                                    <Plus size={18} /> Cadastrar Lead
+                                    <Plus size={18} /> {selectedLead ? 'Salvar Alterações' : 'Cadastrar Lead'}
                                 </button>
+
+                                {selectedLead && (
+                                    <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: 'var(--error)', borderColor: 'var(--error)' }} onClick={handleDeleteLead}>
+                                        <Trash2 size={16} /> Excluir Lead
+                                    </button>
+                                )}
+
                                 <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setShowNewLeadModal(false)}>
                                     Cancelar
                                 </button>
