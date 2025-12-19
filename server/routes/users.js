@@ -7,35 +7,25 @@ const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 
 // Buscar todos os usuários (com filtros de segurança)
-// Role Constants (Virtual IDs)
-const ROLE_IDS = {
-    MASTER: ['master', 'admin'],
-    FRANCHISEE: ['franchisee', 'franqueado', 'franqueadora'],
-    MANAGER: ['manager', 'gestor', 'gerente'],
-    GLOBAL: ['master', 'admin', 'director', 'diretor']
-};
+// Buscar todos os usuários (com filtros de segurança)
+const { ROLE_IDS, getRoleId } = require('../config/roles');
 
 router.get('/', auth, async (req, res) => {
     try {
-        const { role, unitId, id } = req.user;
+        const { roleId, unitId, id } = req.user;
         let where = {};
 
-        const normalizeRole = (r) => (r || '').toLowerCase();
-        const userRole = normalizeRole(role);
-
-        const isGlobal = ROLE_IDS.GLOBAL.some(r => userRole.includes(r));
-        const isFranchisee = ROLE_IDS.FRANCHISEE.some(r => userRole.includes(r));
-        const isManager = ROLE_IDS.MANAGER.some(r => userRole.includes(r));
-
-        // STRICT ID SECURITY (UUID ISO 100%)
-        if (isGlobal) {
-            // View All
-        } else if (isFranchisee || isManager) {
-            // Strict Unit Isolation
+        // PERMISSÕES POR ID (Strict)
+        // 1 & 10 (Master/Director) -> View All
+        if (roleId === ROLE_IDS.MASTER || roleId === ROLE_IDS.DIRECTOR) {
+            // Global Access
+        }
+        // 20, 30, 40, 50, 60 -> Unit Isolation
+        else if ([ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER, ROLE_IDS.LEADER_SALES, ROLE_IDS.LEADER_PEDAGOGICAL, ROLE_IDS.ADMIN_FINANCIAL].includes(roleId)) {
             if (!unitId) return res.json([]);
             where.unitId = unitId;
         } else {
-            // Individual Access
+            // Operacional: Vê apenas o próprio perfil
             where.id = id;
         }
 
@@ -57,42 +47,44 @@ router.post('/', auth, async (req, res) => {
         const { name, email, password, role, unit, unitId, whatsapp, position, profilePicture } = req.body;
         const requester = req.user;
 
+        // 0. Determinar ID do Cargo solicitado
+        const targetRoleId = getRoleId(role);
+
         // 1. Permissões de Criação
-        const ALLOWED_CREATORS = ['master', 'director', 'diretor', 'franchisee', 'franqueado', 'manager', 'gestor', 'admin'];
-        if (!ALLOWED_CREATORS.includes(requester.role)) {
+        // Only Master(1), Director(10), Franchisee(20), Manager(30) can create users
+        if (![ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR, ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER].includes(requester.roleId)) {
             return res.status(403).json({ error: 'Permissão negada. Cargo sem autorização para criar usuários.' });
         }
 
-        // 2. Restrições de Unidade e Hierarquia
         let targetUnitId = unitId;
 
-        // Se for Master e enviou unitName ao invés de unitId => Buscar ou Criar Unidade
-        const { unitName } = req.body;
-        if (requester.role === 'master' && !targetUnitId && unitName) {
-            const existingUnit = await Unit.findOne({ where: { name: unitName } });
-            if (existingUnit) {
-                targetUnitId = existingUnit.id;
-            } else {
-                const newUnit = await Unit.create({
-                    name: unitName,
-                    city: unitName.split('.')[0] || 'Matriz',
-                    active: true
-                });
-                targetUnitId = newUnit.id;
+        // 2. Herança de Unidade
+        // Se o criador NÃO for Global (Master/Director), ele só pode criar na própria unidade
+        const isGlobalCreator = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(requester.roleId);
+
+        if (!isGlobalCreator) {
+            targetUnitId = requester.unitId; // Override forced
+
+            // 3. Restrições de Hierarquia (Anti-Escalada)
+            // Franqueado(20) não pode criar Master(1), Diretor(10), ou outro Franqueado(20)
+            if (targetRoleId <= ROLE_IDS.FRANCHISEE) {
+                return res.status(403).json({ error: 'Permissão negada. Você não pode criar cargos superiores ou equivalentes.' });
             }
-        }
-
-        // Se NÃO for Master/Diretor/Admin, FORÇA A UNIDADE
-        if (!['master', 'director', 'diretor', 'admin'].includes(requester.role)) {
-            targetUnitId = requester.unitId;
-
-            // Se o requester for Franqueado/Gestor, aplica restrições de hierarquia
-            const RESTRICTED_MANAGERS = ['franchisee', 'franqueado', 'manager', 'gestor'];
-            if (RESTRICTED_MANAGERS.includes(requester.role)) {
-                // Não podem criar: Master, Diretor, Franqueado (outro franqueado)
-                const FORBIDDEN_ROLES = ['master', 'director', 'diretor', 'franchisee', 'franqueado', 'admin'];
-                if (FORBIDDEN_ROLES.includes(role)) {
-                    return res.status(403).json({ error: 'Permissão negada. Você não pode criar cargos superiores ou equivalentes.' });
+        } else {
+            // Se for Master/Director e não enviou unitId, tenta resolver por unitName (Retrocompatibilidade)
+            const { unitName } = req.body;
+            if (!targetUnitId && unitName) {
+                const existingUnit = await Unit.findOne({ where: { name: unitName } });
+                if (existingUnit) {
+                    targetUnitId = existingUnit.id;
+                } else {
+                    // Create on the fly
+                    const newUnit = await Unit.create({
+                        name: unitName,
+                        city: 'Matriz', // Default
+                        active: true
+                    });
+                    targetUnitId = newUnit.id;
                 }
             }
         }
