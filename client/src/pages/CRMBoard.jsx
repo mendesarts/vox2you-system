@@ -1,11 +1,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical, X, Check, MapPin, FileText, Upload, Download, Mail, Building, Tag, Trash2 } from 'lucide-react';
 import KanbanCard from '../components/KanbanCard';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor'];
+
+// Helper para CSV Import (Case Insensitive + Normalização)
+const normalizeKey = (row, keys) => {
+    const rowKeys = Object.keys(row).map(k => k.toLowerCase().trim());
+    const foundKey = keys.find(k => rowKeys.includes(k.toLowerCase()));
+    const originalKey = Object.keys(row).find(k => k.toLowerCase().trim() === foundKey);
+    return originalKey ? row[originalKey] : null;
+};
 
 const CRMBoard = () => {
     const { user } = useAuth();
@@ -241,6 +250,74 @@ const CRMBoard = () => {
         }
     };
 
+    const handleImport = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            encoding: "UTF-8", // Garante acentos
+            complete: (results) => {
+                console.log("CSV Raw Data:", results.data);
+
+                const newLeads = results.data.map((row, index) => {
+                    // 1. MAPEAMENTO DE COLUNAS (DE-PARA)
+                    // Tenta encontrar colunas comuns do Kommo/Excel
+                    const title = normalizeKey(row, ['nome', 'name', 'título', 'title', 'negócio']) || 'Lead Sem Nome';
+                    const phone = normalizeKey(row, ['telefone', 'phone', 'celular', 'whatsapp', 'tel']) || '';
+                    const email = normalizeKey(row, ['email', 'e-mail']) || '';
+                    const valueRaw = normalizeKey(row, ['valor', 'value', 'preço', 'orçamento', 'venda']) || '0';
+
+                    // 2. UNIDADE (CRÍTICO)
+                    // Lê do CSV. Se vazio, assume a do usuário logado (herança).
+                    const csvUnit = normalizeKey(row, ['unidade', 'unit', 'loja', 'filial', 'franquia']);
+                    const finalUnit = csvUnit && csvUnit.trim() !== '' ? csvUnit : (user.unit || 'Matriz');
+
+                    // 3. ID (Importante para não duplicar se importar 2x)
+                    const csvId = normalizeKey(row, ['id', 'id do lead', 'código']);
+                    // Se não tiver ID, gera um. Se tiver, usa (mas cuidado com colisão com IDs reais do banco se forem UUID vs Int)
+                    // Kommo usa Int. Banco usa UUID? Se banco usa UUID, IDs do Kommo são seguros como String.
+                    const finalId = csvId ? String(csvId) : `imp-${Date.now()}-${index}`;
+
+                    // 4. TRATAMENTO DE VALOR (R$ 1.000,00 -> 1000.00)
+                    const valueClean = parseFloat(
+                        String(valueRaw)
+                            .replace(/[^0-9,.-]/g, '') // Remove R$ e textos
+                            .replace(',', '.')         // Troca vírgula por ponto (se for padrão BR simples)
+                    ) || 0;
+
+                    return {
+                        id: finalId,
+                        title: title,
+                        value: valueClean,
+                        unit: finalUnit, // <--- AQUI ESTÁ A UNIDADE
+                        contact: { name: title, phone, email },
+                        tags: ['Importado'],
+                        createdAt: new Date().toISOString(),
+                        status: 'new' // Coloca na coluna "Novo Lead"
+                    };
+                });
+
+                // ADICIONA À LISTA
+                if (newLeads.length > 0) {
+                    setLeads(prev => [...newLeads, ...prev]);
+                    // Aqui você poderia chamar uma API para salvar em lote também
+                    alert(`${newLeads.length} Leads importados com sucesso!`);
+                } else {
+                    alert("Nenhum dado válido encontrado no CSV.");
+                }
+            },
+            error: (err) => {
+                console.error("Erro CSV:", err);
+                alert("Erro ao ler o arquivo CSV.");
+            }
+        });
+
+        // Limpa o input para permitir importar o mesmo arquivo novamente se precisar
+        event.target.value = null;
+    };
+
     const handleCreateLead = async () => {
         // Validation
         if (!newLead.name || !newLead.phone) {
@@ -335,81 +412,7 @@ const CRMBoard = () => {
         document.body.removeChild(link);
     };
 
-    const handleImport = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const text = event.target.result;
-            const lines = text.split('\n');
-            if (lines.length < 2) return;
-
-            const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g, ''));
-
-            // Helper to find index by multiple aliases
-            const findIdx = (aliases) => headers.findIndex(h => aliases.some(a => h.includes(a)));
-
-            const titleIdx = findIdx(['nome do lead', 'title', 'título', 'negócio']);
-            const valueIdx = findIdx(['orçamento', 'budget', 'valor', 'venda', 'price']);
-            const phoneIdx = findIdx(['telefone', 'phone', 'celular', 'whatsapp']);
-            const emailIdx = findIdx(['email', 'e-mail']);
-            const statusIdx = findIdx(['etapa', 'stage', 'status', 'fase']);
-            const tagsIdx = findIdx(['tags', 'etiquetas']);
-            const contactIdx = findIdx(['pessoa de contato', 'contato', 'contact name']);
-
-            const newLeads = lines.slice(1).filter(line => line.trim() !== '').map((line, index) => {
-                // Handle CSV split respecting quotes (simple implementation)
-                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
-
-                const title = (titleIdx > -1 ? values[titleIdx] : '') || values[0] || 'Sem Título';
-                const contactName = (contactIdx > -1 ? values[contactIdx] : '') || title; // Fallback
-
-                // Map status specific logic could go here, defaulting to 'new' if not found
-                // For this demo, we check if the CSV value partially matches our column IDs
-                let status = 'new';
-                if (statusIdx > -1) {
-                    const csvStatus = (values[statusIdx] || '').toLowerCase();
-                    if (csvStatus.includes('ganho') || csvStatus.includes('won')) status = 'won';
-                    else if (csvStatus.includes('perdido') || csvStatus.includes('lost')) status = 'closed';
-                    else if (csvStatus.includes('negocia')) status = 'negotiation';
-                    else if (csvStatus.includes('agend')) status = 'scheduled';
-                }
-
-                // Clean Value
-                let value = 0;
-                if (valueIdx > -1) {
-                    value = parseFloat(values[valueIdx].replace(/[^0-9.-]+/g, "")) || 0;
-                }
-
-                const unitPrefix = user.unit || user.unitName || 'Geral';
-                return {
-                    id: `${unitPrefix}-${Date.now()}-${index}`, // Unit-Based ID
-                    title: title,
-                    value: value,
-                    status: status,
-                    unit: unitPrefix, // Tag unit
-                    contact: {
-                        name: contactName,
-                        phone: (phoneIdx > -1 ? values[phoneIdx] : '') || '',
-                        email: (emailIdx > -1 ? values[emailIdx] : '') || ''
-                    },
-                    tags: (tagsIdx > -1 ? values[tagsIdx].split(';') : []),
-                    source: 'Importado',
-                    createdAt: new Date().toISOString()
-                };
-            });
-
-            if (newLeads.length > 0) {
-                setLeads(prev => [...prev, ...newLeads]);
-                alert(`${newLeads.length} Leads importados com sucesso!`);
-            } else {
-                alert('Não foi possível identificar colunas compatíveis ou o arquivo está vazio.');
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
-    };
+    // (Old handleImport removed to avoid conflict)
 
     // ... render return ... (Updating to include Modal)
     return (
