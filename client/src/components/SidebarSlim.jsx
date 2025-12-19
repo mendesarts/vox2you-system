@@ -69,12 +69,11 @@ const SidebarSlim = () => {
             // We will append them to the end or integrate them
             // Since we built 'tailoredItems', we can just push if not present.
             // Using placeholder paths for now as requested features
-            if (!tailoredItems.find(i => i.label === 'Agentes de IA')) {
-                tailoredItems.push({ icon: Bot, label: 'Agentes de IA', path: '/ai-agents' }); // Bot imported? No, need to import or reuse one.
-            }
-            if (!tailoredItems.find(i => i.label === 'Treinamentos')) {
-                tailoredItems.push({ icon: BookOpen, label: 'Treinamentos', path: '/training' });
-            }
+            //     tailoredItems.push({ icon: Bot, label: 'Agentes de IA', path: '/ai-agents' }); // Bot imported? No, need to import or reuse one.
+            // }
+            // if (!tailoredItems.find(i => i.label === 'Treinamentos')) {
+            //     tailoredItems.push({ icon: BookOpen, label: 'Treinamentos', path: '/training' });
+            // }
         }
 
         return tailoredItems;

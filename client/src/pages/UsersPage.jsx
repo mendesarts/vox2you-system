@@ -24,6 +24,7 @@ const UsersPage = () => {
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [units, setUnits] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedUnit, setSelectedUnit] = useState('all'); // Unit Filter
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
@@ -50,16 +51,27 @@ const UsersPage = () => {
     }, []);
 
     useEffect(() => {
-        if (searchTerm === '') {
-            setFilteredUsers(users);
-        } else {
+        let result = users;
+
+        // Search Filter
+        if (searchTerm) {
             const lower = searchTerm.toLowerCase();
-            setFilteredUsers(users.filter(u =>
+            result = result.filter(u =>
                 u.name.toLowerCase().includes(lower) ||
                 u.email.toLowerCase().includes(lower)
-            ));
+            );
         }
-    }, [searchTerm, users]);
+
+        // Unit Filter (Global Roles Only)
+        if (GLOBAL_VIEW_ROLES.includes(currentUser.role) && selectedUnit !== 'all') {
+            result = result.filter(u => {
+                // Check both ID and Name/Tag possibilities
+                return u.unitId === selectedUnit || u.unitName === selectedUnit || (units.find(unit => unit.id === u.unitId)?.name === selectedUnit);
+            });
+        }
+
+        setFilteredUsers(result);
+    }, [searchTerm, users, selectedUnit, currentUser.role, units]);
 
     const loadData = async () => {
         try {
@@ -141,9 +153,10 @@ const UsersPage = () => {
             // Validate Unit Format
             const unitNameToCheck = formData.unitName || units.find(u => u.id === formData.unitId)?.name;
             if (GLOBAL_VIEW_ROLES.includes(currentUser.role) && unitNameToCheck) {
-                const unitRegex = /^[a-zA-Z]+\.[a-zA-Z0-9]+$/;
+                // Modified regex to support accents (Latin characters)
+                const unitRegex = /^[a-zA-ZÀ-ÿ0-9]+\.[a-zA-ZÀ-ÿ0-9-]+$/;
                 if (!unitRegex.test(unitNameToCheck)) {
-                    setFormError('Formato de Unidade inválido. Use Cidade.Nome (ex: Goiania.SetorBueno), sem espaços.');
+                    setFormError('Formato de Unidade inválido. Use Cidade.Nome (ex: Brasília.Águas-Claras), sem espaços.');
                     return;
                 }
             }
@@ -215,11 +228,36 @@ const UsersPage = () => {
                     <h2 className="page-title">Gestão de Usuários</h2>
                     <p className="page-subtitle">Controle de acesso, cargos e permissões.</p>
                 </div>
-                {canCreateUsers && (
-                    <button className="btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-                        <Plus size={20} /> Novo Usuário
-                    </button>
-                )}
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {/* Unit Filter for Master/Director */}
+                    {GLOBAL_VIEW_ROLES.includes(currentUser.role) && (
+                        <select
+                            value={selectedUnit}
+                            onChange={(e) => setSelectedUnit(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border)',
+                                fontSize: '0.9rem',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-main)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="all">Todas as Unidades</option>
+                            {[...new Set(users.map(u => u.unitName || units.find(unit => unit.id === u.unitId)?.name).filter(Boolean))].map(uName => (
+                                <option key={uName} value={uName}>{uName}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    {canCreateUsers && (
+                        <button className="btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
+                            <Plus size={20} /> Novo Usuário
+                        </button>
+                    )}
+                </div>
             </header>
 
             <div className="search-bar" style={{ marginBottom: '20px', maxWidth: '400px', display: 'flex', alignItems: 'center', background: 'var(--bg-surface)', padding: '10px 15px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
