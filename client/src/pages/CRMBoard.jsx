@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,7 +13,17 @@ const CRMBoard = () => {
     const fileInputRef = useRef(null);
 
     // New Lead Form
-    const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', source: 'Instagram', campaign: '' });
+    // New Lead Form (Extended Structure)
+    const [newLead, setNewLead] = useState({
+        title: '',
+        value: '',
+        name: '', // Contact Name
+        phone: '',
+        email: '',
+        company: '',
+        source: 'Instagram',
+        tags: ''
+    });
 
     // Kanban Columns Configuration
     // Kanban Columns Configuration
@@ -131,10 +141,18 @@ const CRMBoard = () => {
 
     const handleCreateLead = async () => {
         // ... (existing code)
+        if (!newLead.title) newLead.title = newLead.name + ' - Negócio'; // Default Title
         if (!newLead.name || !newLead.phone) {
-            alert('Por favor, preencha Nome e WhatsApp.');
+            alert('Por favor, preencha Nome do Contato e WhatsApp.');
             return;
         }
+        // Normalize tags if string
+        const leadPayload = {
+            ...newLead,
+            tags: typeof newLead.tags === 'string' ? newLead.tags.split(',').map(t => t.trim()) : newLead.tags,
+            contact: { name: newLead.name, phone: newLead.phone, email: newLead.email }
+        };
+
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`, {
@@ -143,12 +161,14 @@ const CRMBoard = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(newLead)
+                body: JSON.stringify(leadPayload) // Send structured payload
             });
             if (res.ok) {
+                // If backend is not yet ready for structure, we might need adjustments, 
+                // but since this is frontend-first upgrade, valid JSON is good.
                 fetchLeads();
                 setShowNewLeadModal(false);
-                setNewLead({ name: '', phone: '', email: '', source: 'Instagram', campaign: '' });
+                setNewLead({ title: '', value: '', name: '', phone: '', email: '', company: '', source: 'Instagram', tags: '' });
             }
         } catch (error) {
             console.error(error);
@@ -194,32 +214,69 @@ const CRMBoard = () => {
         reader.onload = (event) => {
             const text = event.target.result;
             const lines = text.split('\n');
-            const headers = lines[0].split(',');
+            if (lines.length < 2) return;
+
+            const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g, ''));
+
+            // Helper to find index by multiple aliases
+            const findIdx = (aliases) => headers.findIndex(h => aliases.some(a => h.includes(a)));
+
+            const titleIdx = findIdx(['nome do lead', 'title', 'título', 'negócio']);
+            const valueIdx = findIdx(['orçamento', 'budget', 'valor', 'venda', 'price']);
+            const phoneIdx = findIdx(['telefone', 'phone', 'celular', 'whatsapp']);
+            const emailIdx = findIdx(['email', 'e-mail']);
+            const statusIdx = findIdx(['etapa', 'stage', 'status', 'fase']);
+            const tagsIdx = findIdx(['tags', 'etiquetas']);
+            const contactIdx = findIdx(['pessoa de contato', 'contato', 'contact name']);
 
             const newLeads = lines.slice(1).filter(line => line.trim() !== '').map((line, index) => {
-                const values = line.split(',');
-                // Simple CSV mapping based on template: Name, Phone, Email, Source, Campaign, Status
+                // Handle CSV split respecting quotes (simple implementation)
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, ''));
+
+                const title = (titleIdx > -1 ? values[titleIdx] : '') || values[0] || 'Sem Título';
+                const contactName = (contactIdx > -1 ? values[contactIdx] : '') || title; // Fallback
+
+                // Map status specific logic could go here, defaulting to 'new' if not found
+                // For this demo, we check if the CSV value partially matches our column IDs
+                let status = 'new';
+                if (statusIdx > -1) {
+                    const csvStatus = (values[statusIdx] || '').toLowerCase();
+                    if (csvStatus.includes('ganho') || csvStatus.includes('won')) status = 'won';
+                    else if (csvStatus.includes('perdido') || csvStatus.includes('lost')) status = 'closed';
+                    else if (csvStatus.includes('negocia')) status = 'negotiation';
+                    else if (csvStatus.includes('agend')) status = 'scheduled';
+                }
+
+                // Clean Value
+                let value = 0;
+                if (valueIdx > -1) {
+                    value = parseFloat(values[valueIdx].replace(/[^0-9.-]+/g, "")) || 0;
+                }
+
                 return {
-                    id: Date.now() + index, // Temp ID
-                    name: values[0] || 'Sem Nome',
-                    phone: values[1] || '',
-                    email: values[2] || '',
-                    source: values[3] || 'Importado',
-                    campaign: values[4] || '',
-                    status: 'new', // Always start at 'new'
+                    id: Date.now() + index,
+                    title: title,
+                    value: value,
+                    status: status,
+                    contact: {
+                        name: contactName,
+                        phone: (phoneIdx > -1 ? values[phoneIdx] : '') || '',
+                        email: (emailIdx > -1 ? values[emailIdx] : '') || ''
+                    },
+                    tags: (tagsIdx > -1 ? values[tagsIdx].split(';') : []),
+                    source: 'Importado',
                     createdAt: new Date().toISOString()
                 };
             });
 
             if (newLeads.length > 0) {
                 setLeads(prev => [...prev, ...newLeads]);
-                alert(`${newLeads.length} Leads importados com sucesso para a coluna 'Novo Lead'!`);
+                alert(`${newLeads.length} Leads importados com sucesso!`);
             } else {
-                alert('Nenhum dado válido encontrado no CSV.');
+                alert('Não foi possível identificar colunas compatíveis ou o arquivo está vazio.');
             }
         };
         reader.readAsText(file);
-        // Reset input
         e.target.value = null;
     };
 
@@ -303,32 +360,68 @@ const CRMBoard = () => {
                                                                 }}
                                                                 onClick={() => setSelectedLead(lead)}
                                                             >
-                                                                <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px' }}>{lead.name}</div>
-                                                                <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    <MessageCircle size={12} /> {lead.source}
+                                                                <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '4px', color: '#1e293b' }}>
+                                                                    {lead.title || lead.name || 'Sem Título'}
                                                                 </div>
 
-                                                                {lead.lastContactAt && (
-                                                                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px' }}>
-                                                                        Último contato: {new Date(lead.lastContactAt).toLocaleDateString()}
+                                                                {/* Value Badge */}
+                                                                {(lead.value > 0 || lead.budget) && (
+                                                                    <div style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                        <DollarSign size={12} strokeWidth={3} />
+                                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.value || lead.budget || 0)}
                                                                     </div>
                                                                 )}
 
-                                                                {lead.handledBy === 'AI' && (
-                                                                    <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#8b5cf6', background: '#f3e8ff', padding: '4px', borderRadius: '4px', textAlign: 'center' }}>
-                                                                        🤖 Em atendimento IA
+                                                                {/* Contact Info Compact */}
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                                                                    {(lead.contact?.name || lead.name) && (
+                                                                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                            <User size={12} /> {lead.contact?.name || lead.name}
+                                                                        </div>
+                                                                    )}
+                                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                                        {(lead.contact?.phone || lead.phone) && <div title={lead.contact?.phone || lead.phone} style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center' }}><Phone size={12} style={{ marginRight: 4 }} /></div>}
+                                                                        {(lead.contact?.email || lead.email) && <div title={lead.contact?.email || lead.email} style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center' }}><Mail size={12} style={{ marginRight: 4 }} /></div>}
+                                                                        {(lead.company) && <div title={lead.company} style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center' }}><Building size={12} style={{ marginRight: 4 }} /></div>}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Tags */}
+                                                                {(lead.tags && lead.tags.length > 0) && (
+                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                                                                        {(Array.isArray(lead.tags) ? lead.tags : [lead.tags]).slice(0, 3).map((tag, i) => (
+                                                                            <span key={i} style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '4px' }}>{tag}</span>
+                                                                        ))}
                                                                     </div>
                                                                 )}
 
-                                                                {/* Quick Action for Automation */}
-                                                                {(lead.status === 'new' || lead.status === 'no_show') && (
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handleLogInteraction(lead.id); }}
-                                                                        style={{ marginTop: '8px', width: '100%', border: '1px solid #e2e8f0', background: 'transparent', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', padding: '4px', color: '#64748b' }}
-                                                                    >
-                                                                        📞 Marcar Contato Feito
-                                                                    </button>
-                                                                )}
+                                                                <div style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: '8px', marginTop: '4px' }}>
+                                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                        <MessageCircle size={10} /> {lead.source || 'Direct'}
+                                                                    </span>
+
+                                                                    {lead.lastContactAt && (
+                                                                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px' }}>
+                                                                            Último contato: {new Date(lead.lastContactAt).toLocaleDateString()}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {lead.handledBy === 'AI' && (
+                                                                        <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#8b5cf6', background: '#f3e8ff', padding: '4px', borderRadius: '4px', textAlign: 'center' }}>
+                                                                            🤖 Em atendimento IA
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Quick Action for Automation */}
+                                                                    {(lead.status === 'new' || lead.status === 'no_show') && (
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); handleLogInteraction(lead.id); }}
+                                                                            style={{ marginTop: '8px', width: '100%', border: '1px solid #e2e8f0', background: 'transparent', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer', padding: '4px', color: '#64748b' }}
+                                                                        >
+                                                                            📞 Marcar Contato Feito
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </Draggable>
@@ -420,7 +513,48 @@ const CRMBoard = () => {
                         <div style={{ padding: '24px' }}>
                             <div className="form-group">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <User size={16} /> Nome Completo <span style={{ color: 'red' }}>*</span>
+                                    <FileText size={16} /> Título do Negócio <span style={{ color: 'red' }}>*</span>
+                                </label>
+                                <input
+                                    className="input-field"
+                                    placeholder="Ex: Venda Curso Inglês - João"
+                                    value={newLead.title}
+                                    onChange={e => setNewLead({ ...newLead, title: e.target.value })}
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className="form-group">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <DollarSign size={16} /> Valor Estimado (R$)
+                                    </label>
+                                    <input
+                                        className="input-field"
+                                        type="number"
+                                        placeholder="0,00"
+                                        value={newLead.value}
+                                        onChange={e => setNewLead({ ...newLead, value: e.target.value })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Building size={16} /> Empresa (Opcional)
+                                    </label>
+                                    <input
+                                        className="input-field"
+                                        placeholder="Nome da Empresa"
+                                        value={newLead.company}
+                                        onChange={e => setNewLead({ ...newLead, company: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '10px 0 20px 0' }} />
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '10px', color: 'var(--text-main)' }}>Contato Principal</div>
+
+                            <div className="form-group">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <User size={16} /> Nome do Contato <span style={{ color: 'red' }}>*</span>
                                 </label>
                                 <input
                                     className="input-field"
@@ -452,13 +586,14 @@ const CRMBoard = () => {
                                         <option>Indicação</option>
                                         <option>Passante</option>
                                         <option>Evento</option>
+                                        <option>Linkedin</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div className="form-group">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <MessageCircle size={16} /> Email (Opcional)
+                                    <Mail size={16} /> Email (Opcional)
                                 </label>
                                 <input
                                     className="input-field"
@@ -471,13 +606,13 @@ const CRMBoard = () => {
 
                             <div className="form-group">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Calendar size={16} /> Campanha / Tags
+                                    <Tag size={16} /> Tags (Separar por vírgula)
                                 </label>
                                 <input
                                     className="input-field"
                                     placeholder="Ex: Black Friday, Promoção de Verão..."
-                                    value={newLead.campaign}
-                                    onChange={e => setNewLead({ ...newLead, campaign: e.target.value })}
+                                    value={newLead.tags}
+                                    onChange={e => setNewLead({ ...newLead, tags: e.target.value })}
                                 />
                             </div>
 
