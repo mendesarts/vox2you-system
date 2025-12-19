@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, UserX, UserCheck, MoreVertical, Filter, Delete, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, UserX, UserCheck, MoreVertical, Filter, Delete, Trash2, FileText, UploadCloud, Download } from 'lucide-react';
 import StudentRegistrationWizard from './StudentRegistrationWizard';
 
 const StudentsManager = ({ initialFilters }) => {
@@ -73,13 +73,51 @@ const StudentsManager = ({ initialFilters }) => {
     // Unique years for filter
     const years = [...new Set(students.map(s => new Date(s.createdAt).getFullYear()))].sort((a, b) => b - a);
 
+    const downloadTemplate = () => {
+        const headers = ["Nome,Email,CPF,Curso,Matricula"];
+        const rows = ["Maria Souza,maria@email.com,12345678900,Inglês Básico,MAT-001"];
+        const csvContent = "data:text/csv;charset=utf-8," + headers.join("\n") + "\n" + rows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "modelo_alunos.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            console.log("Students CSV Imported:", text);
+            alert(`Arquivo "${file.name}" importado com sucesso! (Simulação)`);
+        };
+        reader.readAsText(file);
+    };
+
     return (
         <div className="manager-container">
             <div className="manager-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <h3>Gestão de Alunos</h3>
-                <button className="btn-primary" onClick={() => setShowForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Plus size={16} /> Novo Aluno
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '5px', marginRight: '10px' }}>
+                        <button onClick={downloadTemplate} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <FileText size={16} /> Modelo CSV
+                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <input type="file" accept=".csv" onChange={handleImport} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                            <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <UploadCloud size={16} /> Importar
+                            </button>
+                        </div>
+                    </div>
+                    <button className="btn-primary" onClick={() => setShowForm(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Plus size={16} /> Novo Aluno
+                    </button>
+                </div>
             </div>
 
             {/* Filters Bar */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, UploadCloud } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -173,6 +173,31 @@ const CRMBoard = () => {
     };
 
     // ... (Data Tools)
+    const downloadTemplate = () => {
+        const headers = ["Nome,Telefone,Email,Origem,Campanha,Status"];
+        const rows = ["João Silva,5511999999999,joao@email.com,Instagram,Verão 2024,new"];
+        const csvContent = "data:text/csv;charset=utf-8," + headers.join("\n") + "\n" + rows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "modelo_leads.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            console.log("CSV Imported:", text);
+            alert(`Arquivo "${file.name}" importado com sucesso! (Simulação)\nVerifique o console para os dados.`);
+            // Here we would parse and save to DB
+        };
+        reader.readAsText(file);
+    };
 
     // ... render return ... (Updating to include Modal)
     return (
@@ -184,6 +209,17 @@ const CRMBoard = () => {
                     <p className="page-subtitle">Gerencie seus leads e oportunidades.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '5px', marginRight: '10px' }}>
+                        <button onClick={downloadTemplate} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }} title="Baixar Modelo CSV">
+                            <FileText size={16} /> Modelo
+                        </button>
+                        <div style={{ position: 'relative' }}>
+                            <input type="file" accept=".csv" onChange={handleImport} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                            <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>
+                                <UploadCloud size={16} /> Importar
+                            </button>
+                        </div>
+                    </div>
                     <button className="btn-primary" onClick={() => setShowNewLeadModal(true)}>
                         <Plus size={18} /> Novo Lead
                     </button>
