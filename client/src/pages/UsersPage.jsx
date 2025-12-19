@@ -335,82 +335,44 @@ const UsersPage = () => {
 
             <div className="users-grid">
                 {filteredUsers.map(user => (
-                    <div
-                        key={user.id}
-                        className="user-card animate-fade-in"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '16px',
-                            background: 'white',
-                            borderRadius: '8px',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            marginBottom: '10px',
-                            border: '1px solid #f3f4f6'
-                        }}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div key={user.id} className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-3 flex items-center justify-between hover:shadow-md transition-shadow">
+
+                        <div className="flex items-center gap-4">
                             {/* Avatar */}
-                            <div style={{
-                                width: '48px', height: '48px', borderRadius: '50%',
-                                background: '#e0e7ff', color: '#4338ca',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.125rem', fontWeight: 'bold', overflow: 'hidden', flexShrink: 0
-                            }}>
-                                {user.profilePicture ? (
-                                    <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    (user.name || 'U').charAt(0).toUpperCase()
-                                )}
+                            <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-xl">
+                                {(user.name || 'U').charAt(0).toUpperCase()}
                             </div>
 
-                            {/* Info */}
+                            {/* Info Principal */}
                             <div>
-                                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0, lineHeight: 1.25 }}>{user.name}</h3>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '4px 0 8px 0' }}>{user.email}</p>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{user.name}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{user.email}</p>
 
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                                    {/* Role Badge */}
-                                    <span style={{
-                                        padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.025em',
-                                        backgroundColor: ['master', 'director', 'diretor', 'franqueadora'].includes(user.role) ? '#f3e8ff' : (user.role === 'manager' || user.role === 'gestor') ? '#dbeafe' : '#f3f4f6',
-                                        color: ['master', 'director', 'diretor', 'franqueadora'].includes(user.role) ? '#7e22ce' : (user.role === 'manager' || user.role === 'gestor') ? '#1d4ed8' : '#4b5563',
-                                        border: `1px solid ${['master', 'director', 'diretor', 'franqueadora'].includes(user.role) ? '#e9d5ff' : (user.role === 'manager' || user.role === 'gestor') ? '#bfdbfe' : '#e5e7eb'}`
-                                    }}>
-                                        {ROLE_TRANSLATIONS[user.role] || user.role}
+                                {/* LINHA DE DESTAQUE: CARGO E UNIDADE */}
+                                <div className="flex items-center gap-2 mt-1">
+                                    {/* Cargo Traduzido */}
+                                    <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+                                        {{
+                                            'master': 'Master', 'director': 'Diretor', 'diretor': 'Diretor',
+                                            'franqueado': 'Franqueado', 'admin': 'Franqueado',
+                                            'manager': 'Gestor', 'sales': 'Consultor'
+                                        }[user.role] || user.role}
                                     </span>
 
-                                    {/* Unit Badge */}
-                                    <span style={{
-                                        display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 500, color: '#4b5563',
-                                        backgroundColor: '#f9fafb', padding: '2px 8px', borderRadius: '4px', border: '1px solid #e5e7eb'
-                                    }}>
-                                        <MapPin size={12} className="text-gray-400" />
-                                        {user.unitName || user.unit || units.find(u => u.id === user.unitId)?.name || "Sem Unidade"}
+                                    {/* Unidade - OBRIGATÓRIA */}
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                        <MapPin size={12} /> {user.unit ? user.unit : <span className="text-red-500 font-bold">Sem Unidade</span>}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <button
-                                onClick={() => handleEditUser(user)}
-                                style={{ padding: '8px', color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '50%', transition: 'all 0.2s' }}
-                                title="Editar"
-                                onMouseEnter={(e) => { e.currentTarget.style.color = '#4f46e5'; e.currentTarget.style.background = '#eef2ff'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent'; }}
-                            >
+                        {/* Botões de Ação */}
+                        <div className="flex gap-2">
+                            <button onClick={() => handleEditUser(user)} className="p-2 text-gray-400 hover:text-indigo-500 transition-colors" title="Editar">
                                 <Edit size={20} />
                             </button>
-                            <button
-                                onClick={() => handleDeleteUser(user.id)}
-                                style={{ padding: '8px', color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '50%', transition: 'all 0.2s' }}
-                                title="Excluir"
-                                onMouseEnter={(e) => { e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.background = '#fef2f2'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent'; }}
-                            >
+                            <button onClick={() => handleDeleteUser(user.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Excluir">
                                 <Trash2 size={20} />
                             </button>
                         </div>
