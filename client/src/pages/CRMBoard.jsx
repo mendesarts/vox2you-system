@@ -27,7 +27,8 @@ const CRMBoard = () => {
         city: '',
         neighborhood: '',
         source: 'Instagram',
-        tags: ''
+        tags: '',
+        unit: '' // Added unit
     });
 
     const formatPhone = (value) => {
@@ -211,23 +212,30 @@ const CRMBoard = () => {
             city: lead.city || '',
             neighborhood: lead.neighborhood || '',
             source: lead.source || 'Instagram',
-            tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : (lead.tags || '')
+            tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : (lead.tags || ''),
+            unit: lead.unit || user.unit // Populate unit
         });
         setShowNewLeadModal(true);
     };
 
     const handleDeleteLead = async () => {
         if (!selectedLead || !window.confirm('Tem certeza que deseja excluir este lead?')) return;
+
+        // Optimistic Delete
+        setLeads(prev => prev.filter(l => String(l.id) !== String(selectedLead.id)));
+        setShowNewLeadModal(false); // Close immediately
+
         try {
             const token = localStorage.getItem('token');
             await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${selectedLead.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            fetchLeads();
-            setShowNewLeadModal(false);
+            // fetchLeads(); // No need to refetch if successful, we already removed it.
         } catch (error) {
             console.error(error);
+            // Revert if error (optional, simplified here)
+            fetchLeads();
         }
     };
 
@@ -245,21 +253,14 @@ const CRMBoard = () => {
         }
 
         // Prepare Payload
-        const unitPrefix = user.unit || user.unitName || 'Geral';
-        // Generate Unit-Based ID if new
-        // Note: Backend usually handles ID, but if we are mocking or enforcing client-generated IDs for some reason:
-        // logic: `${unitPrefix}-${Date.now()}`
-        // However, usually POST returns the ID. If we are using mock backend or local state, we do this:
+        const unitPrefix = newLead.unit || user.unit || user.unitName || 'Geral';
 
         const leadPayload = {
             ...newLead,
-            // If creating new (POST), we might send a custom ID if backend supports it, or backend generates.
-            // Requirement says: "Alterar a lógica de geração de ID ... Exemplo final no Banco: SaoPaulo.Centro-17085499201"
-            // We will send this ID if valid, or hope backend uses it.
-            // If backend generates ID, we can't change it here unless we change backend.
-            // Assuming we can send 'id' or we are simulating.
+            unit: unitPrefix,
+
+            // Generate Unit-Based ID if new (safe string)
             ...(selectedLead ? {} : { id: `${unitPrefix}-${Date.now()}` }),
-            unit: unitPrefix, // explicit unit tag
 
             // Save value as raw number
             value: typeof newLead.value === 'string' ? parseFloat(newLead.value.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) : newLead.value,
@@ -267,6 +268,16 @@ const CRMBoard = () => {
             tags: typeof newLead.tags === 'string' ? newLead.tags.split(',').map(t => t.trim()).filter(t => t) : newLead.tags,
             contact: { name: newLead.name, phone: newLead.phone, email: newLead.email }
         };
+
+        // Optimistic Update
+        if (selectedLead) {
+            setLeads(prev => prev.map(l => String(l.id) === String(selectedLead.id) ? { ...l, ...leadPayload } : l));
+        } else {
+            // For new leads, we might want to refetch to get the real ID if backend resets it, but for now push it.
+            // But usually we wait for response to get ID. Here we generated one.
+            setLeads(prev => [...prev, { ...leadPayload, status: 'new' }]);
+        }
+        setShowNewLeadModal(false);
 
         try {
             const token = localStorage.getItem('token');
@@ -276,7 +287,7 @@ const CRMBoard = () => {
 
             const method = selectedLead ? 'PUT' : 'POST';
 
-            const res = await fetch(url, {
+            await fetch(url, {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -284,13 +295,10 @@ const CRMBoard = () => {
                 },
                 body: JSON.stringify(leadPayload)
             });
-
-            if (res.ok) {
-                fetchLeads();
-                setShowNewLeadModal(false);
-            }
+            // fetchLeads(); // Optional refetch
         } catch (error) {
             console.error(error);
+            fetchLeads(); // Revert on error
         }
     };
 
@@ -637,6 +645,23 @@ const CRMBoard = () => {
                         </div>
 
                         <div style={{ padding: '24px' }}>
+                            <div className="form-group">
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <MapPin size={16} /> Unidade (Franquia)
+                                </label>
+                                <input
+                                    className="input-field"
+                                    value={newLead.unit}
+                                    onChange={e => setNewLead({ ...newLead, unit: e.target.value })}
+                                    disabled={!GLOBAL_VIEW_ROLES.includes(user.role)}
+                                    placeholder="Cidade.Bairro"
+                                    style={{
+                                        background: GLOBAL_VIEW_ROLES.includes(user.role) ? 'white' : '#f1f5f9',
+                                        color: GLOBAL_VIEW_ROLES.includes(user.role) ? 'inherit' : '#94a3b8'
+                                    }}
+                                />
+                            </div>
+
                             <div className="form-group">
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <FileText size={16} /> Título do Negócio <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Opcional)</span>
