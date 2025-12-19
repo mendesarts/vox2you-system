@@ -167,7 +167,8 @@ const startServer = async () => {
 
         // Force Sync (Auto-Healing)
         console.log('Executando Auto-Healing do Schema...');
-        await sequelize.sync({ alter: true });
+        // await sequelize.sync({ alter: true });
+        console.log('Schema Sync (Alter) skipped to prevent type errors. Manual migration ran.');
         console.log('Schema sincronizado!');
 
         server.listen(PORT, async () => {

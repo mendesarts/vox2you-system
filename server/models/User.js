@@ -3,8 +3,9 @@ const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
     id: {
-        type: DataTypes.STRING, // Alterado para STRING para aceitar IDs importados (ex: 'imp-...')
-        primaryKey: true,
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4, // Restored UUID
+        primaryKey: true
     },
     name: {
         type: DataTypes.STRING,
@@ -35,22 +36,22 @@ const User = sequelize.define('User', {
         ),
         defaultValue: 'sales',
     },
-    // --- A CORREÇÃO CRÍTICA ESTÁ AQUI ---
+    // --- A CORREÇÃO CRÍTICA ESTÁ AQUI (MANTIDA) ---
     unit: {
         type: DataTypes.STRING,
         allowNull: true,
-        defaultValue: 'Sem Unidade' // Valor padrão seguro
+        defaultValue: 'Sem Unidade'
     },
     // ------------------------------------
-    unitId: { // Mantém compatibilidade com legado se necessário
-        type: DataTypes.STRING,
+    unitId: {
+        type: DataTypes.UUID, // Restored UUID
         allowNull: true
     },
     phone: {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    whatsapp: { // Alias para phone se usado no backend
+    whatsapp: {
         type: DataTypes.STRING,
         allowNull: true
     },
@@ -58,7 +59,7 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    profilePicture: { // Alias para avatar
+    profilePicture: {
         type: DataTypes.TEXT,
         allowNull: true
     },
