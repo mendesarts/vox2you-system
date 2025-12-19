@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserIcon, Mail, Phone, MapPin, Shield, Camera, X, Plus, Edit, Trash2, Search, Check, AlertCircle, Award } from 'lucide-react';
-import RegisterUser from '../components/RegisterUser';
+import RegisterUser from '../components/RegisterUserFinal';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import '../styles/users.css';
