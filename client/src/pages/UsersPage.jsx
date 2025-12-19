@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, MapPin, Search, ShieldCheck } from 'lucide-react';
-import RegisterUserFinal from '../components/RegisterUserPremium';
+import RegisterUser from '../components/RegisterUserPremium';
 import { api } from '../services/api';
 
 const UsersPage = () => {
@@ -141,7 +141,7 @@ const UsersPage = () => {
 
             {/* MODAL INTELIGENTE (Criação ou Edição) */}
             {isModalOpen && (
-                <RegisterUserFinal
+                <RegisterUser
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveUser}
                     currentUser={currentUser}
