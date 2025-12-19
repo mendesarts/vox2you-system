@@ -76,6 +76,18 @@ export const api = {
         }
         return response.json();
     },
+    updateUser: async (id, userData) => {
+        const response = await fetch(`${API_URL}/users/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(userData)
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Falha ao atualizar usuário');
+        }
+        return response.json();
+    },
     deleteUser: async (id) => {
         const response = await fetch(`${API_URL}/users/${id}`, {
             method: 'DELETE',
@@ -100,4 +112,5 @@ export const fetchStudents = api.fetchStudents;
 export const enrollStudent = api.enrollStudent;
 export const fetchUsers = api.fetchUsers;
 export const createUser = api.createUser;
+export const updateUser = api.updateUser;
 export const deleteUser = api.deleteUser;

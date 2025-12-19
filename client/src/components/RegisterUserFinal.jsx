@@ -1,82 +1,126 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Save, AlertTriangle } from 'lucide-react';
 
-const RegisterUserFinal = ({ onClose, onSave, currentUser }) => {
+const RegisterUserFinal = ({ onClose, onSave, currentUser, userToEdit = null }) => {
+    // Permissões
     const isGlobalAdmin = ['master', 'director', 'diretor', 'franqueadora'].includes(currentUser?.role);
-    const [formData, setFormData] = useState({ name: '', email: '', role: 'sales', unit: '', phone: '' });
+    const userHasUnit = currentUser?.unit && currentUser.unit !== 'Sem Unidade';
 
+    // State do Formulário
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        role: 'consultor',
+        unit: '',
+        phone: ''
+    });
+
+    // EFEITO 1: Carregar dados se for EDIÇÃO
     useEffect(() => {
-        if (!isGlobalAdmin) setFormData(prev => ({ ...prev, unit: currentUser?.unit || '' }));
-    }, [currentUser]);
+        if (userToEdit) {
+            setFormData({
+                name: userToEdit.name || '',
+                email: userToEdit.email || '',
+                role: userToEdit.role || 'consultor',
+                unit: userToEdit.unit || '', // Permite corrigir unidade na edição
+                phone: userToEdit.phone || ''
+            });
+        } else {
+            // Se for CRIAÇÃO, aplica a herança de unidade
+            if (!isGlobalAdmin && userHasUnit) {
+                setFormData(prev => ({ ...prev, unit: currentUser.unit }));
+            }
+        }
+    }, [userToEdit, isGlobalAdmin, userHasUnit, currentUser]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!formData.unit) return alert('ERRO: Unidade obrigatória!');
+        if (!formData.unit) return alert('ERRO: A Unidade é obrigatória.');
 
-        const newUser = {
-            id: Date.now().toString(),
+        // Prepara o objeto (Mantém o ID se for edição, cria novo se for criação)
+        const payload = {
             ...formData,
-            password: Math.random().toString(36).slice(-8) + "1!",
-            createdAt: new Date().toISOString(),
-            avatar: null
+            id: userToEdit ? userToEdit.id : undefined // Backend decide se cria ou atualiza
         };
-        onSave(newUser);
+
+        onSave(payload);
         onClose();
     };
 
-    // ESTILOS DE EMERGÊNCIA (Inline para garantir visualização)
-    const buttonStyle = { padding: '12px 24px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' };
+    const inputStyle = "w-full h-12 px-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all";
+    const labelStyle = "block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1";
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border-2 border-indigo-500">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
 
-                {/* HEADER ROXO FORTE */}
-                <div style={{ backgroundColor: '#4F46E5' }} className="px-6 py-4 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-white">NOVO USUÁRIO (V.Final)</h2>
+                {/* HEADER */}
+                <div className={`px-6 py-4 flex justify-between items-center ${userToEdit ? 'bg-orange-600' : 'bg-indigo-600'}`}>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        {userToEdit ? '✏️ EDITAR USUÁRIO' : '✨ NOVO MEMBRO'}
+                    </h2>
                     <button onClick={onClose} className="text-white hover:bg-white/20 p-1 rounded-full"><X size={24} /></button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Nome</label>
+                        <label className={labelStyle}>Nome Completo</label>
                         <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full h-12 px-3 rounded border border-gray-400 dark:bg-gray-700 dark:text-white" placeholder="Nome Completo" />
+                            className={inputStyle} placeholder="Nome do colaborador" />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Email</label>
+                        <label className={labelStyle}>Email de Acesso</label>
                         <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full h-12 px-3 rounded border border-gray-400 dark:bg-gray-700 dark:text-white" placeholder="email@exemplo.com" />
+                            className={inputStyle} placeholder="email@vox2you.com.br" />
                     </div>
 
-                    {/* PERFIL & UNIDADE */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Perfil</label>
-                            <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                className="w-full h-12 px-3 rounded border border-gray-400 dark:bg-gray-700 dark:text-white">
-                                <option value="sales">Consultor</option>
-                                <option value="manager">Gestor</option>
-                                <option value="financial">Financeiro</option>
-                                {isGlobalAdmin && <option value="franqueado">⭐ Franqueado</option>}
-                                {isGlobalAdmin && <option value="diretor">👑 Diretor</option>}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-200">Unidade</label>
-                            <input required readOnly={!isGlobalAdmin} value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                                className="w-full h-12 px-3 rounded border border-gray-400 dark:bg-gray-700 dark:text-white bg-gray-50" />
-                        </div>
+                    {/* LISTA DE CARGOS COMPLETA (A PEDIDA PELO USUÁRIO) */}
+                    <div>
+                        <label className={labelStyle}>Cargo / Função</label>
+                        <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className={inputStyle}>
+                            <optgroup label="Gestão da Unidade">
+                                <option value="manager">Gestor da Unidade</option>
+                                <option value="lider_comercial">Líder Comercial</option>
+                                <option value="lider_pedagogico">Líder Pedagógico</option>
+                                <option value="admin_financeiro">Administrativo / Financeiro</option>
+                            </optgroup>
+                            <optgroup label="Operacional">
+                                <option value="consultor">Consultor (Comercial)</option>
+                                <option value="pedagogico">Pedagógico (Professor)</option>
+                            </optgroup>
+
+                            {isGlobalAdmin && (
+                                <optgroup label="Estratégico (Admin Global)">
+                                    <option value="franqueado">⭐ Franqueado</option>
+                                    <option value="diretor">👑 Diretor</option>
+                                </optgroup>
+                            )}
+                        </select>
                     </div>
 
-                    {/* BOTÕES COM ESTILO INLINE (IMPOSSÍVEL NÃO MUDAR) */}
-                    <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-gray-200">
-                        <button type="button" onClick={onClose} style={{ ...buttonStyle, backgroundColor: '#E5E7EB', color: '#374151' }}>
-                            CANCELAR
+                    {/* UNIDADE (Travada para Franqueado, Aberta para Master) */}
+                    <div>
+                        <label className={labelStyle}>Unidade</label>
+                        <input
+                            required
+                            // Só pode editar se for Master OU se estiver criando um usuário sem unidade definida ainda
+                            readOnly={!isGlobalAdmin && (!userToEdit || userHasUnit)}
+                            value={formData.unit}
+                            onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                            className={`${inputStyle} ${(!isGlobalAdmin) ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 cursor-not-allowed' : ''}`}
+                        />
+                        {!isGlobalAdmin && <p className="text-xs text-gray-400 mt-1">Vinculado automaticamente à sua unidade.</p>}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button type="button" onClick={onClose} className="px-6 py-3 rounded-lg font-bold bg-gray-200 text-gray-700 hover:bg-gray-300">
+                            Cancelar
                         </button>
-                        <button type="submit" style={{ ...buttonStyle, backgroundColor: '#4F46E5', color: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                            SALVAR USUÁRIO
+                        <button type="submit" className={`px-6 py-3 rounded-lg font-bold text-white shadow-lg flex items-center gap-2 ${userToEdit ? 'bg-orange-600 hover:bg-orange-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                            <Save size={18} />
+                            {userToEdit ? 'Atualizar Dados' : 'Salvar Usuário'}
                         </button>
                     </div>
                 </form>
