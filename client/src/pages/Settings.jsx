@@ -11,12 +11,24 @@ import SystemHealth from './admin/SystemHealth';
 import { useAuth } from '../context/AuthContext';
 import './settings.css';
 
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 const Settings = ({ isLightMode, toggleTheme }) => {
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState('appearance');
+
+    // LÓGICA DE PRIORIDADE: 1. State do Router > 2. URL Query Param > 3. Padrão 'appearance'
+    const initialTab = location.state?.activeTab || searchParams.get('tab') || 'appearance';
+    const [activeTab, setActiveTab] = useState(initialTab);
+
+    // Garante que se a URL mudar, a aba muda (Sincronia)
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('tab');
+        if (tabFromUrl && tabFromUrl !== activeTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams]);
     const [previewImage, setPreviewImage] = useState(null);
 
     const LEADER_ROLES = ['master', 'director', 'franchisee', 'manager', 'diretor', 'franqueado', 'gestor', 'admin'];

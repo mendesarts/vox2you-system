@@ -267,7 +267,7 @@ const UsersPage = () => {
         }
     };
 
-    const canCreateUsers = ['master', 'director', 'franchisee', 'manager'].includes(currentUser.role);
+    const canCreateUsers = ['master', 'director', 'diretor', 'franqueado', 'franchisee', 'manager', 'admin'].includes(currentUser.role);
 
     const handleDeleteUser = async (id) => {
         if (!window.confirm('Tem certeza que deseja excluir este usuário?')) return;
