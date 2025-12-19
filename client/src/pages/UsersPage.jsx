@@ -54,6 +54,8 @@ const UsersPage = () => {
             console.log("DADOS RECEBIDOS:", res);
             // Handle array or object response
             const list = Array.isArray(res) ? res : (res.users || res.data || []);
+            // LOG DE AUDITORIA DE VISIBILIDADE
+            console.table(list.map(u => ({ nome: u.name, unidade_usuario: u.unit, minha_unidade: currentUser.unit })));
             setUsers(list);
         } catch (error) { console.error("Erro busca:", error); }
         finally { setLoading(false); }
@@ -128,11 +130,15 @@ const UsersPage = () => {
     const secureUsers = users.filter(u => {
         if (isGlobalAdmin) return true;
 
-        const userUnit = normalize(u.unit);
-        const myUnit = normalize(currentUser.unit);
+        // Normalização agressiva
+        const userUnit = String(u.unit || '').trim().toLowerCase();
+        const myUnit = String(currentUser.unit || '').trim().toLowerCase();
 
-        // 2. Filtro permissivo: Se a unidade for idêntica ou se uma estiver contida na outra
-        return userUnit === myUnit || (userUnit && myUnit && (userUnit.includes(myUnit) || myUnit.includes(userUnit)));
+        // Se o usuário for o próprio franqueado, ele DEVE aparecer
+        if (u.email === currentUser.email) return true;
+
+        // Se a unidade bater exatamente ou se o usuário foi criado por este franqueado
+        return userUnit === myUnit || (userUnit !== '' && myUnit.includes(userUnit)) || (myUnit !== '' && userUnit.includes(myUnit));
     });
 
     const filteredUsers = secureUsers.filter(u => u.name?.toLowerCase().includes(searchTerm.toLowerCase()));
