@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, Shield, Book, Sun, Moon, Database, Users, Building, Bot, Calendar, Activity, Camera } from 'lucide-react';
+import { Palette, Shield, Book, Sun, Moon, Database, Users, Building, Bot, Calendar, Activity, Camera, User } from 'lucide-react';
 import CoursesSettings from './CoursesSettings';
 import CalendarSettings from './administrative/CalendarSettings';
 import UnitManagement from './administrative/UnitManagement';
@@ -85,8 +85,8 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                             <Activity size={18} /> Monitoramento
                         </div>
                     )}
-                    <div className={`settings-nav-item ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
-                        <Shield size={18} /> Segurança
+                    <div className={`settings-nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+                        <User size={18} /> Perfil
                     </div>
                 </aside>
                 <main className="settings-content">
@@ -94,7 +94,51 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                         <div>
                             <div className="section-title"><Palette size={24} /> Aparência do Sistema</div>
 
-                            {/* Profile Photo Section */}
+
+
+                            <div className="user-form" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <h4 style={{ color: 'var(--text-main)', marginBottom: 4 }}>Tema do Sistema</h4>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Alternar entre modo claro e escuro.</p>
+                                </div>
+                                <button onClick={toggleTheme} style={{
+                                    background: isLightMode ? '#374151' : '#f3f4f6',
+                                    color: isLightMode ? '#ffffff' : '#1f2937',
+                                    border: '1px solid var(--border)',
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    fontWeight: '600',
+                                    transition: 'all 0.2s'
+                                }}>
+                                    {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
+                                    <span style={{ marginLeft: 8 }}>{isLightMode ? 'Ativar Modo Escuro' : 'Ativar Modo Claro'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'users' && <UsersPage />}
+
+                    {activeTab === 'whatsapp' && <WhatsAppConnection />}
+
+                    {activeTab === 'calendar' && <CalendarSettings />}
+
+                    {activeTab === 'courses' && <CoursesSettings />}
+
+                    {activeTab === 'ai-training' && <AITrainingSettings />}
+
+                    {activeTab === 'unit' && <UnitManagement />}
+
+                    {activeTab === 'monitoring' && <SystemHealth />}
+
+                    {activeTab === 'profile' && (
+                        <div>
+                            <div className="section-title"><User size={24} /> Meu Perfil</div>
+
+                            {/* Profile Photo Section (Moved) */}
                             <div className="control-card" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
                                 <div style={{ position: 'relative' }}>
                                     <div className="avatar-xl" style={{
@@ -144,47 +188,7 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                                 </div>
                             </div>
 
-                            <div className="user-form" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div>
-                                    <h4 style={{ color: 'var(--text-main)', marginBottom: 4 }}>Tema do Sistema</h4>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Alternar entre modo claro e escuro.</p>
-                                </div>
-                                <button onClick={toggleTheme} style={{
-                                    background: isLightMode ? '#374151' : '#f3f4f6',
-                                    color: isLightMode ? '#ffffff' : '#1f2937',
-                                    border: '1px solid var(--border)',
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    fontWeight: '600',
-                                    transition: 'all 0.2s'
-                                }}>
-                                    {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
-                                    <span style={{ marginLeft: 8 }}>{isLightMode ? 'Ativar Modo Escuro' : 'Ativar Modo Claro'}</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'users' && <UsersPage />}
-
-                    {activeTab === 'whatsapp' && <WhatsAppConnection />}
-
-                    {activeTab === 'calendar' && <CalendarSettings />}
-
-                    {activeTab === 'courses' && <CoursesSettings />}
-
-                    {activeTab === 'ai-training' && <AITrainingSettings />}
-
-                    {activeTab === 'unit' && <UnitManagement />}
-
-                    {activeTab === 'monitoring' && <SystemHealth />}
-
-                    {activeTab === 'security' && (
-                        <div>
-                            <div className="section-title"><Shield size={24} /> Segurança da Conta</div>
+                            <div className="section-title" style={{ marginTop: '30px' }}><Shield size={20} /> Segurança</div>
                             <div className="control-card" style={{ maxWidth: '500px' }}>
                                 <ChangePasswordForm />
                             </div>
