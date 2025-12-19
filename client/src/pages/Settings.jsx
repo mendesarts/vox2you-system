@@ -17,13 +17,16 @@ const Settings = ({ isLightMode, toggleTheme }) => {
     const location = useLocation();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('appearance');
+    const [previewImage, setPreviewImage] = useState(null);
 
     const LEADER_ROLES = ['master', 'director', 'franchisee', 'manager', 'diretor', 'franqueado', 'gestor', 'admin'];
     const isActiveLeader = user && LEADER_ROLES.some(r => user.role.includes(r.toLowerCase()));
 
     useEffect(() => {
         if (location.state?.activeTab) {
-            setActiveTab(location.state.activeTab);
+            // Map legacy 'security' redirect to new 'profile' tab
+            const targetTab = location.state.activeTab === 'security' ? 'profile' : location.state.activeTab;
+            setActiveTab(targetTab);
         }
     }, [location]);
 
@@ -38,6 +41,8 @@ const Settings = ({ isLightMode, toggleTheme }) => {
     const handlePhotoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            const url = URL.createObjectURL(file);
+            setPreviewImage(url);
             // In a real app, we would upload this to a server
             alert('Foto de perfil atualizada com sucesso! (Simulação)');
         }
@@ -151,12 +156,18 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                                         justifyContent: 'center',
                                         fontSize: '2rem',
                                         color: 'white',
-                                        overflow: 'hidden'
+                                        overflow: 'hidden',
+                                        border: '2px solid white',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                     }}>
-                                        {user?.profilePicture ? (
-                                            <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {(previewImage || user?.profilePicture) ? (
+                                            <img
+                                                src={previewImage || user.profilePicture}
+                                                alt="Profile"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                            />
                                         ) : (
-                                            user?.name?.charAt(0) || 'U'
+                                            <span style={{ fontWeight: 600 }}>{user?.name?.charAt(0) || 'U'}</span>
                                         )}
                                     </div>
                                     <label htmlFor="profile-upload" style={{
