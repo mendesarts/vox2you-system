@@ -12,17 +12,12 @@ const SidebarSlim = () => {
     const closeMobile = () => setIsMobileOpen(false);
 
     const ADMIN_ROLES = ['master', 'director', 'franchisee', 'manager', 'admin_financial_manager', 'admin'];
-    const COMMERCIAL_ROLES = ['sales_leader', 'consultant', 'comercial', 'consultor', 'vendedor', 'gestor'];
-    const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary', 'pedagogico', 'professor'];
+    const COMMERCIAL_ROLES = ['sales_leader', 'consultant', 'comercial', 'consultor', 'vendedor', 'gestor', 'sales'];
+    const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary', 'pedagogico', 'professor', 'education', 'teacher'];
 
     const getFilteredNavItems = () => {
         if (!user) return [];
-
-        // DEBUG: Inspect User Object to find correct Role field
-        console.log("🔍 FULL USER OBJECT:", JSON.stringify(user, null, 2));
-
         const role = user.role ? user.role.toLowerCase() : '';
-        console.log("🔍 Detected Role for Filter:", role);
 
         // Common items for everyone
         const commonItems = [
@@ -190,10 +185,6 @@ const SidebarSlim = () => {
                     </div>
                 </div>
             </aside>
-            <div style={{ position: 'fixed', bottom: '10px', right: '10px', backgroundColor: 'black', color: '#00ff00', padding: '20px', zIndex: 9999, borderRadius: '8px', fontSize: '12px', maxWidth: '400px', wordWrap: 'break-word' }}>
-                <strong>DEBUG USER (TIRE PRINT):</strong>
-                <pre>{JSON.stringify(user, null, 2)}</pre>
-            </div>
         </>
     );
 };
