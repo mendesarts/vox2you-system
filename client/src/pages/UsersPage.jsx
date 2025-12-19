@@ -28,6 +28,23 @@ const UsersPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
+    const ROLE_TRANSLATIONS = {
+        'master': 'Master',
+        'director': 'Diretor',
+        'diretor': 'Diretor',
+        'franchisee': 'Franqueado',
+        'franqueado': 'Franqueado',
+        'manager': 'Gestor',
+        'gestor': 'Gestor',
+        'sales': 'Consultor',
+        'consultor': 'Consultor',
+        'sales_leader': 'Líder Comercial',
+        'admin': 'Administrativo',
+        'pedagogical_leader': 'Coord. Pedagógico',
+        'instructor': 'Instrutor',
+        'secretary': 'Secretaria'
+    };
+
     // Default Password Logic: V@x2you!
     const [formData, setFormData] = useState({
         name: '',
@@ -295,7 +312,12 @@ const UsersPage = () => {
                             </div>
                             <div className="user-info-text">
                                 <h3>{user.name}</h3>
-                                {/* Show Unit instead of Role/Job Title */}
+                                {/* Role Badge (Translated) */}
+                                <span className={`role-badge ${user.role}`} style={{ display: 'inline-block', marginBottom: '4px' }}>
+                                    {ROLE_TRANSLATIONS[user.role] || user.role}
+                                </span>
+
+                                {/* Unit Display */}
                                 <span className="text-sm text-gray-500 font-medium" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                     <MapPin size={12} />
                                     {user.unitName || user.unit || units.find(u => u.id === user.unitId)?.name || 'Sem Unidade'}

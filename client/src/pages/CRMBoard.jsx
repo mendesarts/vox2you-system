@@ -651,7 +651,8 @@ const CRMBoard = () => {
                                 </label>
                                 <input
                                     className="input-field"
-                                    value={newLead.unit}
+                                    name="unit" // Added name attribute
+                                    value={newLead.unit || ''} // Ensure controlled component
                                     onChange={e => setNewLead({ ...newLead, unit: e.target.value })}
                                     disabled={!GLOBAL_VIEW_ROLES.includes(user.role)}
                                     placeholder="Cidade.Bairro"
