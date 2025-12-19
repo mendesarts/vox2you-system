@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, MapPin, Search, ShieldCheck } from 'lucide-react';
-import RegisterUserFinal from '../components/RegisterUserFinal';
+import RegisterUserFinal from '../components/RegisterUserPremium';
 import { api } from '../services/api';
 
 const UsersPage = () => {
