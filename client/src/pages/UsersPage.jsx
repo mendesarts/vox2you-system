@@ -236,34 +236,43 @@ const UsersPage = () => {
         alert('Mensagem copiada!');
     };
 
-    const handleRegisterSave = async (newUser) => {
+    const handleRegisterSave = async (userData) => {
         try {
-            // 1. Optimistic Update (Visual Instantâneo)
-            setUsers(prev => [...prev, newUser]);
+            // 1. PREPARAÇÃO DO PAYLOAD BLINDADO
+            const payload = {
+                name: userData.name,
+                email: userData.email,
+                role: userData.role,
+                // AQUI ESTÁ A CORREÇÃO: Força o envio da unidade
+                unit: userData.unit || "Sem Unidade",
+                password: userData.password,
+                phone: userData.phone || ""
+            };
 
-            // 2. Chamada Real ao Backend (com ID e senha gerada)
-            const { id, ...payload } = newUser; // Remove ID temporário se backend gerar.
-            // Mas o RegisterUser gera senha. Backend deve aceitar ou ignorar.
-            // Se backend for Real, ele cria hash. Se for Mock, ele guarda.
-            // Vou enviar TUDO MENOS ID para garantir.
+            console.log("🚀 ENVIANDO PARA API:", payload);
 
-            // NOTA: O payload deve conter a senha (password) para o backend criar o hash.
-            // E precisamos manter a senha em texto plano para o modal de sucesso.
+            // 2. Optimistic Update (Visual)
+            setUsers(prev => [...prev, userData]);
+
+            // 3. Chamada API
             const created = await api.createUser(payload);
 
-            // 3. Atualiza Modal de Sucesso com a senha original (texto plano)
+            // 4. Sucesso e Feedback
             setSuccessData({
-                ...created,
-                password: newUser.password, // Importante: Usa a senha gerada no front
-                unit: newUser.unit
+                name: created.name,
+                email: created.email,
+                password: userData.password, // Mantém original
+                unit: created.unit || payload.unit
             });
 
-            loadData(); // Recarrega para garantir consistência
+            // Refetch para garantir ID real
+            loadData();
             setShowModal(false);
+
         } catch (error) {
-            console.error('Erro ao criar usuário:', error);
-            alert(error.message || 'Erro ao criar usuário');
-            loadData(); // Reverte optimistic se falhar
+            console.error("Erro ao salvar:", error);
+            alert("Erro ao criar usuário: " + (error.message || "Erro desconhecido"));
+            loadData(); // Revert
         }
     };
 
