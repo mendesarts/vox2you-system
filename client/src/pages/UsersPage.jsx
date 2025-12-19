@@ -204,7 +204,6 @@ const UsersPage = () => {
             unitId: !GLOBAL_VIEW_ROLES.includes(currentUser.role) ? currentUser.unitId : '',
             unitName: !GLOBAL_VIEW_ROLES.includes(currentUser.role) ? currentUser.unitName : '', // Maintain name if available
             whatsapp: '',
-            position: '',
             patent: '',
             profilePicture: ''
         });
@@ -296,7 +295,11 @@ const UsersPage = () => {
                             </div>
                             <div className="user-info-text">
                                 <h3>{user.name}</h3>
-                                <span className={`role-badge ${user.role}`}>{ROLES[user.role] || user.role}</span>
+                                {/* Show Unit instead of Role/Job Title */}
+                                <span className="text-sm text-gray-500 font-medium" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                    <MapPin size={12} />
+                                    {user.unitName || user.unit || units.find(u => u.id === user.unitId)?.name || 'Sem Unidade'}
+                                </span>
                                 <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
                                     {user.patent && <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#64748b' }}>{user.patent}</span>}
                                     <p className="user-position" style={{ margin: 0 }}>{user.position || 'Sem cargo'}</p>
@@ -421,10 +424,6 @@ const UsersPage = () => {
 
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Cargo / Função</label>
-                                    <input placeholder="Ex: Consultor Sênior" value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} />
-                                </div>
-                                <div className="form-group" style={{ flex: 1 }}>
                                     <label>Unidade*</label>
                                     {GLOBAL_VIEW_ROLES.includes(currentUser.role) ? (
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -449,8 +448,9 @@ const UsersPage = () => {
                                 </div>
                             </div>
 
+
                             <div className="form-group">
-                                <label>Perfil de Acesso*</label>
+                                <label>Nível de Acesso*</label>
                                 <select
                                     value={formData.role}
                                     onChange={e => setFormData({ ...formData, role: e.target.value })}
