@@ -3,74 +3,76 @@ const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true
+        type: DataTypes.STRING, // Alterado para STRING para aceitar IDs importados (ex: 'imp-...')
+        primaryKey: true,
     },
     name: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
     },
     email: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        unique: true,
     },
     password: {
         type: DataTypes.STRING,
-        allowNull: false
-    },
-    whatsapp: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    profilePicture: {
-        type: DataTypes.TEXT, // Base64 or URL
-        allowNull: true
-    },
-    position: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    patent: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    forcePasswordChange: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true // Usuários novos devem mudar a senha
+        allowNull: false,
     },
     role: {
+        // Aceita tanto os termos em PT quanto EN para evitar erros
         type: DataTypes.ENUM(
-            'master', // Franqueadora (Acesso Total)
-            'director', // Diretor de Unidade (Master Local)
-            'franchisee', // Franqueado (Acesso Total Unidade)
-            'manager', // Gestor (Acesso Total Unidade)
-            'sales_leader', // Lider Comercial
-            'sales', // Comercial/Consultor
-            'pedagogical_leader', // Lider Pedagógico
-            'pedagogical', // Pedagógico/Professor
-            'admin_financial_manager', // Gerente Adm/Fin
-            'admin', // Administrativo
-            'financial' // Financeiro
+            'master', 'admin',
+            'franqueado', 'franchisee',
+            'manager', 'gestor',
+            'sales', 'consultor',
+            'financial', 'financeiro',
+            'pedagogico', 'pedagogical',
+            'lider_comercial', 'sales_leader',
+            'lider_pedagogico', 'pedagogical_leader',
+            'admin_financeiro', 'admin_financial_manager',
+            'diretor', 'director'
         ),
-        defaultValue: 'sales'
+        defaultValue: 'sales',
     },
-    color: {
-        type: DataTypes.STRING, // Hex code for custom UI color
-        defaultValue: '#05AAA8'
+    // --- A CORREÇÃO CRÍTICA ESTÁ AQUI ---
+    unit: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: 'Sem Unidade' // Valor padrão seguro
+    },
+    // ------------------------------------
+    unitId: { // Mantém compatibilidade com legado se necessário
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    phone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    whatsapp: { // Alias para phone se usado no backend
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    avatar: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    profilePicture: { // Alias para avatar
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+    },
+    lastLogin: {
+        type: DataTypes.DATE,
+        allowNull: true
     },
     active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
-    },
-    unit: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    unitId: {
-        type: DataTypes.UUID,
-        allowNull: true // Null = Head Office / Master
     }
 });
 
