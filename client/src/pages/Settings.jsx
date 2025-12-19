@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, Shield, Book, Sun, Moon, Database, Users, Building, Bot, Calendar, Activity } from 'lucide-react';
+import { Palette, Shield, Book, Sun, Moon, Database, Users, Building, Bot, Calendar, Activity, Camera } from 'lucide-react';
 import CoursesSettings from './CoursesSettings';
 import CalendarSettings from './administrative/CalendarSettings';
 import UnitManagement from './administrative/UnitManagement';
@@ -18,11 +18,30 @@ const Settings = ({ isLightMode, toggleTheme }) => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('appearance');
 
+    const LEADER_ROLES = ['master', 'director', 'franchisee', 'manager', 'diretor', 'franqueado', 'gestor', 'admin'];
+    const isActiveLeader = user && LEADER_ROLES.some(r => user.role.includes(r.toLowerCase()));
+
     useEffect(() => {
         if (location.state?.activeTab) {
             setActiveTab(location.state.activeTab);
         }
     }, [location]);
+
+    // Redirect if accessing restricted tab without permission
+    useEffect(() => {
+        const restrictedTabs = ['users', 'whatsapp', 'courses', 'calendar', 'ai-training', 'unit'];
+        if (!isActiveLeader && restrictedTabs.includes(activeTab)) {
+            setActiveTab('appearance');
+        }
+    }, [activeTab, isActiveLeader]);
+
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // In a real app, we would upload this to a server
+            alert('Foto de perfil atualizada com sucesso! (Simulação)');
+        }
+    };
 
     return (
         <div className="settings-page page-fade-in">
@@ -38,27 +57,29 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                         <Palette size={18} /> Aparência
                     </div>
                     {/* Access Control for Users Tab */}
-                    {user && ['master', 'franchisee', 'manager', 'admin_financial_manager'].includes(user.role) && (
-                        <div className={`settings-nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-                            <Users size={18} /> Gestão Usuários
-                        </div>
+                    {isActiveLeader && (
+                        <>
+                            <div className={`settings-nav-item ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
+                                <Users size={18} /> Gestão Usuários
+                            </div>
+                            <div className={`settings-nav-item ${activeTab === 'whatsapp' ? 'active' : ''}`} onClick={() => setActiveTab('whatsapp')}>
+                                <Bot size={18} /> Conexão WhatsApp
+                            </div>
+                            {/* ... other tabs ... */}
+                            <div className={`settings-nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
+                                <Book size={18} /> Cadastro de Treinamentos
+                            </div>
+                            <div className={`settings-nav-item ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>
+                                <Calendar size={18} /> Calendário Escolar
+                            </div>
+                            <div className={`settings-nav-item ${activeTab === 'ai-training' ? 'active' : ''}`} onClick={() => setActiveTab('ai-training')}>
+                                <Bot size={18} /> Agentes de IA
+                            </div>
+                            <div className={`settings-nav-item ${activeTab === 'unit' ? 'active' : ''}`} onClick={() => setActiveTab('unit')}>
+                                <Building size={18} /> Dados da Unidade
+                            </div>
+                        </>
                     )}
-                    <div className={`settings-nav-item ${activeTab === 'whatsapp' ? 'active' : ''}`} onClick={() => setActiveTab('whatsapp')}>
-                        <Bot size={18} /> Conexão WhatsApp
-                    </div>
-                    {/* ... other tabs ... */}
-                    <div className={`settings-nav-item ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
-                        <Book size={18} /> Cadastro de Treinamentos
-                    </div>
-                    <div className={`settings-nav-item ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>
-                        <Calendar size={18} /> Calendário Escolar
-                    </div>
-                    <div className={`settings-nav-item ${activeTab === 'ai-training' ? 'active' : ''}`} onClick={() => setActiveTab('ai-training')}>
-                        <Bot size={18} /> Agentes de IA
-                    </div>
-                    <div className={`settings-nav-item ${activeTab === 'unit' ? 'active' : ''}`} onClick={() => setActiveTab('unit')}>
-                        <Building size={18} /> Dados da Unidade
-                    </div>
                     {user && user.role === 'master' && (
                         <div className={`settings-nav-item ${activeTab === 'monitoring' ? 'active' : ''}`} onClick={() => setActiveTab('monitoring')}>
                             <Activity size={18} /> Monitoramento
@@ -72,6 +93,57 @@ const Settings = ({ isLightMode, toggleTheme }) => {
                     {activeTab === 'appearance' && (
                         <div>
                             <div className="section-title"><Palette size={24} /> Aparência do Sistema</div>
+
+                            {/* Profile Photo Section */}
+                            <div className="control-card" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <div className="avatar-xl" style={{
+                                        width: '80px',
+                                        height: '80px',
+                                        borderRadius: '50%',
+                                        background: user?.color || '#3b82f6',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '2rem',
+                                        color: 'white',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {user?.profilePicture ? (
+                                            <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            user?.name?.charAt(0) || 'U'
+                                        )}
+                                    </div>
+                                    <label htmlFor="profile-upload" style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        right: 0,
+                                        background: 'var(--primary)',
+                                        color: 'white',
+                                        borderRadius: '50%',
+                                        padding: '6px',
+                                        cursor: 'pointer',
+                                        border: '2px solid var(--bg-surface)'
+                                    }}>
+                                        <Camera size={14} />
+                                    </label>
+                                    <input
+                                        id="profile-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onChange={handlePhotoChange}
+                                    />
+                                </div>
+                                <div>
+                                    <h4 style={{ margin: '0 0 4px 0' }}>Foto de Perfil</h4>
+                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        Clique no ícone da câmera para alterar sua foto.
+                                    </p>
+                                </div>
+                            </div>
+
                             <div className="user-form" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div>
                                     <h4 style={{ color: 'var(--text-main)', marginBottom: 4 }}>Tema do Sistema</h4>
