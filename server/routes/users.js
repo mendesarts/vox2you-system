@@ -37,7 +37,7 @@ router.get('/', auth, async (req, res) => {
 // Criar novo usuário (com validações de segurança)
 router.post('/', auth, async (req, res) => {
     try {
-        const { name, email, password, role, unitId, whatsapp, position, profilePicture } = req.body;
+        const { name, email, password, role, unit, unitId, whatsapp, position, profilePicture } = req.body;
         const requester = req.user;
 
         // 1. Permissões de Criação
@@ -114,6 +114,8 @@ router.post('/', auth, async (req, res) => {
             password: hashedPassword,
             role,
             unitId: targetUnitId,
+            unit: unit || "Sem Unidade", // Persistência Explícita (String)
+            whatsapp,
             whatsapp,
             position,
             profilePicture, // Base64 string from frontend

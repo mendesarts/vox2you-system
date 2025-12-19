@@ -132,6 +132,39 @@ const startServer = async () => {
         await sequelize.authenticate();
         console.log('Banco de dados conectado.');
 
+        // --- FORCE DB SCHEMA UPDATE (EMERGENCY FIX) ---
+        try {
+            console.log("🛠️ INICIANDO CORREÇÃO FORÇADA DO BANCO...");
+
+            // 1. FORÇA A CRIAÇÃO DA COLUNA UNIT (Se não existir)
+            // Tenta sintaxe Postgres (DO block)
+            try {
+                await sequelize.query(`
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Users' AND column_name='unit') THEN 
+                    ALTER TABLE "Users" ADD COLUMN "unit" VARCHAR(255); 
+                    END IF; 
+                END $$;
+                `);
+            } catch (ignore) {
+                // Fallback simples
+                await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "unit" VARCHAR(255);');
+            }
+            console.log("✅ COLUNA 'unit' GARANTIDA NA TABELA USERS.");
+
+            // 2. FORÇA A ATUALIZAÇÃO DOS CARGOS (Enums)
+            const roles = ['franqueado', 'diretor', 'manager', 'lider_comercial', 'lider_pedagogico', 'admin_financeiro', 'consultor', 'pedagogico'];
+            for (const role of roles) {
+                await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS '${role}'`).catch(() => { });
+            }
+            console.log("✅ ENUMS DE CARGOS ATUALIZADOS.");
+
+        } catch (err) {
+            console.error("❌ ERRO GERAL AO ALTERAR BANCO:", err.message);
+        }
+        // ---------------------------------------
+
         // Force Sync (Auto-Healing)
         console.log('Executando Auto-Healing do Schema...');
         await sequelize.sync({ alter: true });

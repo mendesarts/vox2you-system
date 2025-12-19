@@ -64,6 +64,10 @@ const User = sequelize.define('User', {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     },
+    unit: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     unitId: {
         type: DataTypes.UUID,
         allowNull: true // Null = Head Office / Master
