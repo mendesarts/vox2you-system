@@ -17,7 +17,12 @@ const SidebarSlim = () => {
 
     const getFilteredNavItems = () => {
         if (!user) return [];
+
+        // DEBUG: Inspect User Object to find correct Role field
+        console.log("🔍 FULL USER OBJECT:", JSON.stringify(user, null, 2));
+
         const role = user.role ? user.role.toLowerCase() : '';
+        console.log("🔍 Detected Role for Filter:", role);
 
         // Common items for everyone
         const commonItems = [
