@@ -190,8 +190,8 @@ const SidebarSlim = () => {
                     </div>
                 </div>
             </aside>
-            <div className="fixed bottom-0 right-0 bg-black text-white p-4 z-50 opacity-90 text-xs max-w-md pointer-events-none">
-                <strong>DEBUG MODE:</strong>
+            <div style={{ position: 'fixed', bottom: '10px', right: '10px', backgroundColor: 'black', color: '#00ff00', padding: '20px', zIndex: 9999, borderRadius: '8px', fontSize: '12px', maxWidth: '400px', wordWrap: 'break-word' }}>
+                <strong>DEBUG USER (TIRE PRINT):</strong>
                 <pre>{JSON.stringify(user, null, 2)}</pre>
             </div>
         </>
