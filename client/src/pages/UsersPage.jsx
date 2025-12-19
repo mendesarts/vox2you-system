@@ -9,8 +9,6 @@ const UsersPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-
-    // Estado do Usuário Logado
     const [currentUser, setCurrentUser] = useState({ role: 'indefinido', unit: '' });
 
     const roleMap = {
@@ -21,27 +19,30 @@ const UsersPage = () => {
         'pedagogico': 'Pedagógico', 'consultor': 'Consultor', 'sales': 'Consultor'
     };
 
-    useEffect(() => {
-        // 1. DETECÇÃO ROBUSTA DE USUÁRIO
-        const detectUser = () => {
-            const keys = ['user', 'vox_user', 'auth_user', 'sb-user'];
-            for (const key of keys) {
-                const data = localStorage.getItem(key);
-                if (data) {
-                    try {
-                        const parsed = JSON.parse(data);
-                        const userObj = parsed.user || parsed; // Tenta pegar o objeto user ou o próprio root
-                        const role = userObj.role || parsed.role;
-                        const unit = userObj.unit || parsed.unit; // Garante que pegamos a unidade
+    // FUNÇÃO DE DETECÇÃO MELHORADA
+    const detectUser = () => {
+        const keys = ['user', 'vox_user', 'auth_user', 'sb-user', 'usuario'];
+        for (const key of keys) {
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    const userObj = parsed.user || parsed;
+                    const role = (userObj.role || parsed.role || '').toLowerCase();
+                    const unit = userObj.unit || parsed.unit || '';
 
-                        if (role) {
-                            setCurrentUser({ ...userObj, role, unit }); // Salva com unidade explícita
-                            return;
-                        }
-                    } catch (e) { }
-                }
+                    if (role) {
+                        console.log("📍 Unidade Detectada:", unit);
+                        setCurrentUser({ ...userObj, role, unit });
+                        return unit;
+                    }
+                } catch (e) { console.error(e); }
             }
-        };
+        }
+        return '';
+    };
+
+    useEffect(() => {
         detectUser();
         fetchUsers();
     }, []);
@@ -50,9 +51,7 @@ const UsersPage = () => {
         try {
             setLoading(true);
             const res = await api.fetchUsers();
-            // Adjust handling for different response structures if needed, but api.fetchUsers usually returns the data or {users: []}
-            // Assuming api.fetchUsers returns the array or object with data needed.
-            // Based on previous files, api.fetchUsers returns response.json().
+            // Handle array or object response
             const list = Array.isArray(res) ? res : (res.users || res.data || []);
             setUsers(list);
         } catch (error) { console.error("Erro busca:", error); }
@@ -61,24 +60,37 @@ const UsersPage = () => {
 
     const handleSaveUser = async (userData) => {
         try {
-            // Garante que se a unidade vier vazia, usa a do usuário logado (Safety net)
-            const finalUnit = userData.unit || currentUser.unit || "Sem Unidade";
+            // FORÇA A UNIDADE: Se userData.unit for "Carregando..." ou vazio, usa a do currentUser
+            // Note: "Carregando..." is localized text, checking emptiness or placeholder match
+            const finalUnit = (userData.unit && userData.unit !== 'Carregando...')
+                ? userData.unit
+                : currentUser.unit;
+
+            if (!finalUnit || finalUnit === '') {
+                alert("Erro: Não foi possível identificar sua unidade. Tente deslogar e logar novamente.");
+                return;
+            }
+
             const payload = { ...userData, unit: finalUnit };
 
             if (userData.id) {
                 if (api.updateUser) {
                     await api.updateUser(userData.id, payload);
                 } else {
-                    await api.createUser(payload); // Fallback
+                    await api.createUser(payload);
                 }
             } else {
                 await api.createUser(payload);
             }
-            alert('Operação realizada com sucesso!');
+
+            alert('Usuário salvo com sucesso!');
             setIsModalOpen(false);
             setEditingUser(null);
             fetchUsers();
-        } catch (error) { alert("Erro ao salvar usuário."); }
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao salvar. Verifique os dados.");
+        }
     };
 
     const handleDeleteUser = async (id) => {
@@ -91,14 +103,10 @@ const UsersPage = () => {
         }
     };
 
-    // LÓGICA DE FILTRAGEM DE SEGURANÇA
-    const isGlobalAdmin = ['master', 'admin', 'diretor', 'director'].includes(currentUser.role?.toLowerCase());
+    const isGlobalAdmin = ['master', 'admin', 'diretor', 'director'].includes(currentUser.role);
 
-    // Se for Admin Global, vê tudo. Se não, vê SÓ a própria unidade.
     const secureUsers = users.filter(u => {
         if (isGlobalAdmin) return true;
-        // Filtro estrito: Unidade tem que ser idêntica
-        // Normalizing units for comparison might be good but let's trust exact match for now as requested
         return u.unit === currentUser.unit;
     });
 
@@ -109,32 +117,35 @@ const UsersPage = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Gestão de Usuários</h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Logado como: <strong className="text-indigo-600 uppercase">{currentUser.role}</strong>
-                        {!isGlobalAdmin && <span className="ml-2 text-gray-400">({currentUser.unit})</span>}
+                    <p className="text-sm text-gray-500 mt-1 uppercase font-bold text-indigo-600">
+                        {currentUser.role} {currentUser.unit ? `• ${currentUser.unit}` : ''}
                     </p>
                 </div>
-                <button onClick={() => { setEditingUser(null); setIsModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2">
+                <button
+                    onClick={() => {
+                        const unit = detectUser(); // Redetecta antes de abrir
+                        if (!isGlobalAdmin && !unit) {
+                            alert("Aviso: Sua unidade não foi detectada no sistema. O salvamento pode falhar.");
+                        }
+                        setEditingUser(null);
+                        setIsModalOpen(true);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
+                >
                     <Plus size={20} /> Novo Usuário
                 </button>
             </div>
 
-            <div className="relative mb-6">
-                <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
-                <input type="text" placeholder="Buscar na sua lista..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-
-            {loading ? <div className="text-center">Carregando...</div> : (
+            {/* Grid de Cards permanece igual */}
+            {loading ? <div className="text-center py-20">Carregando lista de usuários...</div> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredUsers.map((user) => (
-                        <div key={user.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative group">
+                        <div key={user.id || Math.random()} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative group">
                             <div className="flex justify-between items-start">
-                                <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl">
+                                <div className="h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold text-xl">
                                     {user.name?.charAt(0).toUpperCase()}
                                 </div>
-                                {/* Só mostra botões de editar se for da mesma hierarquia ou admin */}
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => { setEditingUser(user); setIsModalOpen(true); }} className="text-gray-400 hover:text-indigo-600 p-2">
                                         <Edit2 size={18} />
                                     </button>
@@ -143,19 +154,19 @@ const UsersPage = () => {
                                     </button>
                                 </div>
                             </div>
-                            <h3 className="mt-4 text-lg font-bold text-gray-800">{user.name}</h3>
-                            <p className="text-sm text-gray-500">{user.email}</p>
-                            <div className="mt-4 flex gap-2">
-                                <span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600 uppercase">
+                            <h3 className="mt-4 text-lg font-bold text-gray-800 truncate">{user.name}</h3>
+                            <p className="text-sm text-gray-500 truncate mb-4">{user.email}</p>
+                            <div className="flex flex-col gap-2">
+                                <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-black uppercase w-fit border border-indigo-100">
                                     {roleMap[user.role?.toLowerCase()] || user.role}
                                 </span>
-                                <span className="px-2 py-1 bg-blue-50 rounded text-xs font-bold text-blue-600 truncate max-w-[120px]">
-                                    {user.unit}
+                                <span className="px-2 py-1 bg-gray-50 text-gray-600 rounded text-[10px] font-bold w-fit border border-gray-100 truncate max-w-full">
+                                    📍 {user.unit || 'Sem Unidade'}
                                 </span>
                             </div>
                         </div>
                     ))}
-                    {filteredUsers.length === 0 && <p className="text-gray-500 col-span-3 text-center">Nenhum usuário encontrado nesta unidade.</p>}
+                    {filteredUsers.length === 0 && <p className="text-gray-500 col-span-3 text-center">Nenhum usuário encontrado nesta unidade (ou carregando...).</p>}
                 </div>
             )}
 
@@ -163,7 +174,7 @@ const UsersPage = () => {
                 <RegisterUser
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveUser}
-                    currentUser={currentUser} // Passa o usuário COM a unidade detectada
+                    currentUser={currentUser}
                     userToEdit={editingUser}
                 />
             )}
