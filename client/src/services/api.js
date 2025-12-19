@@ -60,8 +60,9 @@ export const api = {
     },
 
     // Users
-    fetchUsers: async () => {
-        const response = await fetch(`${API_URL}/users`, { headers: getHeaders() });
+    fetchUsers: async (queryString = '') => {
+        const url = queryString ? `${API_URL}/users${queryString}` : `${API_URL}/users`;
+        const response = await fetch(url, { headers: getHeaders() });
         return response.json();
     },
     createUser: async (userData) => {

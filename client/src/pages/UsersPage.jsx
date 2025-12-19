@@ -50,11 +50,27 @@ const UsersPage = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const res = await api.fetchUsers();
-            console.log("DADOS RECEBIDOS:", res);
-            // Handle array or object response
-            const list = Array.isArray(res) ? res : (res.users || res.data || []);
-            // LOG DE AUDITORIA DE VISIBILIDADE
+            let res = await api.fetchUsers();
+            console.log("DADOS RECEBIDOS (Tentativa 1):", res);
+
+            let list = Array.isArray(res) ? res : (res.users || res.data || []);
+
+            // FALLBACK DE EMERGÊNCIA: Se a lista vier vazia, mas sabemos nossa Unidade
+            // O backend pode estar falhando em detectar o unitId no token, então forçamos a busca por String
+            if (list.length === 0 && currentUser.unit && currentUser.unit !== 'Carregando...') {
+                console.warn(`[FALLBACK] Lista vazia. Tentando buscar por nome da unidade: ${currentUser.unit}`);
+                try {
+                    const fallbackRes = await api.fetchUsers(`?unitName=${encodeURIComponent(currentUser.unit)}`);
+                    const fallbackList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes.users || fallbackRes.data || []);
+                    if (fallbackList.length > 0) {
+                        console.log("✅ [FALLBACK] Sucesso! Registros recuperados via query string.");
+                        list = fallbackList;
+                    }
+                } catch (err) {
+                    console.error("❌ [FALLBACK] Falhou:", err);
+                }
+            }
+
             console.table(list.map(u => ({ nome: u.name, unidade_usuario: u.unit, minha_unidade: currentUser.unit })));
             setUsers(list);
         } catch (error) { console.error("Erro busca:", error); }

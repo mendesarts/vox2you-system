@@ -10,6 +10,8 @@ const { Op } = require('sequelize');
 router.get('/', auth, async (req, res) => {
     try {
         const { role, unitId } = req.user;
+        console.log(`[GET /users] Requester: ${req.user.email} | Role: ${role} | UnitID: ${unitId}`);
+
         let where = {};
 
         // Regras de Visualização
@@ -17,17 +19,26 @@ router.get('/', auth, async (req, res) => {
             // Master vê tudo
         } else if (['franchisee', 'manager'].includes(role)) {
             // Franqueado/Gestor vê apenas sua unidade
-            where.unitId = unitId;
+            if (unitId) {
+                where.unitId = unitId;
+            } else {
+                console.warn("[GET /users] Franqueado sem unitId no token! Filtrando por unitId = null.");
+                where.unitId = null;
+            }
         } else {
             // Outros cargos vêem APENAS o próprio perfil para edição
             where.id = req.user.id;
         }
+
+        console.log("[GET /users] Where Clause:", where);
 
         const users = await User.findAll({
             where,
             attributes: { exclude: ['password'] },
             order: [['name', 'ASC']]
         });
+
+        console.log(`[GET /users] Encontrados ${users.length} usuários.`);
         res.json(users);
     } catch (error) {
         res.status(500).json({ error: error.message });
