@@ -51,6 +51,7 @@ const UsersPage = () => {
         try {
             setLoading(true);
             const res = await api.fetchUsers();
+            console.log("DADOS RECEBIDOS:", res);
             // Handle array or object response
             const list = Array.isArray(res) ? res : (res.users || res.data || []);
             setUsers(list);
@@ -121,9 +122,17 @@ const UsersPage = () => {
     const isGlobalAdmin = ['master', 'admin', 'diretor', 'director'].includes(currentRole);
 
     // Filter Logic: Global sees all, Franchisee/Others see only their unit
+    // 1. Normalização de strings para comparação segura
+    const normalize = (str) => String(str || '').trim().toLowerCase();
+
     const secureUsers = users.filter(u => {
         if (isGlobalAdmin) return true;
-        return u.unit === currentUser.unit;
+
+        const userUnit = normalize(u.unit);
+        const myUnit = normalize(currentUser.unit);
+
+        // 2. Filtro permissivo: Se a unidade for idêntica ou se uma estiver contida na outra
+        return userUnit === myUnit || (userUnit && myUnit && (userUnit.includes(myUnit) || myUnit.includes(userUnit)));
     });
 
     const filteredUsers = secureUsers.filter(u => u.name?.toLowerCase().includes(searchTerm.toLowerCase()));
