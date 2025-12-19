@@ -7,30 +7,37 @@ const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 
 // Buscar todos os usuários (com filtros de segurança)
+// Role Constants (Virtual IDs)
+const ROLE_IDS = {
+    MASTER: ['master', 'admin'],
+    FRANCHISEE: ['franchisee', 'franqueado', 'franqueadora'],
+    MANAGER: ['manager', 'gestor', 'gerente'],
+    GLOBAL: ['master', 'admin', 'director', 'diretor']
+};
+
 router.get('/', auth, async (req, res) => {
     try {
-        const { role, unitId } = req.user;
-        console.log(`[GET /users] Requester: ${req.user.email} | Role: ${role} | UnitID: ${unitId}`);
-
+        const { role, unitId, id } = req.user;
         let where = {};
 
-        // Regras de Visualização
-        if (role === 'master') {
-            // Master vê tudo
-        } else if (['franchisee', 'manager'].includes(role)) {
-            // Franqueado/Gestor vê apenas sua unidade
-            if (unitId) {
-                where.unitId = unitId;
-            } else {
-                console.warn("[GET /users] Franqueado sem unitId no token! Filtrando por unitId = null.");
-                where.unitId = null;
-            }
-        } else {
-            // Outros cargos vêem APENAS o próprio perfil para edição
-            where.id = req.user.id;
-        }
+        const normalizeRole = (r) => (r || '').toLowerCase();
+        const userRole = normalizeRole(role);
 
-        console.log("[GET /users] Where Clause:", where);
+        const isGlobal = ROLE_IDS.GLOBAL.some(r => userRole.includes(r));
+        const isFranchisee = ROLE_IDS.FRANCHISEE.some(r => userRole.includes(r));
+        const isManager = ROLE_IDS.MANAGER.some(r => userRole.includes(r));
+
+        // STRICT ID SECURITY (UUID ISO 100%)
+        if (isGlobal) {
+            // View All
+        } else if (isFranchisee || isManager) {
+            // Strict Unit Isolation
+            if (!unitId) return res.json([]);
+            where.unitId = unitId;
+        } else {
+            // Individual Access
+            where.id = id;
+        }
 
         const users = await User.findAll({
             where,
@@ -38,7 +45,6 @@ router.get('/', auth, async (req, res) => {
             order: [['name', 'ASC']]
         });
 
-        console.log(`[GET /users] Encontrados ${users.length} usuários.`);
         res.json(users);
     } catch (error) {
         res.status(500).json({ error: error.message });
