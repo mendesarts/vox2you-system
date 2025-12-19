@@ -237,6 +237,20 @@ const UsersPage = () => {
 
     const canCreateUsers = ['master', 'director', 'franchisee', 'manager'].includes(currentUser.role);
 
+    const handleDeleteUser = async (id) => {
+        if (!window.confirm('Tem certeza que deseja excluir este usuário?')) return;
+        try {
+            await fetch(`${api.API_URL || 'https://vox2you-system-978034491078.us-central1.run.app/api'}/users/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            loadData();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao excluir usuário.');
+        }
+    };
+
     return (
         <div className="page-fade-in" style={{ padding: '20px' }}>
             <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -289,59 +303,84 @@ const UsersPage = () => {
 
             <div className="users-grid">
                 {filteredUsers.map(user => (
-                    <div key={user.id} className="user-card animate-fade-in" style={{ position: 'relative' }}>
-                        <div className="user-card-actions" style={{ position: 'absolute', top: '15px', right: '15px' }}>
-                            <button
-                                onClick={() => handleEditUser(user)}
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
-                                title="Editar Usuário"
-                            >
-                                <Edit size={18} />
-                            </button>
-                        </div>
-
-                        <div className="user-card-header">
-                            <div className="user-avatar-lg">
+                    <div
+                        key={user.id}
+                        className="user-card animate-fade-in"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '16px',
+                            background: 'white',
+                            borderRadius: '8px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            marginBottom: '10px',
+                            border: '1px solid #f3f4f6'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            {/* Avatar */}
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '50%',
+                                background: '#e0e7ff', color: '#4338ca',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '1.125rem', fontWeight: 'bold', overflow: 'hidden', flexShrink: 0
+                            }}>
                                 {user.profilePicture ? (
-                                    <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                    <div className="avatar-placeholder" style={{ backgroundColor: user.color || '#e2e8f0', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
-                                        <UserIcon size={32} color="#94a3b8" />
-                                    </div>
+                                    (user.name || 'U').charAt(0).toUpperCase()
                                 )}
                             </div>
-                            <div className="user-info-text">
-                                <h3>{user.name}</h3>
-                                {/* Role Badge (Translated) */}
-                                <span className={`role-badge ${user.role}`} style={{ display: 'inline-block', marginBottom: '4px' }}>
-                                    {ROLE_TRANSLATIONS[user.role] || user.role}
-                                </span>
 
-                                {/* Unit Display */}
-                                <span className="text-sm text-gray-500 font-medium" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                    <MapPin size={12} />
-                                    {user.unitName || user.unit || units.find(u => u.id === user.unitId)?.name || 'Sem Unidade'}
-                                </span>
-                                <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
-                                    {user.patent && <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#64748b' }}>{user.patent}</span>}
-                                    <p className="user-position" style={{ margin: 0 }}>{user.position || 'Sem cargo'}</p>
+                            {/* Info */}
+                            <div>
+                                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0, lineHeight: 1.25 }}>{user.name}</h3>
+                                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '4px 0 8px 0' }}>{user.email}</p>
+
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                                    {/* Role Badge */}
+                                    <span style={{
+                                        padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.025em',
+                                        backgroundColor: ['master', 'director', 'diretor', 'franqueadora'].includes(user.role) ? '#f3e8ff' : (user.role === 'manager' || user.role === 'gestor') ? '#dbeafe' : '#f3f4f6',
+                                        color: ['master', 'director', 'diretor', 'franqueadora'].includes(user.role) ? '#7e22ce' : (user.role === 'manager' || user.role === 'gestor') ? '#1d4ed8' : '#4b5563',
+                                        border: `1px solid ${['master', 'director', 'diretor', 'franqueadora'].includes(user.role) ? '#e9d5ff' : (user.role === 'manager' || user.role === 'gestor') ? '#bfdbfe' : '#e5e7eb'}`
+                                    }}>
+                                        {ROLE_TRANSLATIONS[user.role] || user.role}
+                                    </span>
+
+                                    {/* Unit Badge */}
+                                    <span style={{
+                                        display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 500, color: '#4b5563',
+                                        backgroundColor: '#f9fafb', padding: '2px 8px', borderRadius: '4px', border: '1px solid #e5e7eb'
+                                    }}>
+                                        <MapPin size={12} className="text-gray-400" />
+                                        {user.unitName || user.unit || units.find(u => u.id === user.unitId)?.name || "Sem Unidade"}
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="user-card-details">
-                            <div className="detail-item">
-                                <Mail size={16} /> <span>{user.email}</span>
-                            </div>
-                            {user.whatsapp && (
-                                <div className="detail-item">
-                                    <Phone size={16} /> <span>{user.whatsapp}</span>
-                                </div>
-                            )}
-                            {user.unitId && (
-                                <div className="detail-item">
-                                    <MapPin size={16} /> <span>{units.find(u => u.id === user.unitId)?.name || 'Unidade não encontrada'}</span>
-                                </div>
-                            )}
+
+                        {/* Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button
+                                onClick={() => handleEditUser(user)}
+                                style={{ padding: '8px', color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '50%', transition: 'all 0.2s' }}
+                                title="Editar"
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#4f46e5'; e.currentTarget.style.background = '#eef2ff'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                <Edit size={20} />
+                            </button>
+                            <button
+                                onClick={() => handleDeleteUser(user.id)}
+                                style={{ padding: '8px', color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '50%', transition: 'all 0.2s' }}
+                                title="Excluir"
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.background = '#fef2f2'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                <Trash2 size={20} />
+                            </button>
                         </div>
                     </div>
                 ))}
