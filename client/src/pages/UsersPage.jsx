@@ -115,8 +115,12 @@ const UsersPage = () => {
         }
     };
 
-    const isGlobalAdmin = ['master', 'admin', 'diretor', 'director'].includes(currentUser.role);
+    // ROBUST ROLE CHECK
+    const currentRole = currentUser.role?.toLowerCase() || '';
+    const isFranchisee = ['franqueado', 'franchisee', 'franqueadora'].includes(currentRole);
+    const isGlobalAdmin = ['master', 'admin', 'diretor', 'director'].includes(currentRole);
 
+    // Filter Logic: Global sees all, Franchisee/Others see only their unit
     const secureUsers = users.filter(u => {
         if (isGlobalAdmin) return true;
         return u.unit === currentUser.unit;
@@ -129,8 +133,8 @@ const UsersPage = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Gestão de Usuários</h1>
-                    <p className="text-sm text-gray-500 mt-1 uppercase font-bold text-indigo-600">
-                        {currentUser.role} {currentUser.unit ? `• ${currentUser.unit}` : ''}
+                    <p className="text-sm text-gray-500 mt-1 uppercase font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg w-fit border border-indigo-100">
+                        ROTA: {currentRole} • UNIDADE: {currentUser.unit || 'NÃO DETECTADA'}
                     </p>
                 </div>
                 <button

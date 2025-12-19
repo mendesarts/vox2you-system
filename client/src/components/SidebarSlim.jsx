@@ -11,7 +11,7 @@ const SidebarSlim = () => {
 
     const closeMobile = () => setIsMobileOpen(false);
 
-    const ADMIN_ROLES = ['master', 'director', 'franchisee', 'manager', 'admin_financial_manager', 'admin'];
+    const ADMIN_ROLES = ['master', 'director', 'franchisee', 'franqueado', 'franqueadora', 'manager', 'admin_financial_manager', 'admin'];
     const COMMERCIAL_ROLES = ['sales_leader', 'consultant', 'comercial', 'consultor', 'vendedor', 'gestor', 'sales'];
     const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary', 'pedagogico', 'professor', 'education', 'teacher'];
     const LEADER_ROLES = ['master', 'director', 'director_franchisee', 'franchisee', 'manager', 'sales_leader', 'pedagogical_leader', 'admin', 'gestor', 'diretor', 'lider comercial', 'lider pedagogico'];
