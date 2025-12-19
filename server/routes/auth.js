@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getRoleId } = require('../config/roles');
 
 const JWT_SECRET = 'vox2you-secret-key-change-in-prod';
 
@@ -50,9 +51,12 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Email ou senha inválidos' });
         }
 
-        // 3. Gerar Token
+        // 3. CALCULAR RoleID VIRTUAL (Migration Path)
+        const roleId = getRoleId(user.role);
+
+        // 4. Gerar Token (agora com roleId integer)
         const token = jwt.sign(
-            { id: user.id, role: user.role, name: user.name, unitId: user.unitId },
+            { id: user.id, role: user.role, roleId: roleId, name: user.name, unitId: user.unitId },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -64,8 +68,9 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                roleId: roleId, // INT
                 unit: user.unit,
-                unitId: user.unitId,
+                unitId: user.unitId, // UUID
                 profilePicture: user.profilePicture,
                 color: user.color,
                 forcePasswordChange: user.forcePasswordChange
