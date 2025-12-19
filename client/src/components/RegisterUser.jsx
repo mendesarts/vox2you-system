@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
 const RegisterUser = ({ onClose, onSave, currentUser }) => {
-    // 1. ESTADO INICIAL BLINDADO
+    // Definição de Permissões Globais
+    const GLOBAL_ADMINS = ['master', 'director', 'diretor', 'franqueadora'];
+    const isGlobalAdmin = GLOBAL_ADMINS.includes(currentUser?.role);
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        password: '', // Senha inicial
-        role: 'sales', // Padrão
-        unit: '', // IMPORTANTE: Inicializar vazio
+        password: '', // Senha será gerada/definida no backend ou padrão
+        role: 'sales', // Valor padrão seguro
+        unit: '',
         phone: ''
     });
 
     const [error, setError] = useState('');
 
-    // 2. PREENCHIMENTO AUTOMÁTICO (HERANÇA)
+    // Lógica de Unidade: Master digita, outros herdam.
     useEffect(() => {
-        // Se quem está criando NÃO é Master/Diretor, a unidade é travada na dele
-        const isGlobalAdmin = ['master', 'director', 'diretor'].includes(currentUser.role);
-
         if (!isGlobalAdmin) {
-            setFormData(prev => ({ ...prev, unit: currentUser.unit || currentUser.unitName || '' }));
+            setFormData(prev => ({ ...prev, unit: currentUser?.unit || '' }));
         }
-    }, [currentUser]);
+    }, [currentUser, isGlobalAdmin]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -32,169 +32,90 @@ const RegisterUser = ({ onClose, onSave, currentUser }) => {
         e.preventDefault();
         setError('');
 
-        // 3. VALIDAÇÃO RIGOROSA DA UNIDADE
         if (!formData.unit || formData.unit.trim() === '') {
             setError('O campo Unidade é obrigatório.');
             return;
         }
 
-        const isGlobalAdmin = ['master', 'director', 'diretor'].includes(currentUser.role);
-        // Validação de formato (apenas se for Master editando, senão confia na herança)
-        if (isGlobalAdmin) {
-            // Regex que aceita acentos: Brasília.Guará
-            const unitRegex = /^[a-zA-ZÀ-ÿ0-9]+\.[a-zA-ZÀ-ÿ0-9\s-]+$/;
-            if (!unitRegex.test(formData.unit)) {
-                setError('Formato inválido. Use: Cidade.Bairro (Ex: Brasília.AsaSul)');
-                return;
-            }
-        }
-
-        // 4. PREPARAÇÃO DO PACOTE DE DADOS (Payload)
+        // Payload final
         const newUser = {
-            // id: Date.now().toString(), // ID Único (Let parent/backend handle ID)
-            name: formData.name,
-            email: formData.email,
-            password: formData.password || 'V@x2you!', // Senha padrão se vazia
-            role: formData.role,
-
-            // AQUI ESTÁ A CORREÇÃO: Força a unidade a ir junto
-            unit: formData.unit,
-            unitName: formData.unit,
-
-            createdAt: new Date().toISOString(),
-            avatar: null // Inicia sem foto
+            // id: Date.now().toString(), // Remove manual ID to let backend handle it, unless user explicitly wants it. Prompt code included it.
+            // The prompt code included `id: Date.now().toString()`. I will double check the instruction.
+            // Instruction says: "Use este código EXATO".
+            // So I will use `id: Date.now().toString()`.
+            id: Date.now().toString(),
+            ...formData,
+            createdAt: new Date().toISOString()
         };
 
-        console.log("Salvando Novo Usuário com Unidade:", newUser); // Debug no Console
-
-        // Chama a função do pai para salvar na lista
         onSave(newUser);
-        // onClose(); // Let parent close after success? Or close here. Provided code says close here.
-        // The parent might fail. Ideally parent closes. But prompt code showed onClose().
-        // I will call onClose() in the parent after success, or here?
-        // The provided snippet has onClose() at the end of handleSubmit.
         onClose();
     };
 
-    const isGlobalAdmin = ['master', 'director', 'diretor'].includes(currentUser.role);
-
-    // Styles (Inline for safety)
-    const overlayStyle = {
-        position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50
-    };
-    const modalStyle = {
-        backgroundColor: 'white', padding: '24px', borderRadius: '8px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '448px'
-    };
-    const inputStyle = {
-        marginTop: '4px', display: 'block', width: '100%', borderRadius: '4px',
-        border: '1px solid #d1d5db', padding: '8px', boxSizing: 'border-box'
-    };
-    const labelStyle = { display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151' };
-
     return (
-        <div style={overlayStyle}>
-            <div style={modalStyle}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '16px', color: '#111827' }}>Novo Usuário</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-xl font-bold mb-4 text-gray-800">Novo Usuário</h2>
 
                 {error && (
-                    <div style={{ marginBottom: '16px', padding: '8px', backgroundColor: '#fee2e2', color: '#b91c1c', fontSize: '0.875rem', borderRadius: '4px', border: '1px solid #fecaca' }}>
+                    <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded border border-red-200">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Nome */}
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label style={labelStyle}>Nome Completo</label>
-                        <input
-                            type="text"
-                            name="name"
-                            required
-                            value={formData.name}
-                            onChange={handleChange}
-                            style={inputStyle}
-                        />
+                        <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
+                        <input name="name" type="text" required value={formData.name} onChange={handleChange} className="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border" />
                     </div>
 
-                    {/* Email */}
                     <div>
-                        <label style={labelStyle}>Email</label>
-                        <input
-                            type="email"
-                            name="email"
-                            required
-                            value={formData.email}
-                            onChange={handleChange}
-                            style={inputStyle}
-                        />
+                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <input name="email" type="email" required value={formData.email} onChange={handleChange} className="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border" />
                     </div>
 
-                    {/* Nível de Acesso (Antigo Cargo) */}
+                    {/* SELECT DE PERFIL ROBUSTO */}
                     <div>
-                        <label style={labelStyle}>Nível de Acesso</label>
+                        <label className="block text-sm font-medium text-gray-700">Perfil de Acesso</label>
                         <select
                             name="role"
                             value={formData.role}
                             onChange={handleChange}
-                            style={{ ...inputStyle, backgroundColor: 'white' }}
+                            className="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border bg-white"
                         >
-                            <option value="sales">Consultor</option>
-                            <option value="manager">Gestor</option>
+                            <option value="sales">Consultor (Comercial)</option>
+                            <option value="manager">Gestor (Gerente)</option>
                             <option value="financial">Financeiro</option>
+                            <option value="pedagogico">Pedagógico</option>
+
+                            {/* Opções restritas apenas para Master/Diretor */}
                             {isGlobalAdmin && (
                                 <>
-                                    <option value="franqueado">Franqueado</option>
-                                    <option value="director">Diretor</option>
-                                    <option value="pedagogical_leader">Líder Pedagógico</option>
-                                    <option value="pedagogical">Pedagógico</option>
+                                    <option value="franqueado">Franqueado (Dono)</option>
+                                    <option value="diretor">Diretor</option>
                                 </>
                             )}
                         </select>
                     </div>
 
-                    {/* CAMPO UNIDADE (CRÍTICO) */}
                     <div>
-                        <label style={labelStyle}>
-                            Unidade <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 400 }}>(Identificação da Franquia)</span>
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700">Unidade</label>
                         <input
-                            type="text"
                             name="unit"
+                            type="text"
                             required
-                            // Se for admin, pode editar. Se não, só visualiza a herança.
                             readOnly={!isGlobalAdmin}
                             value={formData.unit}
                             onChange={handleChange}
-                            placeholder="Ex: Brasília.LagoSul"
-                            style={{
-                                ...inputStyle,
-                                backgroundColor: !isGlobalAdmin ? '#f3f4f6' : 'white',
-                                color: !isGlobalAdmin ? '#6b7280' : 'inherit',
-                                cursor: !isGlobalAdmin ? 'not-allowed' : 'text'
-                            }}
+                            placeholder="Ex: Brasilia.AsaSul"
+                            className={`mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border ${!isGlobalAdmin ? 'bg-gray-100 text-gray-500' : ''}`}
                         />
-                        {isGlobalAdmin && (
-                            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>Padrão obrigatório: Cidade.Bairro</p>
-                        )}
+                        {isGlobalAdmin && <p className="text-xs text-gray-500 mt-1">Formato: Cidade.Bairro</p>}
                     </div>
 
-                    {/* Botões */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #e5e7eb', marginTop: '8px' }}>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            style={{ padding: '8px 16px', fontSize: '0.875rem', color: '#374151', backgroundColor: 'transparent', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer' }}
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            style={{ padding: '8px 16px', fontSize: '0.875rem', color: 'white', backgroundColor: '#4f46e5', border: 'none', borderRadius: '4px', fontWeight: 500, cursor: 'pointer' }}
-                        >
-                            Criar Usuário
-                        </button>
+                    <div className="flex justify-end gap-3 pt-4 border-t mt-2">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">Cancelar</button>
+                        <button type="submit" className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded font-medium">Salvar</button>
                     </div>
                 </form>
             </div>
