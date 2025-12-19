@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign, Trash2, MapPin } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical, X, Check, MapPin, FileText, Upload, Download, Mail, Building, Tag, Trash2 } from 'lucide-react';
+import KanbanCard from '../components/KanbanCard';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor', 'franqueadora'];
@@ -35,9 +37,9 @@ const CRMBoard = () => {
         if (!value) return '';
         const v = value.replace(/\D/g, '');
         if (v.length > 11) return v.slice(0, 11);
-        if (v.length > 10) return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
-        if (v.length > 6) return `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
-        if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
+        if (v.length > 10) return `(${v.slice(0, 2)}) ${v.slice(2, 7)} -${v.slice(7)} `;
+        if (v.length > 6) return `(${v.slice(0, 2)}) ${v.slice(2, 6)} -${v.slice(6)} `;
+        if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)} `;
         return v;
     };
 
@@ -57,14 +59,14 @@ const CRMBoard = () => {
     // Kanban Columns Configuration
     // Kanban Columns Configuration
     const columns = {
-        'new': { id: 'new', title: 'Novo Lead', color: '#3b82f6', icon: Bot },
-        'connecting': { id: 'connecting', title: 'Conectando', color: '#8b5cf6', icon: MessageCircle },
-        'connected': { id: 'connected', title: 'Conexão', color: '#6366f1', icon: User },
-        'scheduled': { id: 'scheduled', title: 'Agendamento', color: '#f59e0b', icon: User },
-        'no_show': { id: 'no_show', title: 'No-Show (IA Resgate)', color: '#ef4444', icon: Bot },
-        'negotiation': { id: 'negotiation', title: 'Negociação', color: '#10b981', icon: User },
-        'won': { id: 'won', title: 'Matriculados', color: '#059669', icon: User },
-        'closed': { id: 'closed', title: 'Atendimento Encerrado', color: '#6b7280', icon: AlertCircle }
+        'new': { id: 'new', title: 'Novo Lead', color: '#3b82f6', icon: Plus }, // Changed icon to Plus
+        'connecting': { id: 'connecting', title: 'Conectando', color: '#8b5cf6', icon: Phone }, // Changed icon to Phone
+        'connected': { id: 'connected', title: 'Conexão', color: '#6366f1', icon: Check }, // Changed icon to Check
+        'scheduled': { id: 'scheduled', title: 'Agendamento', color: '#f59e0b', icon: Calendar },
+        'no_show': { id: 'no_show', title: 'No-Show (IA Resgate)', color: '#ef4444', icon: Clock }, // Changed icon to Clock
+        'negotiation': { id: 'negotiation', title: 'Negociação', color: '#10b981', icon: DollarSign }, // Changed icon to DollarSign
+        'won': { id: 'won', title: 'Matriculados', color: '#059669', icon: Check }, // Changed icon to Check
+        'closed': { id: 'closed', title: 'Atendimento Encerrado', color: '#6b7280', icon: X } // Changed icon to X
     };
 
     const columnOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
@@ -91,8 +93,8 @@ const CRMBoard = () => {
     const fetchLeads = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'} /crm/leads`, {
+                headers: { 'Authorization': `Bearer ${token} ` }
             });
             const data = await res.json();
 
@@ -167,7 +169,7 @@ const CRMBoard = () => {
         // API Call
         try {
             const token = localStorage.getItem('token');
-            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${leadId}/move`, {
+            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'} /crm/leads / ${leadId}/move`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -492,73 +494,12 @@ const CRMBoard = () => {
                                         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             {Array.isArray(colLeads) && colLeads.map((lead, index) => (
                                                 lead && (
-                                                    <Draggable key={lead.id} draggableId={lead.id ? lead.id.toString() : `lead-${index}`} index={index}>
-                                                        {(provided) => (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                                {...provided.dragHandleProps}
-                                                                style={{
-                                                                    userSelect: 'none',
-                                                                    padding: '12px',
-                                                                    backgroundColor: 'white',
-                                                                    borderRadius: '8px',
-                                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                                                    borderLeft: `4px solid ${column.color}`,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.2s',
-                                                                    ...provided.draggableProps.style
-                                                                }}
-                                                                onClick={() => handleOpenEditLead(lead)}
-                                                                className="hover:shadow-md"
-                                                            >
-                                                                {/* Compact Header: Name + Value */}
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                                                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b', lineHeight: '1.2' }}>
-                                                                        {lead.title || lead.contact?.name || lead.name || 'Sem Título'}
-                                                                    </div>
-                                                                    {(lead.value > 0 || lead.budget) && (
-                                                                        <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                                                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(lead.value || lead.budget || 0)}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Row 2: Phone + Icons */}
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                            <Phone size={10} />
-                                                                            <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                                                {lead.contact?.phone || lead.phone || 'Sem telefone'}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                                                        {lead.handledBy === 'AI' && (
-                                                                            <span style={{ fontSize: '0.65rem', color: '#8b5cf6', background: '#f3e8ff', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
-                                                                                IA
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Footer: Responsible (Mini) */}
-                                                                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#64748b' }}>
-                                                                            <User size={8} />
-                                                                        </div>
-                                                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                                                                            {user?.name?.split(' ')[0] || 'Eu'}
-                                                                        </span>
-                                                                    </div>
-                                                                    {lead.source && <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>{lead.source}</span>}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </Draggable>
+                                                    <KanbanCard
+                                                        key={lead.id}
+                                                        lead={lead}
+                                                        index={index}
+                                                        onClick={() => handleOpenEditLead(lead)}
+                                                    />
                                                 )
                                             ))}
                                             {provided.placeholder}
