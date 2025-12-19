@@ -190,6 +190,10 @@ const SidebarSlim = () => {
                     </div>
                 </div>
             </aside>
+            <div className="fixed bottom-0 right-0 bg-black text-white p-4 z-50 opacity-90 text-xs max-w-md pointer-events-none">
+                <strong>DEBUG MODE:</strong>
+                <pre>{JSON.stringify(user, null, 2)}</pre>
+            </div>
         </>
     );
 };
