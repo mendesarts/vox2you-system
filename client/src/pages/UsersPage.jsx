@@ -150,37 +150,75 @@ const UsersPage = () => {
                 </button>
             </div>
 
-            {loading ? <div className="text-center py-20">Carregando lista de usuários...</div> : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredUsers.map((user) => (
-                        <div key={user.id || Math.random()} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all relative group">
-                            <div className="flex justify-between items-start">
-                                <div className="h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold text-xl">
-                                    {user.name?.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => { setEditingUser(user); setIsModalOpen(true); }} className="text-gray-400 hover:text-indigo-600 p-2">
-                                        <Edit2 size={18} />
-                                    </button>
-                                    <button onClick={() => handleDeleteUser(user.id)} className="text-gray-400 hover:text-red-600 p-2">
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
+            {loading ? <div className="text-center py-20 animate-pulse text-indigo-500 font-bold">Carregando seus usuários...</div> : (
+                <>
+                    {filteredUsers.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                            <div className="h-24 w-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <Search size={40} className="text-gray-400" />
                             </div>
-                            <h3 className="mt-4 text-lg font-bold text-gray-800 truncate">{user.name}</h3>
-                            <p className="text-sm text-gray-500 truncate mb-4">{user.email}</p>
-                            <div className="flex flex-col gap-2">
-                                <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-black uppercase w-fit border border-indigo-100">
-                                    {roleMap[user.role?.toLowerCase()] || user.role}
-                                </span>
-                                <span className="px-2 py-1 bg-gray-50 text-gray-600 rounded text-[10px] font-bold w-fit border border-gray-100 truncate max-w-full">
-                                    📍 {user.unit || 'Sem Unidade'}
-                                </span>
-                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">Nenhum usuário encontrado</h3>
+                            <p className="text-gray-500 mt-2 text-center max-w-sm">Parece que ainda não há ninguém cadastrado nesta unidade ou perfil. Clique em "Novo Usuário" para começar.</p>
                         </div>
-                    ))}
-                    {filteredUsers.length === 0 && <p className="text-gray-500 col-span-3 text-center">Nenhum usuário encontrado nesta unidade (ou carregando...).</p>}
-                </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredUsers.map((user) => {
+                                // COLOR LOGIC
+                                let roleColor = "bg-gray-100 text-gray-700 border-gray-200"; // Default
+                                const rid = user.roleId || 0;
+
+                                if (rid === 1 || rid === 10) roleColor = "bg-amber-100 text-amber-800 border-amber-200"; // Master/Director (Gold)
+                                else if (rid === 20) roleColor = "bg-green-100 text-green-800 border-green-200"; // Franchisee (Green)
+                                else if (rid === 30) roleColor = "bg-blue-100 text-blue-800 border-blue-200"; // Manager (Blue)
+                                else if (rid === 40 || rid === 50) roleColor = "bg-purple-100 text-purple-800 border-purple-200"; // Leaders (Purple)
+
+                                return (
+                                    <div key={user.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all relative group flex flex-col justify-between h-full">
+                                        <div>
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold text-xl shadow-sm ${roleColor.split(' ')[0]}`}>
+                                                    {user.name?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${roleColor}`}>
+                                                    {roleMap[user.role?.toLowerCase()] || user.role}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-lg font-bold text-gray-900 truncate tracking-tight">{user.name}</h3>
+                                            <p className="text-sm text-gray-500 mb-4 truncate flex items-center gap-1">
+                                                <span className="text-xs">📧</span> {user.email}
+                                            </p>
+
+                                            <div className="flex items-center gap-2 mt-2 px-3 py-2 bg-gray-50 rounded-lg w-full">
+                                                <MapPin size={14} className="text-gray-400 min-w-[14px]" />
+                                                <span className="text-xs font-medium text-gray-600 truncate">
+                                                    {user.unit || 'Aguardando vínculo...'}
+                                                </span>
+                                                {/* Debug UnitID for Master */}
+                                                {isGlobalAdmin && <span className="text-[8px] text-gray-300 ml-auto">{user.unitId?.slice(0, 4)}</span>}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6 flex gap-2 border-t border-gray-100 pt-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300">
+                                            <button
+                                                onClick={() => { setEditingUser(user); setIsModalOpen(true); }}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                                            >
+                                                <Edit2 size={16} /> Editar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(user.id)}
+                                                className="w-10 flex items-center justify-center rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </>
             )}
 
             {isModalOpen && (
