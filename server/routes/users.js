@@ -41,9 +41,9 @@ router.post('/', auth, async (req, res) => {
         const requester = req.user;
 
         // 1. Permissões de Criação
-        // Apenas Master, Diretor, Franqueado e Gestor podem criar contas
-        if (!['master', 'director', 'franchisee', 'manager'].includes(requester.role)) {
-            return res.status(403).json({ error: 'Permissão negada. Você não tem permissão para criar usuários.' });
+        const ALLOWED_CREATORS = ['master', 'director', 'diretor', 'franchisee', 'franqueado', 'manager', 'gestor', 'admin'];
+        if (!ALLOWED_CREATORS.includes(requester.role)) {
+            return res.status(403).json({ error: 'Permissão negada. Cargo sem autorização para criar usuários.' });
         }
 
         // 2. Restrições de Unidade e Hierarquia
@@ -52,39 +52,30 @@ router.post('/', auth, async (req, res) => {
         // Se for Master e enviou unitName ao invés de unitId => Buscar ou Criar Unidade
         const { unitName } = req.body;
         if (requester.role === 'master' && !targetUnitId && unitName) {
-            // Check if unit exists
             const existingUnit = await Unit.findOne({ where: { name: unitName } });
             if (existingUnit) {
                 targetUnitId = existingUnit.id;
             } else {
-                // Create new Unit on the fly
                 const newUnit = await Unit.create({
                     name: unitName,
-                    city: unitName.split('.')[0] || 'Matriz', // Simple inference
+                    city: unitName.split('.')[0] || 'Matriz',
                     active: true
                 });
                 targetUnitId = newUnit.id;
             }
         }
 
-        if (requester.role !== 'master' && requester.role !== 'director') {
-            // Se não for master/diretor, FORÇA a unidade do criador? 
-            // User says Director creates other Directors. Directors might be global or unit bound?
-            // "O diretor pode criar outros diretores... mas não é master".
-            // If director is unit-bound, they can't create global users.
-            // Let's assume Director is effectively a Sub-Master (Global or Multi-Unit).
-            // For safety, let's say Director *can* set unitId but creates with restriction?
-            // Actually, usually Director is top-level.
-
+        // Se NÃO for Master/Diretor/Admin, FORÇA A UNIDADE
+        if (!['master', 'director', 'diretor', 'admin'].includes(requester.role)) {
             targetUnitId = requester.unitId;
 
-            targetUnitId = requester.unitId;
-
-            // Hierarquia Restritiva para Franqueado e Gestor
-            if (['franchisee', 'manager'].includes(requester.role)) {
-                // Não podem criar: Master, Diretor, Franqueado, Gestor
-                if (['master', 'director', 'franchisee', 'manager'].includes(role)) {
-                    return res.status(403).json({ error: 'Permissão negada. Você não pode criar cargos de nível gerencial ou superior.' });
+            // Se o requester for Franqueado/Gestor, aplica restrições de hierarquia
+            const RESTRICTED_MANAGERS = ['franchisee', 'franqueado', 'manager', 'gestor'];
+            if (RESTRICTED_MANAGERS.includes(requester.role)) {
+                // Não podem criar: Master, Diretor, Franqueado (outro franqueado)
+                const FORBIDDEN_ROLES = ['master', 'director', 'diretor', 'franchisee', 'franqueado', 'admin'];
+                if (FORBIDDEN_ROLES.includes(role)) {
+                    return res.status(403).json({ error: 'Permissão negada. Você não pode criar cargos superiores ou equivalentes.' });
                 }
             }
         }
