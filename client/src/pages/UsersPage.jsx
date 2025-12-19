@@ -60,36 +60,48 @@ const UsersPage = () => {
 
     const handleSaveUser = async (userData) => {
         try {
-            // FORÇA A UNIDADE: Se userData.unit for "Carregando..." ou vazio, usa a do currentUser
-            // Note: "Carregando..." is localized text, checking emptiness or placeholder match
-            const finalUnit = (userData.unit && userData.unit !== 'Carregando...')
-                ? userData.unit
-                : currentUser.unit;
+            // 1. LIMPEZA TOTAL DE DADOS (Payload Sanitization)
+            const payload = {
+                name: userData.name,
+                email: userData.email,
+                role: userData.role?.toLowerCase() || 'consultor',
+                unit: (userData.unit && userData.unit !== 'Carregando...') ? userData.unit : currentUser.unit,
+                phone: userData.phone || '',
+                // Se for criação (sem id), o backend DEVE gerar o UUID. 
+                // Se for edição, enviamos o id.
+                id: userData.id || undefined
+            };
 
-            if (!finalUnit || finalUnit === '') {
-                alert("Erro: Não foi possível identificar sua unidade. Tente deslogar e logar novamente.");
-                return;
-            }
+            console.log("📤 TENTANDO ENVIAR PAYLOAD:", payload);
 
-            const payload = { ...userData, unit: finalUnit };
-
+            let response;
             if (userData.id) {
-                if (api.updateUser) {
-                    await api.updateUser(userData.id, payload);
-                } else {
-                    await api.createUser(payload);
-                }
+                // EDIÇÃO
+                response = await api.updateUser(userData.id, payload);
             } else {
-                await api.createUser(payload);
+                // CRIAÇÃO (Garante senha padrão para novos usuários se o backend exigir)
+                const createPayload = { ...payload, password: 'Vox@ChangeMe123' };
+                response = await api.createUser(createPayload);
             }
 
+            console.log("✅ RESPOSTA DO SERVIDOR:", response);
             alert('Usuário salvo com sucesso!');
             setIsModalOpen(false);
             setEditingUser(null);
             fetchUsers();
+
         } catch (error) {
-            console.error(error);
-            alert("Erro ao salvar. Verifique os dados.");
+            // 2. CAPTURA DO ERRO REAL DO BACKEND
+            const serverError = error.message || "Erro desconhecido";
+            console.error("❌ ERRO DETALHADO DO SERVIDOR:", serverError);
+
+            if (serverError.includes('unique constraint') || serverError.includes('already exists')) {
+                alert("ERRO: Este email já está cadastrado em outro usuário.");
+            } else if (serverError.includes('invalid input syntax for type uuid')) {
+                alert("ERRO DE SISTEMA: Conflito de ID. Tente criar um novo usuário do zero.");
+            } else {
+                alert(`Erro ao salvar: ${serverError}`);
+            }
         }
     };
 
