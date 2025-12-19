@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, MapPin, Search, ShieldCheck } from 'lucide-react';
 import RegisterUser from '../components/RegisterUserPremium';
 import { api } from '../services/api';
+import { ROLE_IDS, ROLE_GROUPS } from '../config/roles';
 
 const UsersPage = () => {
     const [users, setUsers] = useState([]);
@@ -9,7 +10,7 @@ const UsersPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [currentUser, setCurrentUser] = useState({ role: 'indefinido', unit: '' });
+    const [currentUser, setCurrentUser] = useState({ role: 'indefinido', unit: '', roleId: 0, unitId: null });
 
     const roleMap = {
         'master': 'Master', 'director': 'Diretor', 'diretor': 'Diretor',
@@ -19,7 +20,6 @@ const UsersPage = () => {
         'pedagogico': 'Pedagógico', 'consultor': 'Consultor', 'sales': 'Consultor'
     };
 
-    // FUNÇÃO DE DETECÇÃO MELHORADA
     const detectUser = () => {
         const keys = ['user', 'vox_user', 'auth_user', 'sb-user', 'usuario'];
         for (const key of keys) {
@@ -28,18 +28,11 @@ const UsersPage = () => {
                 try {
                     const parsed = JSON.parse(data);
                     const userObj = parsed.user || parsed;
-                    const role = (userObj.role || parsed.role || '').toLowerCase();
-                    const unit = userObj.unit || parsed.unit || '';
-
-                    if (role) {
-                        console.log("📍 Unidade Detectada:", unit);
-                        setCurrentUser({ ...userObj, role, unit });
-                        return unit;
-                    }
+                    setCurrentUser(userObj || {});
+                    return;
                 } catch (e) { console.error(e); }
             }
         }
-        return '';
     };
 
     useEffect(() => {
@@ -50,28 +43,8 @@ const UsersPage = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            let res = await api.fetchUsers();
-            console.log("DADOS RECEBIDOS (Tentativa 1):", res);
-
-            let list = Array.isArray(res) ? res : (res.users || res.data || []);
-
-            // FALLBACK DE EMERGÊNCIA: Se a lista vier vazia, mas sabemos nossa Unidade
-            // O backend pode estar falhando em detectar o unitId no token, então forçamos a busca por String
-            if (list.length === 0 && currentUser.unit && currentUser.unit !== 'Carregando...') {
-                console.warn(`[FALLBACK] Lista vazia. Tentando buscar por nome da unidade: ${currentUser.unit}`);
-                try {
-                    const fallbackRes = await api.fetchUsers(`?unitName=${encodeURIComponent(currentUser.unit)}`);
-                    const fallbackList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes.users || fallbackRes.data || []);
-                    if (fallbackList.length > 0) {
-                        console.log("✅ [FALLBACK] Sucesso! Registros recuperados via query string.");
-                        list = fallbackList;
-                    }
-                } catch (err) {
-                    console.error("❌ [FALLBACK] Falhou:", err);
-                }
-            }
-
-            console.table(list.map(u => ({ nome: u.name, unidade_usuario: u.unit, minha_unidade: currentUser.unit })));
+            const res = await api.fetchUsers();
+            const list = Array.isArray(res) ? res : (res.users || res.data || []);
             setUsers(list);
         } catch (error) { console.error("Erro busca:", error); }
         finally { setLoading(false); }
@@ -134,27 +107,17 @@ const UsersPage = () => {
         }
     };
 
-    // ROBUST ROLE CHECK
-    const currentRole = currentUser.role?.toLowerCase() || '';
-    const isFranchisee = ['franqueado', 'franchisee', 'franqueadora'].includes(currentRole);
-    const isGlobalAdmin = ['master', 'admin', 'diretor', 'director'].includes(currentRole);
-
-    // Filter Logic: Global sees all, Franchisee/Others see only their unit
-    // 1. Normalização de strings para comparação segura
-    const normalize = (str) => String(str || '').trim().toLowerCase();
+    // STRICT ID FILTER LOGIC
+    const isGlobalAdmin = ROLE_GROUPS.GLOBAL.includes(currentUser.roleId || 0);
 
     const secureUsers = users.filter(u => {
         if (isGlobalAdmin) return true;
 
-        // Normalização agressiva
-        const userUnit = String(u.unit || '').trim().toLowerCase();
-        const myUnit = String(currentUser.unit || '').trim().toLowerCase();
+        // Safety: If current user has no unitId (unexpected), show nothing
+        if (!currentUser.unitId) return false;
 
-        // Se o usuário for o próprio franqueado, ele DEVE aparecer
-        if (u.email === currentUser.email) return true;
-
-        // Se a unidade bater exatamente ou se o usuário foi criado por este franqueado
-        return userUnit === myUnit || (userUnit !== '' && myUnit.includes(userUnit)) || (myUnit !== '' && userUnit.includes(myUnit));
+        // Strict UUID Match
+        return u.unitId === currentUser.unitId;
     });
 
     const filteredUsers = secureUsers.filter(u => u.name?.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -164,16 +127,9 @@ const UsersPage = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Gestão de Usuários</h1>
-                    <p className="text-sm text-gray-500 mt-1 uppercase font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg w-fit border border-indigo-100">
-                        ROTA: {currentRole} • UNIDADE: {currentUser.unit || 'NÃO DETECTADA'}
-                    </p>
                 </div>
                 <button
                     onClick={() => {
-                        const unit = detectUser(); // Redetecta antes de abrir
-                        if (!isGlobalAdmin && !unit) {
-                            alert("Aviso: Sua unidade não foi detectada no sistema. O salvamento pode falhar.");
-                        }
                         setEditingUser(null);
                         setIsModalOpen(true);
                     }}
@@ -183,7 +139,6 @@ const UsersPage = () => {
                 </button>
             </div>
 
-            {/* Grid de Cards permanece igual */}
             {loading ? <div className="text-center py-20">Carregando lista de usuários...</div> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredUsers.map((user) => (

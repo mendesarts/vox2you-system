@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, Calendar, MessageSquare, Settings, LogOut, Brie
 import './sidebar.css';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo-full-white.png';
+import { ROLE_GROUPS } from '../config/roles';
 
 const SidebarSlim = () => {
     const { user, logout } = useAuth();
@@ -11,14 +12,9 @@ const SidebarSlim = () => {
 
     const closeMobile = () => setIsMobileOpen(false);
 
-    const ADMIN_ROLES = ['master', 'director', 'franchisee', 'franqueado', 'franqueadora', 'manager', 'admin_financial_manager', 'admin'];
-    const COMMERCIAL_ROLES = ['sales_leader', 'consultant', 'comercial', 'consultor', 'vendedor', 'gestor', 'sales'];
-    const PEDAGOGICAL_ROLES = ['pedagogical_leader', 'instructor', 'secretary', 'pedagogico', 'professor', 'education', 'teacher'];
-    const LEADER_ROLES = ['master', 'director', 'director_franchisee', 'franchisee', 'manager', 'sales_leader', 'pedagogical_leader', 'admin', 'gestor', 'diretor', 'lider comercial', 'lider pedagogico'];
-
     const getFilteredNavItems = () => {
         if (!user) return [];
-        const role = user.role ? user.role.toLowerCase() : '';
+        const roleId = user.roleId || 0;
 
         // Common items for everyone
         const commonItems = [
@@ -28,12 +24,9 @@ const SidebarSlim = () => {
             { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' }
         ];
 
-        // Create the tailored list
-        let tailoredItems = [];
-
-        // Admin sees everything
-        if (ADMIN_ROLES.includes(role)) {
-            tailoredItems = [
+        // ID-Based Logic
+        if (ROLE_GROUPS.ADMIN.includes(roleId)) {
+            return [
                 { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
                 { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
                 { icon: Briefcase, label: 'Administrativo', path: '/administrative' },
@@ -42,41 +35,29 @@ const SidebarSlim = () => {
                 { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
                 { icon: Calendar, label: 'Calendário', path: '/calendar' },
             ];
-        } else if (COMMERCIAL_ROLES.includes(role)) {
-            tailoredItems = [
+        }
+
+        if (ROLE_GROUPS.COMMERCIAL.includes(roleId)) {
+            return [
                 { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
                 { icon: Users, label: 'Comercial', path: '/crm' },
                 { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
                 { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
                 { icon: Calendar, label: 'Calendário', path: '/calendar' },
             ];
-        } else if (PEDAGOGICAL_ROLES.includes(role)) {
-            tailoredItems = [
+        }
+
+        if (ROLE_GROUPS.PEDAGOGICAL.includes(roleId)) {
+            return [
                 { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
                 { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
                 { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
                 { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
                 { icon: Calendar, label: 'Calendário', path: '/calendar' },
             ];
-        } else {
-            tailoredItems = commonItems;
         }
 
-        // Leader Strict Extras
-        // Only show AI Agents and Training to Leaders
-        if (LEADER_ROLES.some(r => role.includes(r.toLowerCase()))) {
-            // Check if items already exist to avoid duplicates
-            // We will append them to the end or integrate them
-            // Since we built 'tailoredItems', we can just push if not present.
-            // Using placeholder paths for now as requested features
-            //     tailoredItems.push({ icon: Bot, label: 'Agentes de IA', path: '/ai-agents' }); // Bot imported? No, need to import or reuse one.
-            // }
-            // if (!tailoredItems.find(i => i.label === 'Treinamentos')) {
-            //     tailoredItems.push({ icon: BookOpen, label: 'Treinamentos', path: '/training' });
-            // }
-        }
-
-        return tailoredItems;
+        return commonItems;
     };
 
     const navItems = getFilteredNavItems();
