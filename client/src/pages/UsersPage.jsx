@@ -16,6 +16,8 @@ const ROLES = {
     admin: 'Administrativo e Financeiro'
 };
 
+const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor', 'franqueadora'];
+
 const UsersPage = () => {
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
@@ -138,7 +140,7 @@ const UsersPage = () => {
         try {
             // Validate Unit Format
             const unitNameToCheck = formData.unitName || units.find(u => u.id === formData.unitId)?.name;
-            if (['master', 'director'].includes(currentUser.role) && unitNameToCheck) {
+            if (GLOBAL_VIEW_ROLES.includes(currentUser.role) && unitNameToCheck) {
                 const unitRegex = /^[a-zA-Z]+\.[a-zA-Z0-9]+$/;
                 if (!unitRegex.test(unitNameToCheck)) {
                     setFormError('Formato de Unidade inválido. Use Cidade.Nome (ex: Goiania.SetorBueno), sem espaços.');
@@ -186,8 +188,8 @@ const UsersPage = () => {
             email: '',
             password: 'V@x2you!',
             role: 'sales',
-            unitId: !['master', 'director'].includes(currentUser.role) ? currentUser.unitId : '',
-            unitName: !['master', 'director'].includes(currentUser.role) ? currentUser.unitName : '', // Maintain name if available
+            unitId: !GLOBAL_VIEW_ROLES.includes(currentUser.role) ? currentUser.unitId : '',
+            unitName: !GLOBAL_VIEW_ROLES.includes(currentUser.role) ? currentUser.unitName : '', // Maintain name if available
             whatsapp: '',
             position: '',
             patent: '',
@@ -386,11 +388,11 @@ const UsersPage = () => {
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Unidade*</label>
-                                    {['master', 'director'].includes(currentUser.role) ? (
+                                    {GLOBAL_VIEW_ROLES.includes(currentUser.role) ? (
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                                             <input
                                                 type="text"
-                                                placeholder="Ex: Brasília.ÁguasClaras"
+                                                placeholder="Ex: Brasília.ÁguasClaras" // Updated placeholder
                                                 value={formData.unitName || (formData.unitId ? units.find(u => u.id === formData.unitId)?.name : '')}
                                                 onChange={e => setFormData({ ...formData, unitName: e.target.value, unitId: null })}
                                                 required={!formData.unitId}

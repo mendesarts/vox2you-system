@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign, Trash2, MapPin } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
+const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor', 'franqueadora'];
 
 const CRMBoard = () => {
     const { user } = useAuth();
@@ -71,7 +72,7 @@ const CRMBoard = () => {
         let list = leads;
 
         // Apply Unit Filter (Global or Master selection)
-        if (user?.role !== 'master' && user?.role !== 'director') {
+        if (!GLOBAL_VIEW_ROLES.includes(user?.role)) {
             // Already filtered by API or client logic, but let's enforce
             // Usually api returns filtered, but if we do client side:
             // list = list.filter(l => l.unit === user.unit);
@@ -98,7 +99,7 @@ const CRMBoard = () => {
             let fetchedLeads = Array.isArray(data) ? data : [];
 
             // Client-side multitenancy enforcement for safety (if API is loose)
-            if (user && !['master', 'director'].includes(user.role)) {
+            if (user && !GLOBAL_VIEW_ROLES.includes(user.role)) {
                 fetchedLeads = fetchedLeads.filter(l =>
                     // Match by unit name string or ID if robust
                     l.unit === user.unit || l.unitId === user.unitId ||
@@ -411,7 +412,7 @@ const CRMBoard = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     {/* Master Filter */}
-                    {['master', 'director'].includes(user?.role) && (
+                    {GLOBAL_VIEW_ROLES.includes(user?.role) && (
                         <select
                             value={unitFilter}
                             onChange={(e) => setUnitFilter(e.target.value)}
