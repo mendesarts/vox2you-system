@@ -136,6 +136,16 @@ const UsersPage = () => {
         setFormError('');
 
         try {
+            // Validate Unit Format
+            const unitNameToCheck = formData.unitName || units.find(u => u.id === formData.unitId)?.name;
+            if (['master', 'director'].includes(currentUser.role) && unitNameToCheck) {
+                const unitRegex = /^[a-zA-Z]+\.[a-zA-Z0-9]+$/;
+                if (!unitRegex.test(unitNameToCheck)) {
+                    setFormError('Formato de Unidade inválido. Use Cidade.Nome (ex: Goiania.SetorBueno), sem espaços.');
+                    return;
+                }
+            }
+
             if (isEditing) {
                 const res = await fetch(`${api.API_URL || 'https://vox2you-system-978034491078.us-central1.run.app/api'}/users/${formData.id}`, {
                     method: 'PUT',
@@ -162,6 +172,7 @@ const UsersPage = () => {
         }
     };
 
+
     const handleEditUser = (user) => {
         setFormData({ ...user, password: '' });
         setPreviewImage(user.profilePicture);
@@ -176,10 +187,10 @@ const UsersPage = () => {
             password: 'V@x2you!',
             role: 'sales',
             unitId: !['master', 'director'].includes(currentUser.role) ? currentUser.unitId : '',
+            unitName: !['master', 'director'].includes(currentUser.role) ? currentUser.unitName : '', // Maintain name if available
             whatsapp: '',
             position: '',
             patent: '',
-            unitName: '',
             profilePicture: ''
         });
         setPreviewImage(null);
@@ -384,13 +395,14 @@ const UsersPage = () => {
                                                 onChange={e => setFormData({ ...formData, unitName: e.target.value, unitId: null })}
                                                 required={!formData.unitId}
                                             />
-                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.7em' }}>Digite Cidade.Bairro para criar/vincular.</small>
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.7em' }}>Obrigatório: Cidade.Nome (sem espaços)</small>
                                         </div>
                                     ) : (
                                         <input
                                             type="text"
-                                            value={units.find(u => u.id === currentUser.unitId)?.name || 'Minha Unidade'}
+                                            value={currentUser.unitName || units.find(u => u.id === currentUser.unitId)?.name || 'Minha Unidade'}
                                             disabled
+                                            readOnly
                                             style={{ background: 'var(--bg-app)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
                                         />
                                     )}

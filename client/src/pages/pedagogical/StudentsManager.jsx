@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, UserX, UserCheck, MoreVertical, Filter, Delete, Trash2, FileText, Upload, Download } from 'lucide-react';
 import StudentRegistrationWizard from './StudentRegistrationWizard';
+import { useAuth } from '../../context/AuthContext';
 
 const StudentsManager = ({ initialFilters }) => {
+    const { user } = useAuth();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -96,8 +98,10 @@ const StudentsManager = ({ initialFilters }) => {
 
             const newStudents = lines.slice(1).filter(line => line.trim() !== '').map((line, index) => {
                 const values = line.split(',');
+                const unitPrefix = user?.unit || user?.unitName || 'Geral';
                 return {
-                    id: Date.now() + index, // Temp ID
+                    id: `${unitPrefix}-${Date.now()}-${index}`, // Unit-Based ID
+                    unit: unitPrefix,
                     name: values[0] || 'Sem Nome',
                     email: values[1] || '',
                     cpf: values[2] || '',

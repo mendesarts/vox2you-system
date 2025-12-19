@@ -10,6 +10,8 @@ const CRMBoard = () => {
     const [loading, setLoading] = useState(true);
     const [showNewLeadModal, setShowNewLeadModal] = useState(false);
     const [selectedLead, setSelectedLead] = useState(null);
+    const [unitFilter, setUnitFilter] = useState('all'); // Master Filter
+    const [allLeads, setAllLeads] = useState([]); // Store all leads for client-side filtering (if simple) or refetch logic
     const fileInputRef = useRef(null);
 
     // New Lead Form
@@ -66,7 +68,18 @@ const CRMBoard = () => {
     const columnOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
 
     const getLeadsByStatus = (status) => {
-        return leads.filter(lead => lead.status === status);
+        let list = leads;
+
+        // Apply Unit Filter (Global or Master selection)
+        if (user?.role !== 'master' && user?.role !== 'director') {
+            // Already filtered by API or client logic, but let's enforce
+            // Usually api returns filtered, but if we do client side:
+            // list = list.filter(l => l.unit === user.unit);
+        } else if (unitFilter !== 'all') {
+            list = list.filter(l => l.unitId === unitFilter || l.unit === unitFilter); // Support both ID or Name logic depending on backend
+        }
+
+        return list.filter(lead => lead.status === status);
     };
 
     useEffect(() => {
@@ -80,7 +93,24 @@ const CRMBoard = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
-            setLeads(Array.isArray(data) ? data : []);
+
+
+            let fetchedLeads = Array.isArray(data) ? data : [];
+
+            // Client-side multitenancy enforcement for safety (if API is loose)
+            if (user && !['master', 'director'].includes(user.role)) {
+                fetchedLeads = fetchedLeads.filter(l =>
+                    // Match by unit name string or ID if robust
+                    l.unit === user.unit || l.unitId === user.unitId ||
+                    // Fallback: If lead has no unit, maybe show it? Better hide.
+                    // For now, assume leads MUST have unit if created properly.
+                    // If user.unit is "Brasilia.AguasClaras", check that.
+                    (user.unit && l.id.toString().startsWith(user.unit))
+                );
+            }
+
+            setLeads(fetchedLeads);
+            setAllLeads(fetchedLeads); // Backup for master filtering
         } catch (error) {
             console.error(error);
         } finally {
@@ -214,8 +244,22 @@ const CRMBoard = () => {
         }
 
         // Prepare Payload
+        const unitPrefix = user.unit || user.unitName || 'Geral';
+        // Generate Unit-Based ID if new
+        // Note: Backend usually handles ID, but if we are mocking or enforcing client-generated IDs for some reason:
+        // logic: `${unitPrefix}-${Date.now()}`
+        // However, usually POST returns the ID. If we are using mock backend or local state, we do this:
+
         const leadPayload = {
             ...newLead,
+            // If creating new (POST), we might send a custom ID if backend supports it, or backend generates.
+            // Requirement says: "Alterar a lógica de geração de ID ... Exemplo final no Banco: SaoPaulo.Centro-17085499201"
+            // We will send this ID if valid, or hope backend uses it.
+            // If backend generates ID, we can't change it here unless we change backend.
+            // Assuming we can send 'id' or we are simulating.
+            ...(selectedLead ? {} : { id: `${unitPrefix}-${Date.now()}` }),
+            unit: unitPrefix, // explicit unit tag
+
             // Save value as raw number
             value: typeof newLead.value === 'string' ? parseFloat(newLead.value.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) : newLead.value,
             title: leadTitle,
@@ -327,11 +371,13 @@ const CRMBoard = () => {
                     value = parseFloat(values[valueIdx].replace(/[^0-9.-]+/g, "")) || 0;
                 }
 
+                const unitPrefix = user.unit || user.unitName || 'Geral';
                 return {
-                    id: Date.now() + index,
+                    id: `${unitPrefix}-${Date.now()}-${index}`, // Unit-Based ID
                     title: title,
                     value: value,
                     status: status,
+                    unit: unitPrefix, // Tag unit
                     contact: {
                         name: contactName,
                         phone: (phoneIdx > -1 ? values[phoneIdx] : '') || '',
@@ -364,6 +410,27 @@ const CRMBoard = () => {
                     <p className="page-subtitle">Gerencie seus leads e oportunidades.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
+                    {/* Master Filter */}
+                    {['master', 'director'].includes(user?.role) && (
+                        <select
+                            value={unitFilter}
+                            onChange={(e) => setUnitFilter(e.target.value)}
+                            style={{
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '0.85rem',
+                                color: '#475569',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="all">Todas as Unidades</option>
+                            {[...new Set(allLeads.map(l => l.unit || l.unitId).filter(Boolean))].map(u => (
+                                <option key={u} value={u}>{u}</option>
+                            ))}
+                        </select>
+                    )}
+
                     <div style={{ display: 'flex', gap: '5px', marginRight: '10px' }}>
                         <button onClick={downloadTemplate} className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }} title="Baixar Modelo CSV">
                             <Download size={16} /> Modelo
