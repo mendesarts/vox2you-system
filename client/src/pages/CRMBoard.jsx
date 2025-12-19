@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign, Trash2 } from 'lucide-react';
+import { Plus, MessageCircle, Phone, Calendar, Search, AlertCircle, Bot, User, FileSpreadsheet, Upload, X, Download, FileText, Mail, Building, Tag, DollarSign, Trash2, MapPin } from 'lucide-react';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,9 +21,34 @@ const CRMBoard = () => {
         phone: '',
         email: '',
         company: '',
+        city: '',
+        neighborhood: '',
         source: 'Instagram',
         tags: ''
     });
+
+    const formatPhone = (value) => {
+        if (!value) return '';
+        const v = value.replace(/\D/g, '');
+        if (v.length > 11) return v.slice(0, 11);
+        if (v.length > 10) return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+        if (v.length > 6) return `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
+        if (v.length > 2) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
+        return v;
+    };
+
+    const formatCurrency = (value) => {
+        if (!value) return '';
+        // Handle incoming number or string
+        const v = value.toString().replace(/\D/g, '');
+        const numberValue = parseFloat(v) / 100;
+        return isNaN(numberValue) ? '' : numberValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    const parseCurrency = (displayValue) => {
+        if (!displayValue) return 0;
+        return parseFloat(displayValue.replace(/[^0-9,-]+/g, "").replace(",", ".")) || 0;
+    };
 
     // Kanban Columns Configuration
     // Kanban Columns Configuration
@@ -138,7 +163,7 @@ const CRMBoard = () => {
     };
 
     const handleOpenNewLead = () => {
-        setNewLead({ title: '', value: '', name: '', phone: '', email: '', company: '', source: 'Instagram', tags: '' });
+        setNewLead({ title: '', value: '', name: '', phone: '', email: '', company: '', city: '', neighborhood: '', source: 'Instagram', tags: '' });
         setSelectedLead(null);
         setShowNewLeadModal(true);
     };
@@ -147,11 +172,13 @@ const CRMBoard = () => {
         setSelectedLead(lead);
         setNewLead({
             title: lead.title || '',
-            value: lead.value || '',
+            value: lead.value ? lead.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '', // Format for display
             name: lead.contact?.name || lead.name || '',
-            phone: lead.contact?.phone || lead.phone || '',
+            phone: formatPhone(lead.contact?.phone || lead.phone || ''),
             email: lead.contact?.email || lead.email || '',
             company: lead.company || '',
+            city: lead.city || '',
+            neighborhood: lead.neighborhood || '',
             source: lead.source || 'Instagram',
             tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : (lead.tags || '')
         });
@@ -189,6 +216,8 @@ const CRMBoard = () => {
         // Prepare Payload
         const leadPayload = {
             ...newLead,
+            // Save value as raw number
+            value: typeof newLead.value === 'string' ? parseFloat(newLead.value.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) : newLead.value,
             title: leadTitle,
             tags: typeof newLead.tags === 'string' ? newLead.tags.split(',').map(t => t.trim()).filter(t => t) : newLead.tags,
             contact: { name: newLead.name, phone: newLead.phone, email: newLead.email }
@@ -559,10 +588,10 @@ const CRMBoard = () => {
                                     </label>
                                     <input
                                         className="input-field"
-                                        type="number"
-                                        placeholder="0,00"
+                                        type="text"
+                                        placeholder="R$ 0,00"
                                         value={newLead.value}
-                                        onChange={e => setNewLead({ ...newLead, value: e.target.value })}
+                                        onChange={e => setNewLead({ ...newLead, value: formatCurrency(e.target.value) })}
                                     />
                                 </div>
                                 <div className="form-group">
@@ -574,6 +603,31 @@ const CRMBoard = () => {
                                         placeholder="Nome da Empresa"
                                         value={newLead.company}
                                         onChange={e => setNewLead({ ...newLead, company: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                                <div className="form-group">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <MapPin size={16} /> Cidade
+                                    </label>
+                                    <input
+                                        className="input-field"
+                                        placeholder="Ex: São Paulo"
+                                        value={newLead.city}
+                                        onChange={e => setNewLead({ ...newLead, city: e.target.value })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <MapPin size={16} /> Bairro
+                                    </label>
+                                    <input
+                                        className="input-field"
+                                        placeholder="Ex: Centro"
+                                        value={newLead.neighborhood}
+                                        onChange={e => setNewLead({ ...newLead, neighborhood: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -602,7 +656,7 @@ const CRMBoard = () => {
                                         className="input-field"
                                         placeholder="(00) 00000-0000"
                                         value={newLead.phone}
-                                        onChange={e => setNewLead({ ...newLead, phone: e.target.value })}
+                                        onChange={e => setNewLead({ ...newLead, phone: formatPhone(e.target.value) })}
                                     />
                                 </div>
                                 <div className="form-group">
