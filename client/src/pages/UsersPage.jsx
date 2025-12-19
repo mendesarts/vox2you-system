@@ -71,13 +71,24 @@ const UsersPage = () => {
                 // EDIÇÃO
                 response = await api.updateUser(userData.id, payload);
             } else {
-                // CRIAÇÃO (Garante senha padrão para novos usuários se o backend exigir)
-                const createPayload = { ...payload, password: 'Vox@ChangeMe123' };
+                // CRIAÇÃO: Senha Padrão Temporária
+                const tempPassword = 'Vox2You@2025';
+                const createPayload = { ...payload, password: tempPassword };
                 response = await api.createUser(createPayload);
+
+                // FEEDBACK VISUAL COM CREDENCIAIS
+                const data = response.user || response || {};
+                alert(
+                    `✅ Usuário criado com sucesso!\n\n` +
+                    `📧 Email: ${payload.email}\n` +
+                    `🔑 Senha Temporária: ${tempPassword}\n` +
+                    `🏢 ID Unidade: ${data.unitId || payload.unit || 'Global'}\n` +
+                    `\nCopie estas informações agora!`
+                );
             }
 
-            console.log("✅ RESPOSTA DO SERVIDOR:", response);
-            alert('Usuário salvo com sucesso!');
+            if (userData.id) alert('Usuário atualizado com sucesso!');
+
             setIsModalOpen(false);
             setEditingUser(null);
             fetchUsers();

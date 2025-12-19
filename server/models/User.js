@@ -21,20 +21,12 @@ const User = sequelize.define('User', {
         allowNull: false,
     },
     role: {
-        // Aceita tanto os termos em PT quanto EN para evitar erros
-        type: DataTypes.ENUM(
-            'master', 'admin',
-            'franqueado', 'franchisee',
-            'manager', 'gestor',
-            'sales', 'consultor',
-            'financial', 'financeiro',
-            'pedagogico', 'pedagogical',
-            'lider_comercial', 'sales_leader',
-            'lider_pedagogico', 'pedagogical_leader',
-            'admin_financeiro', 'admin_financial_manager',
-            'diretor', 'director'
-        ),
-        defaultValue: 'sales',
+        type: DataTypes.STRING, // Downgraded to String for Legacy Support
+        allowNull: true
+    },
+    roleId: {
+        type: DataTypes.INTEGER, // NEW STRENGTHENED ID
+        allowNull: true // Allow null during migration, then strict
     },
     // --- A CORREÇÃO CRÍTICA ESTÁ AQUI (MANTIDA) ---
     unit: {

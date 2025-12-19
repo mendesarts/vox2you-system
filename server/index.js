@@ -22,6 +22,83 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 const aiController = require('./controllers/aiController');
 app.post('/api/webhook/whatsapp', aiController.handleIncomingMessage);
 
+// MIGRATION ROUTE (DIRECT INJECTION)
+app.get('/api/setup/run-migration', async (req, res) => {
+    const logs = [];
+    const log = (msg) => logs.push(msg);
+    try {
+        const { DataTypes } = require('sequelize');
+        const User = require('./models/User');
+        const Unit = require('./models/Unit');
+        const { ROLE_IDS, getRoleId } = require('./config/roles');
+
+        log('🔄 Iniciando Migração (Via Route Injected)...');
+        const qi = sequelize.getQueryInterface();
+
+        const colsToAdd = [
+            { name: 'roleId', type: DataTypes.INTEGER },
+            { name: 'unitId', type: DataTypes.UUID },
+            { name: 'unit', type: DataTypes.STRING },
+            { name: 'password', type: DataTypes.STRING },
+            { name: 'phone', type: DataTypes.STRING },
+            { name: 'whatsapp', type: DataTypes.STRING },
+            { name: 'avatar', type: DataTypes.STRING },
+            { name: 'profilePicture', type: DataTypes.TEXT },
+            { name: 'lastLogin', type: DataTypes.DATE }
+        ];
+
+        for (const col of colsToAdd) {
+            try {
+                await qi.addColumn('Users', col.name, { type: col.type, allowNull: true });
+                log(`✅ Coluna ${col.name} verificada.`);
+            } catch (e) { }
+        }
+
+        const users = await User.findAll();
+        log(`📊 Users found: ${users.length}`);
+
+        let targetUnit = await Unit.findOne({ where: { name: 'Brasília.ÁguasClaras' } });
+        if (!targetUnit) {
+            // Try partial
+            const pUnit = await Unit.findOne({ where: { name: 'Brasília' } });
+            if (pUnit) {
+                pUnit.name = 'Brasília.ÁguasClaras';
+                await pUnit.save();
+                targetUnit = pUnit;
+            } else {
+                targetUnit = await Unit.create({
+                    name: 'Brasília.ÁguasClaras',
+                    city: 'Brasília',
+                    active: true
+                });
+            }
+        }
+        log(`🏢 Target Unit: ${targetUnit.id}`);
+
+        for (const u of users) {
+            let changed = false;
+            const freshRoleId = getRoleId(u.role);
+            if (freshRoleId !== 0 && freshRoleId !== u.roleId) {
+                u.roleId = freshRoleId;
+                changed = true;
+            }
+            if (!u.roleId) {
+                u.roleId = ROLE_IDS.CONSULTANT;
+                changed = true;
+            }
+            if (!u.unitId) {
+                u.unitId = targetUnit.id;
+                u.unit = targetUnit.name;
+                changed = true;
+            }
+            if (changed) await u.save();
+        }
+        res.json({ success: true, logs });
+    } catch (e) {
+        res.status(500).json({ error: e.message, logs });
+    }
+});
+
 // Rotas do Sistema (Para quando formos mexer no resto)
 try {
     app.use('/api/tasks', require('./routes/tasks'));
@@ -39,6 +116,7 @@ try {
     app.use('/api/health', require('./routes/health'));
     app.use('/api/units', require('./routes/units'));
     app.use('/api', require('./routes/rescue'));
+    app.use('/api/migration', require('./routes/migration')); // SETUP ONLY
 } catch (e) { console.log('Erro ao carregar rotas:', e); }
 
 app.get('/', (req, res) => res.send('Vox2you System Active'));
