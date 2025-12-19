@@ -17,7 +17,7 @@ const ROLES = {
     admin: 'Administrativo e Financeiro'
 };
 
-const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor', 'franqueadora'];
+const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor'];
 
 const UsersPage = () => {
     const { user: currentUser } = useAuth();

@@ -5,7 +5,7 @@ import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical,
 import KanbanCard from '../components/KanbanCard';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import { useAuth } from '../context/AuthContext';
-const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor', 'franqueadora'];
+const GLOBAL_VIEW_ROLES = ['master', 'director', 'diretor'];
 
 const CRMBoard = () => {
     const { user } = useAuth();

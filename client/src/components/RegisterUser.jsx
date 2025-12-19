@@ -16,7 +16,7 @@ const RegisterUser = ({ onClose, onSave, currentUser }) => {
     // 2. PREENCHIMENTO AUTOMÁTICO (HERANÇA)
     useEffect(() => {
         // Se quem está criando NÃO é Master/Diretor, a unidade é travada na dele
-        const isGlobalAdmin = ['master', 'director', 'diretor', 'franqueadora'].includes(currentUser.role);
+        const isGlobalAdmin = ['master', 'director', 'diretor'].includes(currentUser.role);
 
         if (!isGlobalAdmin) {
             setFormData(prev => ({ ...prev, unit: currentUser.unit || currentUser.unitName || '' }));
@@ -38,7 +38,7 @@ const RegisterUser = ({ onClose, onSave, currentUser }) => {
             return;
         }
 
-        const isGlobalAdmin = ['master', 'director', 'diretor', 'franqueadora'].includes(currentUser.role);
+        const isGlobalAdmin = ['master', 'director', 'diretor'].includes(currentUser.role);
         // Validação de formato (apenas se for Master editando, senão confia na herança)
         if (isGlobalAdmin) {
             // Regex que aceita acentos: Brasília.Guará
@@ -76,7 +76,7 @@ const RegisterUser = ({ onClose, onSave, currentUser }) => {
         onClose();
     };
 
-    const isGlobalAdmin = ['master', 'director', 'diretor', 'franqueadora'].includes(currentUser.role);
+    const isGlobalAdmin = ['master', 'director', 'diretor'].includes(currentUser.role);
 
     // Styles (Inline for safety)
     const overlayStyle = {
