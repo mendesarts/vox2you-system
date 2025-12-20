@@ -55,82 +55,81 @@ const RegisterUserPremium = ({ onClose, onSave, currentUser, userToEdit = null }
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-8 space-y-5 overflow-y-auto">
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">Nome</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <label className="text-sm font-bold text-gray-700 block mb-1">Nome Completo</label>
                             <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 outline-none" placeholder="Nome completo" />
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 outline-none" placeholder="Ex: João Silva" />
                         </div>
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">Email</label>
+                        <div className="md:col-span-2">
+                            <label className="text-sm font-bold text-gray-700 block mb-1">Email Corporativo</label>
                             <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 outline-none" placeholder="email@vox.com" />
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 outline-none" placeholder="joao@vox2you.com" />
                         </div>
-                    </div>
 
-                    {/* SENHA PADRÃO VISÍVEL (Apenas Criação) */}
-                    {!userToEdit && (
-                        <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                            <label className="text-xs font-bold text-amber-800 uppercase block mb-1">Senha Inicial (Padrão)</label>
+                        {/* SENHA PADRÃO VISÍVEL (Apenas Criação) */}
+                        {!userToEdit && (
+                            <div className="md:col-span-2 bg-amber-50 rounded-xl p-4 border border-amber-100 mt-2">
+                                <label className="text-xs font-bold text-amber-800 uppercase block mb-1">Senha Inicial (Padrão)</label>
+                                <div className="relative">
+                                    <input
+                                        readOnly
+                                        value="Vox2You@2025"
+                                        type="text"
+                                        className="w-full px-4 py-2 rounded-lg bg-white border border-amber-200 text-gray-800 font-mono text-sm focus:outline-none cursor-text select-all"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-amber-700 mt-2 font-medium">
+                                    ⚠️ Esta é a senha padrão. O usuário deve alterá-la no primeiro acesso.
+                                </p>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="text-sm font-bold text-gray-700 block mb-1">Cargo</label>
                             <div className="relative">
+                                <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none appearance-none cursor-pointer">
+                                    {isGlobalAdmin && (
+                                        <optgroup label="Global">
+                                            <option value="franqueado">Franqueado</option>
+                                            <option value="diretor">Diretor</option>
+                                        </optgroup>
+                                    )}
+                                    <optgroup label="Unidade">
+                                        <option value="manager">Gestor</option>
+                                        <option value="lider_comercial">Líder Comercial</option>
+                                        <option value="consultor">Consultor</option>
+                                        <option value="pedagogico">Pedagógico</option>
+                                        <option value="admin_financeiro">Financeiro</option>
+                                    </optgroup>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-3.5 text-gray-400 pointer-events-none" size={18} />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-bold text-gray-700 block mb-1">Unidade</label>
+                            <div className="relative">
+                                <MapPin className="absolute left-4 top-3.5 text-gray-400" size={18} />
                                 <input
-                                    readOnly
-                                    value="Vox2You@2025"
-                                    type="text"
-                                    className="w-full px-4 py-2 rounded-lg bg-white border border-amber-200 text-gray-800 font-mono text-sm focus:outline-none cursor-text select-all"
+                                    required
+                                    readOnly={!isGlobalAdmin}
+                                    value={formData.unit}
+                                    onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                                    className={`w-full pl-11 pr-4 py-3 rounded-xl border outline-none font-medium ${!isGlobalAdmin
+                                        ? 'bg-gray-100 text-gray-600 border-gray-200'
+                                        : 'bg-white border-gray-200 focus:border-indigo-500'
+                                        }`}
+                                    placeholder="Unidade..."
                                 />
                             </div>
-                            <p className="text-[10px] text-amber-700 mt-2 font-medium">
-                                ⚠️ Esta é a senha padrão. O usuário poderá alterá-la depois.
-                            </p>
+                            {!isGlobalAdmin && (
+                                <p className="text-xs text-gray-500 mt-1 ml-1">
+                                    🔒 Vinculada: <strong>{currentUser?.unit || '...'}</strong>
+                                </p>
+                            )}
                         </div>
-                    )}
-
-                    <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">Cargo</label>
-                        <div className="relative">
-                            <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none appearance-none cursor-pointer">
-                                {isGlobalAdmin && (
-                                    <optgroup label="Global">
-                                        <option value="franqueado">Franqueado</option>
-                                        <option value="diretor">Diretor</option>
-                                    </optgroup>
-                                )}
-                                <optgroup label="Unidade">
-                                    <option value="manager">Gestor</option>
-                                    <option value="lider_comercial">Líder Comercial</option>
-                                    <option value="consultor">Consultor</option>
-                                    <option value="pedagogico">Pedagógico</option>
-                                    <option value="admin_financeiro">Financeiro</option>
-                                </optgroup>
-                            </select>
-                            <ChevronDown className="absolute right-4 top-3.5 text-gray-400 pointer-events-none" size={18} />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">Unidade</label>
-                        <div className="relative">
-                            <MapPin className="absolute left-4 top-3.5 text-gray-400" size={18} />
-                            {/* INPUT INTELIGENTE: Se for admin, digita. Se for franqueado, MOSTRA o valor travado. */}
-                            <input
-                                required
-                                readOnly={!isGlobalAdmin}
-                                value={formData.unit}
-                                onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                                className={`w-full pl-11 pr-4 py-3 rounded-xl border outline-none font-medium ${!isGlobalAdmin
-                                    ? 'bg-gray-100 text-gray-600 border-gray-200' // Visual Travado Claro
-                                    : 'bg-white border-gray-200 focus:border-indigo-500'
-                                    }`}
-                                placeholder="Unidade..."
-                            />
-                        </div>
-                        {!isGlobalAdmin && (
-                            <p className="text-xs text-gray-500 mt-1 ml-1">
-                                🔒 Vinculado à unidade: <strong>{currentUser?.unit || 'Carregando...'}</strong>
-                            </p>
-                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
