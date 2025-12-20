@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Book, Plus, Trash2, ChevronDown, ChevronUp, Users, Clock, Edit2, Save, X } from 'lucide-react';
+import { Book, Plus, Trash2, ChevronDown, ChevronUp, Users, Clock, Edit2, Save, X, Video } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
+import PageHeader from '../components/PageHeader';
+import DataCard from '../components/DataCard';
+import ActionModal from '../components/ActionModal';
 
 const CoursesSettings = () => {
     const [courses, setCourses] = useState([]);
@@ -11,12 +14,6 @@ const CoursesSettings = () => {
 
     // New Course State
     const [newCourse, setNewCourse] = useState({ name: '', workload: 40, weeklyFrequency: 2, mentorshipsIncluded: 0, modules: [] });
-    // Placeholder for launching program (future implementation)
-    const handleLaunchProgram = (courseId) => {
-        // TODO: Implement program launch logic, e.g., POST to /courses/:id/launch
-        console.log('Launching program for course', courseId);
-        showToast('Programa de aulas lançado (simulado)', 'success');
-    };
 
     // New Module State
     const [newModule, setNewModule] = useState({ title: '', description: '', order: 1 });
@@ -40,9 +37,9 @@ const CoursesSettings = () => {
 
     const fetchCourses = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/courses');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses`);
             const data = await res.json();
-            setCourses(data);
+            setCourses(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error(error);
         } finally {
@@ -53,17 +50,13 @@ const CoursesSettings = () => {
     const handleCreateCourse = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('http://localhost:3000/api/courses', {
-                // Ensure proper headers for JSON payload
-                // (already set) but adding explicit mode for CORS safety
-                mode: 'cors',
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newCourse)
             });
             if (res.ok) {
                 fetchCourses();
-                setIsCreating(false);
                 setIsCreating(false);
                 setNewCourse({ name: '', workload: 40, weeklyFrequency: 2, mentorshipsIncluded: 0, modules: [] });
                 showToast('Curso criado com sucesso!');
@@ -79,9 +72,8 @@ const CoursesSettings = () => {
 
     const handleDeleteCourse = async () => {
         if (!confirmModal.courseId) return;
-
         try {
-            const res = await fetch(`http://localhost:3000/api/courses/${confirmModal.courseId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${confirmModal.courseId}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
@@ -91,7 +83,6 @@ const CoursesSettings = () => {
                 showToast('Erro ao excluir curso.', 'error');
             }
         } catch (error) {
-            console.error('Erro ao excluir curso:', error);
             showToast('Erro ao excluir curso.', 'error');
         }
     };
@@ -110,7 +101,7 @@ const CoursesSettings = () => {
     const saveCourseEdit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:3000/api/courses/${editingCourseId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${editingCourseId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editCourseData)
@@ -140,7 +131,7 @@ const CoursesSettings = () => {
 
     const saveModuleEdit = async () => {
         try {
-            const res = await fetch(`http://localhost:3000/api/courses/modules/${editingModuleId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/modules/${editingModuleId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editModuleData)
@@ -160,7 +151,7 @@ const CoursesSettings = () => {
     const handleAddModule = async (e, courseId) => {
         e.preventDefault();
         try {
-            const res = await fetch(`http://localhost:3000/api/courses/${courseId}/modules`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${courseId}/modules`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newModule)
@@ -175,12 +166,15 @@ const CoursesSettings = () => {
     };
 
     const toggleExpand = (id) => {
-        if (expandedCourse === id) setExpandedCourse(null);
-        else setExpandedCourse(id);
+        setExpandedCourse(expandedCourse === id ? null : id);
+    };
+
+    const handleLaunchProgram = (courseId) => {
+        showToast('Programa de aulas lançado (simulado)', 'success');
     };
 
     return (
-        <div style={{ paddingBottom: '80px' }}>
+        <div className="p-6 max-w-7xl mx-auto space-y-8 pb-32">
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             <ConfirmModal
@@ -188,242 +182,148 @@ const CoursesSettings = () => {
                 onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
                 onConfirm={handleDeleteCourse}
                 title="Excluir Curso"
-                message="Tem certeza que deseja excluir este curso? Esta ação também removerá todo o programa de aulas associado e não poderá ser desfeita."
+                message="Tem certeza que deseja excluir este curso? Esta ação remove todo o histórico."
                 isDangerous={true}
             />
-            <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <Book size={24} style={{ marginRight: '10px' }} /> Gestão de Cursos e Programas
+
+            <PageHeader
+                title="Gestão de Cursos"
+                subtitle="Configure os cursos, módulos e carga horária."
+                actionLabel="Novo Curso"
+                actionIcon={Plus}
+                onAction={() => setIsCreating(true)}
+            />
+
+            {/* CREATE MODAL */}
+            <ActionModal
+                isOpen={isCreating}
+                onClose={() => setIsCreating(false)}
+                title="Novo Curso"
+                footer={
+                    <>
+                        <button onClick={() => setIsCreating(false)} className="btn-secondary">Cancelar</button>
+                        <button onClick={handleCreateCourse} className="btn-primary">Salvar Curso</button>
+                    </>
+                }
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Nome do Curso</label>
+                        <input required value={newCourse.name} onChange={e => setNewCourse({ ...newCourse, name: e.target.value })}
+                            placeholder="Ex: Oratória Premium" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Carga Horária (h)</label>
+                        <input type="number" required value={newCourse.workload} onChange={e => setNewCourse({ ...newCourse, workload: e.target.value })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Freq. Semanal</label>
+                        <input type="number" required value={newCourse.weeklyFrequency} onChange={e => setNewCourse({ ...newCourse, weeklyFrequency: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-gray-700 mb-1">Mentorias Incluídas</label>
+                        <input type="number" value={newCourse.mentorshipsIncluded} onChange={e => setNewCourse({ ...newCourse, mentorshipsIncluded: parseInt(e.target.value || 0) })} />
+                    </div>
                 </div>
-                <button className="btn-primary" onClick={() => setIsCreating(true)}>
-                    <Plus size={16} /> Novo Curso
-                </button>
-            </div>
+            </ActionModal>
 
-            {isCreating && (
-                <div className="control-card" style={{ marginBottom: '20px', border: '1px solid var(--primary)' }}>
-                    <h4>Novo Curso</h4>
-                    <form onSubmit={handleCreateCourse} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            <input placeholder="Nome do Curso" required value={newCourse.name} onChange={e => setNewCourse({ ...newCourse, name: e.target.value })} className="input-field" />
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nome completo do curso</span>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <Clock size={16} color="var(--text-muted)" />
-                            <div style={{ flex: 1 }}>
-                                <input type="number" placeholder="Carga Horária (h)" required value={newCourse.workload} onChange={e => setNewCourse({ ...newCourse, workload: e.target.value })} className="input-field" style={{ width: '100%' }} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Carga horária total (horas)</span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <Clock size={16} color="var(--text-muted)" />
-                            <div style={{ flex: 1 }}>
-                                <input type="number" placeholder="Freq. Semanal" required value={newCourse.weeklyFrequency} onChange={e => setNewCourse({ ...newCourse, weeklyFrequency: e.target.value })} className="input-field" style={{ width: '100%' }} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Aulas por semana</span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <Users size={16} color="var(--text-muted)" />
-                            <div style={{ flex: 1 }}>
-                                <input type="number" placeholder="Qtd. Mentorias" required value={newCourse.mentorshipsIncluded} onChange={e => setNewCourse({ ...newCourse, mentorshipsIncluded: parseInt(e.target.value || 0) })} className="input-field" style={{ width: '100%' }} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mentorias por contrato</span>
-                            </div>
-                        </div>
-                        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                            <button type="button" onClick={() => setIsCreating(false)} className="btn-secondary">Cancelar</button>
-                            <button type="submit" className="btn-primary">Salvar Curso</button>
-                        </div>
-                    </form>
-                </div>
-            )}
-
-            <div className="courses-list">
-                {courses.map(course => (
-                    <div key={course.id} className="control-card" style={{ marginBottom: '15px' }}>
-                        <div
-                            className="course-header"
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            {/* LIST */}
+            {loading ? <div className="text-center p-10 animate-pulse text-teal-600 font-bold">Carregando cursos...</div> : (
+                <div className="grid grid-cols-1 gap-6">
+                    {courses.map(course => (
+                        <DataCard
+                            key={course.id}
+                            title={editingCourseId === course.id ? "Editando..." : course.name}
+                            subtitle={`${course.Modules?.length || 0} módulos cadastrados`}
+                            status={course.Modules?.length > 0 ? "active" : "pending"}
+                            statusColor={course.Modules?.length > 0 ? "border-teal-500" : "border-amber-400"}
                             onClick={() => toggleExpand(course.id)}
+                            actions={
+                                <div className="flex gap-2">
+                                    <button onClick={(e) => { e.stopPropagation(); startEditingCourse(course); }} className="p-2 hover:bg-gray-100 rounded-lg text-indigo-600">
+                                        <Edit2 size={18} />
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); confirmDeleteCourse(course.id); }} className="p-2 hover:bg-gray-100 rounded-lg text-rose-500">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            }
                         >
+                            {/* EDITOR MODE */}
                             {editingCourseId === course.id ? (
-                                <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                                    <input
-                                        value={editCourseData.name}
-                                        onChange={e => setEditCourseData({ ...editCourseData, name: e.target.value })}
-                                        className="input-field"
-                                        style={{ flex: 1 }}
-                                        placeholder="Nome do curso"
-                                    />
-                                    <input
-                                        type="number"
-                                        value={editCourseData.workload}
-                                        onChange={e => setEditCourseData({ ...editCourseData, workload: e.target.value })}
-                                        className="input-field"
-                                        style={{ width: '80px' }}
-                                        placeholder="Horas"
-                                    />
-                                    <input
-                                        type="number"
-                                        value={editCourseData.weeklyFrequency}
-                                        onChange={e => setEditCourseData({ ...editCourseData, weeklyFrequency: e.target.value })}
-                                        className="input-field"
-                                        style={{ width: '80px' }}
-                                        placeholder="Freq."
-                                    />
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={saveCourseEdit} className="btn-primary" style={{ padding: '8px' }} title="Salvar"><Save size={16} /></button>
-                                        <button onClick={cancelEditCourse} className="btn-secondary" style={{ padding: '8px' }} title="Cancelar"><X size={16} /></button>
-                                    </div>
-                                    <div onClick={(e) => { e.stopPropagation(); toggleExpand(course.id); }} style={{ cursor: 'pointer', padding: '4px' }}>
-                                        {expandedCourse === course.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                <div onClick={e => e.stopPropagation()} className="grid grid-cols-3 gap-4 mb-4">
+                                    <input value={editCourseData.name} onChange={e => setEditCourseData({ ...editCourseData, name: e.target.value })} placeholder="Nome" />
+                                    <input value={editCourseData.workload} onChange={e => setEditCourseData({ ...editCourseData, workload: e.target.value })} type="number" placeholder="Horas" />
+                                    <div className="flex gap-2">
+                                        <button onClick={saveCourseEdit} className="btn-primary w-full"><Save size={16} /> Salvar</button>
+                                        <button onClick={cancelEditCourse} className="btn-secondary w-full"><X size={16} /> Cancelar</button>
                                     </div>
                                 </div>
                             ) : (
-                                <>
-                                    <div>
-                                        <h3 style={{ margin: 0, color: 'var(--text-main)' }}>{course.name}</h3>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '15px', marginTop: '5px' }}>
-                                            <span>{course.workload}h</span>
-                                            <span>{course.weeklyFrequency}x/sem</span>
-                                            <span>{course.mentorshipsIncluded || 0} mentorias</span>
-                                            <span>{course.Modules?.length || 0} aulas</span>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {expandedCourse === course.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                        <button onClick={(e) => { e.stopPropagation(); startEditingCourse(course); }} className="btn-secondary" style={{ padding: '8px' }}>
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button onClick={(e) => { e.stopPropagation(); confirmDeleteCourse(course.id); }} className="btn-danger" style={{ marginLeft: '5px' }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </>
+                                <div className="flex gap-6 text-sm text-gray-600">
+                                    <span className="flex items-center gap-1"><Clock size={14} /> {course.workload}h Total</span>
+                                    <span className="flex items-center gap-1"><CalendarCheck size={14} /> {course.weeklyFrequency}x/sem</span>
+                                    <span className="flex items-center gap-1"><Users size={14} /> {course.mentorshipsIncluded} Mentorias</span>
+                                </div>
                             )}
-                        </div>
 
-                        {expandedCourse === course.id && (
-                            <div className="course-program" style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                                <h4 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>Programa de Aulas</h4>
-                                {/* Button to launch the program of classes */}
-                                <button onClick={() => handleLaunchProgram(course.id)} className="btn-primary" style={{ marginBottom: '10px' }}>
-                                    Lançar Programa
-                                </button>
+                            {/* EXPANDED CONTENT (MODULES) */}
+                            {expandedCourse === course.id && (
+                                <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 animate-in slide-in-from-top-2 duration-300 cursor-default" onClick={e => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="font-bold text-gray-800 flex items-center gap-2"><Book size={18} /> Programa de Aulas</h4>
+                                        <button onClick={() => handleLaunchProgram(course.id)} className="text-xs uppercase font-bold text-teal-600 hover:text-teal-700 border border-teal-200 px-3 py-1 rounded-full">
+                                            Lançar Programa
+                                        </button>
+                                    </div>
 
-                                <div className="modules-list" style={{ marginBottom: '20px' }}>
-                                    {course.Modules && course.Modules.length > 0 ? (
-                                        course.Modules.map(mod => (
-                                            <div key={mod.id} style={{
-                                                display: 'flex', alignItems: 'center', gap: '10px',
-                                                padding: '10px', background: 'var(--bg-app)', marginBottom: '8px', borderRadius: '6px'
-                                            }}>
+                                    <div className="space-y-2">
+                                        {course.Modules?.sort((a, b) => a.order - b.order).map(mod => (
+                                            <div key={mod.id} className="bg-gray-50 dark:bg-slate-900/50 p-3 rounded-lg flex items-center gap-4 hover:bg-gray-100 transition-colors group">
                                                 {editingModuleId === mod.id ? (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, width: '100%' }}>
-                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                            <input
-                                                                value={editModuleData.order}
-                                                                onChange={e => setEditModuleData({ ...editModuleData, order: parseInt(e.target.value) })}
-                                                                className="input-field" style={{ width: '50px', padding: '6px' }}
-                                                                placeholder="Ord."
-                                                            />
-                                                            <input
-                                                                value={editModuleData.title}
-                                                                onChange={e => setEditModuleData({ ...editModuleData, title: e.target.value })}
-                                                                className="input-field" style={{ flex: 1, padding: '6px' }}
-                                                                placeholder="Título da Aula"
-                                                            />
-                                                            <button onClick={saveModuleEdit} className="btn-primary" style={{ padding: '6px' }}><Save size={14} /></button>
-                                                            <button onClick={cancelEditModule} className="btn-secondary" style={{ padding: '6px' }}><X size={14} /></button>
-                                                        </div>
-                                                        <input
-                                                            value={editModuleData.description}
-                                                            onChange={e => setEditModuleData({ ...editModuleData, description: e.target.value })}
-                                                            className="input-field" style={{ width: '100%', padding: '6px' }}
-                                                            placeholder="Descrição do conteúdo"
-                                                        />
+                                                    <div className="flex gap-2 w-full">
+                                                        <input className="w-16" type="number" value={editModuleData.order} onChange={e => setEditModuleData({ ...editModuleData, order: e.target.value })} />
+                                                        <input className="flex-1" value={editModuleData.title} onChange={e => setEditModuleData({ ...editModuleData, title: e.target.value })} />
+                                                        <button onClick={saveModuleEdit} className="text-teal-600"><Save size={18} /></button>
+                                                        <button onClick={cancelEditModule} className="text-gray-400"><X size={18} /></button>
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <div style={{ fontWeight: 'bold', color: 'var(--primary)', width: '30px' }}>#{mod.order}</div>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontWeight: 500 }}>{mod.title}</div>
-                                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{mod.description}</div>
+                                                        <span className="font-bold text-teal-600 w-8">#{mod.order}</span>
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-gray-800">{mod.title}</div>
+                                                            {mod.description && <div className="text-xs text-gray-500">{mod.description}</div>}
                                                         </div>
-                                                        <button onClick={() => startEditingModule(mod)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', marginRight: '5px' }}>
+                                                        <button onClick={() => startEditingModule(mod)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-indigo-600 transition-all">
                                                             <Edit2 size={16} />
-                                                        </button>
-                                                        <button style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>
-                                                            <Trash2 size={16} />
                                                         </button>
                                                     </>
                                                 )}
                                             </div>
-                                        ))
-                                    ) : (
-                                        <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Nenhuma aula cadastrada.</p>
-                                    )}
-                                </div>
+                                        ))}
+                                    </div>
 
-                                <form onSubmit={(e) => handleAddModule(e, course.id)} style={{ background: 'var(--bg-surface-hover)', padding: '20px', borderRadius: '8px', marginBottom: '10px' }}>
-                                    <h5 style={{ marginBottom: '10px' }}>Adicionar Aula</h5>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: '10px', alignItems: 'start' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <input
-                                                type="number"
-                                                placeholder="Ord."
-                                                value={newModule.order}
-                                                onChange={e => setNewModule({ ...newModule, order: parseInt(e.target.value) })}
-                                                className="input-field"
-                                                style={{ padding: '8px' }}
-                                            />
-                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>Ordem</span>
+                                    {/* ADD MODULE */}
+                                    <form onSubmit={(e) => handleAddModule(e, course.id)} className="mt-4 bg-teal-50/50 p-4 rounded-xl border border-teal-100 flex gap-4 items-end">
+                                        <div className="w-20">
+                                            <label className="text-[10px] uppercase font-bold text-teal-800">Ordem</label>
+                                            <input type="number" required value={newModule.order} onChange={e => setNewModule({ ...newModule, order: e.target.value })} className="bg-white border-teal-200" />
                                         </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <input
-                                                placeholder="Título da Aula"
-                                                required
-                                                value={newModule.title}
-                                                onChange={e => setNewModule({ ...newModule, title: e.target.value })}
-                                                className="input-field"
-                                                style={{ padding: '8px' }}
-                                            />
-                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>Título do tema</span>
+                                        <div className="flex-1">
+                                            <label className="text-[10px] uppercase font-bold text-teal-800">Título</label>
+                                            <input required value={newModule.title} onChange={e => setNewModule({ ...newModule, title: e.target.value })} className="bg-white border-teal-200" placeholder="Novo tópico..." />
                                         </div>
-                                        <button type="submit" className="btn-primary" style={{ padding: '8px' }}>
-                                            <Plus size={16} />
+                                        <button type="submit" className="btn-primary h-[42px] aspect-square flex items-center justify-center p-0 rounded-lg">
+                                            <Plus size={20} />
                                         </button>
-                                    </div>
-                                    <div style={{ marginTop: '10px' }}>
-                                        <input
-                                            placeholder="Descrição do conteúdo..."
-                                            value={newModule.description}
-                                            onChange={e => setNewModule({ ...newModule, description: e.target.value })}
-                                            className="input-field"
-                                            style={{ width: '100%', padding: '8px' }}
-                                        />
-                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Descrição</span>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-                    </div>
-                ))
-                }
-            </div >
-
-            <style>{`
-                .input-field {
-                    background: var(--bg-app);
-                    border: 1px solid var(--border);
-                    color: var(--text-main);
-                    border-radius: 4px;
-                    padding: 10px;
-                }
-            `}</style>
-        </div >
+                                    </form>
+                                </div>
+                            )}
+                        </DataCard>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 };
 

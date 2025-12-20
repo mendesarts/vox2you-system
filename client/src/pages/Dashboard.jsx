@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, Users, CalendarCheck, DollarSign, ArrowUpRight, Store, Award, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ErrorBoundary from '../components/ErrorBoundary';
+import PageHeader from '../components/PageHeader';
+import DataCard from '../components/DataCard';
 import './dashboard.css';
 
 const Dashboard = () => {
-    const { user } = useAuth(); // Need user token logic if useAuth provides api or token
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         commercial: { newLeadsMonth: 0, salesMonth: 0, conversionRate: 0 },
         financial: { revenue: 0, expense: 0, balance: 0 },
@@ -22,10 +24,7 @@ const Dashboard = () => {
 
     const fetchStats = async (unitId = '') => {
         try {
-            // Build query
             const query = unitId && unitId !== 'all' ? `?unitId=${unitId}` : '';
-
-            // 1. Fetch Main Stats
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${query}`);
             if (res.ok) {
                 const data = await res.json();
@@ -34,7 +33,6 @@ const Dashboard = () => {
                 console.error("Dashboard error:", await res.text());
             }
 
-            // 2. Fetch Top Seller (Only if authenticated properly, assuming useAuth exposes token or local storage)
             const token = localStorage.getItem('token');
             if (token) {
                 const resSeller = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/stats/top-seller${query}`, {
@@ -60,241 +58,173 @@ const Dashboard = () => {
         fetchStats(newVal);
     };
 
-    if (loading) return <div>Carregando dashboard...</div>;
-    // Safety check for stats to prevent crashes
+    if (loading) return <div className="p-10 text-center text-teal-500 font-bold animate-pulse">Carregando dashboard...</div>;
     if (!stats) return <div className="p-4 text-center">Nenhum dado disponível. Recarregue a página.</div>;
 
     const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
     return (
-        <div className="dashboard-page page-fade-in">
-            <header className="page-header" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
-                <div>
-                    <h2 className="page-title">Visão Geral da Escola</h2>
-                    <p className="page-subtitle">Acompanhe os principais indicadores de performance (KPIs).</p>
-                </div>
+        <div className="dashboard-page p-6 max-w-7xl mx-auto space-y-8">
+            <PageHeader
+                title="Visão Geral da Escola"
+                subtitle={`Referência: ${new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}`}
+                actionLabel={stats.units && stats.units.length > 0 ? "Filtrar Unidade" : null}
+                actionIcon={Store}
+                onAction={() => document.getElementById('unit-selector-focus').focus()}
+            />
 
-                {/* Unit Selector */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                        Referência: {new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+            {/* Hidden Focus Target or actually show the selector cleanly */}
+            {stats.units && stats.units.length > 0 && (
+                <div className="flex justify-end -mt-6 mb-4">
+                    <div className="relative">
+                        <select
+                            id="unit-selector-focus"
+                            value={selectedUnit}
+                            onChange={handleUnitChange}
+                            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm font-medium shadow-sm outline-none focus:border-teal-500 cursor-pointer appearance-none pr-8"
+                        >
+                            <option value="all">Todas as Unidades (Master)</option>
+                            <optgroup label="Unidades">
+                                {stats.units.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </optgroup>
+                        </select>
+                        <Store className="absolute right-2 top-2.5 text-gray-400 pointer-events-none" size={16} />
                     </div>
-                    {stats.units && stats.units.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '8px 12px', borderRadius: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                            <Store size={18} color="#64748b" />
-                            <select
-                                value={selectedUnit}
-                                onChange={handleUnitChange}
-                                style={{ border: 'none', background: 'transparent', fontSize: '0.9rem', color: '#0f172a', fontWeight: 500, outline: 'none', cursor: 'pointer' }}
-                            >
-                                <option value="all">Todas as Unidades (Master)</option>
-                                <optgroup label="Unidades">
-                                    {stats.units.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </optgroup>
-                            </select>
-                        </div>
-                    )}
                 </div>
-            </header>
+            )}
 
-            {/* Top Row - Key Metrics */}
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
-                {/* Metric 1 - Commercial */}
-                <div className="stat-card" style={{ borderLeft: '4px solid #3b82f6' }}>
-                    <div className="stat-header">
-                        <div className="stat-icon" style={{ background: '#eff6ff', color: '#1d4ed8' }}><Users size={24} /></div>
-                        <span className="stat-change positive">Novos Leads</span>
-                    </div>
-                    <div className="stat-value">{stats?.commercial?.newLeadsMonth || 0}</div>
-                    <div className="stat-label">{stats?.commercial?.salesMonth || 0} Matrículas este mês</div>
-                </div>
-
-                {/* Metric 2 - Pedagogical */}
-                <div className="stat-card" style={{ borderLeft: '4px solid #8b5cf6' }}>
-                    <div className="stat-header">
-                        <div className="stat-icon" style={{ background: '#f5f3ff', color: '#7c3aed' }}><CalendarCheck size={24} /></div>
-                        <span className="stat-change positive">Alunos Ativos</span>
-                    </div>
-                    <div className="stat-value">{stats?.pedagogical?.activeStudents || 0}</div>
-                    <div className="stat-label">{stats?.pedagogical?.activeClasses || 0} Turmas em andamento</div>
-                </div>
-
-                {/* Metric 3 - Financial */}
-                <div className="stat-card" style={{ borderLeft: '4px solid #059669' }}>
-                    <div className="stat-header">
-                        <div className="stat-icon" style={{ background: '#ecfdf5', color: '#047857' }}><DollarSign size={24} /></div>
-                        <span className="stat-change positive">Faturamento</span>
-                    </div>
-                    <div className="stat-value">{formatMoney(stats?.financial?.revenue || 0)}</div>
-                    <div className="stat-label">Saldo: {formatMoney(stats?.financial?.balance || 0)}</div>
-                </div>
-            </div>
-
-            {/* Team Performance - New Section */}
-            <div style={{ marginTop: '32px' }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Users size={20} /> Desempenho da Equipe (Metas)
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-                    {stats.commercial?.teamPerformance && stats.commercial.teamPerformance.length > 0 ? (
-                        stats.commercial.teamPerformance.map(member => (
-                            <div key={member.id} className="dashboard-card" style={{ padding: '20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                                    <div style={{
-                                        width: '40px', height: '40px', borderRadius: '50%',
-                                        background: '#3b82f6', color: 'white',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {member.name?.charAt(0) || 'U'}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: 600 }}>{member.name}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Consultor(a)</div>
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
-                                    <span style={{ color: 'var(--text-muted)' }}>Vendas</span>
-                                    <strong style={{ color: (member.sales || 0) >= (member.goal || 1) ? '#16a34a' : '#3b82f6' }}>
-                                        {member.sales || 0} / {member.goal || 0}
-                                    </strong>
-                                </div>
-
-                                {/* Progress Bar */}
-                                <div style={{ width: '100%', height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{
-                                        width: `${member.progress || 0}%`,
-                                        height: '100%',
-                                        background: (member.progress || 0) >= 100 ? '#16a34a' : '#3b82f6',
-                                        transition: 'width 0.5s ease'
-                                    }}></div>
-                                </div>
-                                <div style={{ textAlign: 'right', fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-muted)' }}>
-                                    {member.progress || 0}% da meta
-                                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* COMMERCIAL STATS */}
+                <DataCard title="Comercial" subtitle="Desempenho de Vendas" status="active" statusColor="border-teal-500">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
+                            <div className="flex items-center gap-2 mb-1">
+                                <TrendingUp size={16} className="text-teal-600" />
+                                <span className="text-xs font-bold uppercase text-teal-700">Novos Leads</span>
                             </div>
-                        ))
-                    ) : (
-                        <div style={{ gridColumn: '1 / -1', padding: '20px', background: '#f8fafc', borderRadius: '8px', color: '#64748b', textAlign: 'center' }}>
-                            Nenhum consultor encontrado.
+                            <span className="text-2xl font-bold font-heading text-teal-900 dark:text-teal-100">{stats.commercial?.newLeadsMonth || 0}</span>
                         </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Second Row - Details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginTop: '32px' }}>
-
-                {/* Top Seller Card */}
-                <div className="dashboard-card" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FDB931 100%)', color: '#78350f', border: 'none' }}>
-                    <div className="card-header" style={{ borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
-                        <h3 style={{ color: '#78350f', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Award size={24} /> Destaque do Mês
-                        </h3>
-                    </div>
-                    {topSeller ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', height: 'calc(100% - 60px)' }}>
-                            <div style={{
-                                width: '80px', height: '80px', borderRadius: '50%',
-                                border: '4px solid rgba(255,255,255,0.5)', overflow: 'hidden',
-                                marginBottom: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                {topSeller.profilePicture ? (
-                                    <img src={topSeller.profilePicture} alt={topSeller.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#FDB931' }}>{topSeller.name?.charAt(0) || 'U'}</span>
-                                )}
+                        <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Award size={16} className="text-teal-600" />
+                                <span className="text-xs font-bold uppercase text-teal-700">Vendas</span>
                             </div>
-                            <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{topSeller.name || 'Usuário'}</div>
-                            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>{topSeller.month || '-'}</div>
-                            <div style={{
-                                marginTop: '12px', background: 'rgba(255,255,255,0.3)',
-                                padding: '4px 12px', borderRadius: '20px', fontWeight: 'bold'
-                            }}>
-                                {topSeller.salesCount || 0} Vendas
-                            </div>
+                            <span className="text-2xl font-bold font-heading text-teal-900 dark:text-teal-100">{stats.commercial?.salesMonth || 0}</span>
                         </div>
-                    ) : (
-                        <div style={{ padding: '24px', textAlign: 'center', opacity: 0.8 }}>
-                            Nenhum destaque definido ainda.
-                        </div>
-                    )}
-                </div>
-
-                {/* Financial Breakdown */}
-                <div className="dashboard-card">
-                    <div className="card-header">
-                        <h3><TrendingUp size={20} /> Saúde Financeira</h3>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px', gap: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>Receita</span>
-                            <span style={{ fontWeight: 700, color: '#059669' }}>{formatMoney(stats.financial?.revenue || 0)}</span>
+                    <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                        <span>Taxa de Conversão</span>
+                        <span className="font-bold text-gray-800 dark:text-white">
+                            {((stats.commercial?.conversionRate || 0) * 100).toFixed(1)}%
+                        </span>
+                    </div>
+                </DataCard>
+
+                {/* FINANCIAL STATS */}
+                <DataCard title="Financeiro" subtitle="Fluxo de Caixa Mensal" status="active" statusColor="border-emerald-500">
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <DollarSign size={18} className="text-emerald-500" />
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Receitas</span>
+                            </div>
+                            <span className="font-bold text-gray-900 dark:text-white">{formatMoney(stats.financial?.revenue || 0)}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>Despesa</span>
-                            <span style={{ fontWeight: 700, color: '#ef4444' }}>{formatMoney(stats.financial?.expense || 0)}</span>
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <ArrowUpRight size={18} className="text-rose-500 rotate-45" />
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Despesas</span>
+                            </div>
+                            <span className="font-bold text-gray-900 dark:text-white">{formatMoney(stats.financial?.expense || 0)}</span>
                         </div>
-                        <div style={{ padding: '8px 0', borderTop: '1px solid var(--border)', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 600 }}>Saldo</span>
-                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: (stats.financial?.balance || 0) >= 0 ? '#3b82f6' : '#ef4444' }}>
+                        <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-white/5 p-3 rounded-lg">
+                            <span className="font-bold uppercase text-xs text-gray-500">Saldo</span>
+                            <span className={`font-bold font-heading text-lg ${(stats.financial?.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {formatMoney(stats.financial?.balance || 0)}
                             </span>
                         </div>
                     </div>
-                </div>
+                </DataCard>
 
-                {/* Conversion */}
-                <div className="dashboard-card">
-                    <div className="card-header">
-                        <h3><ArrowUpRight size={20} /> Conversão</h3>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', height: '100%' }}>
-                        <div style={{ fontSize: '3rem', fontWeight: 800, color: '#3b82f6', lineHeight: 1 }}>
-                            {stats.commercial?.conversionRate || 0}%
+                {/* PEDAGOGICAL STATS */}
+                <DataCard title="Pedagógico" subtitle="Retenção e Turmas" status="active" statusColor="border-indigo-500">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center">
+                            <div className="flex justify-center mb-2">
+                                <div className="bg-white p-2 rounded-full shadow-sm text-indigo-600">
+                                    <Users size={20} />
+                                </div>
+                            </div>
+                            <h4 className="text-2xl font-bold font-heading text-indigo-900 dark:text-indigo-100">{stats.pedagogical?.activeStudents || 0}</h4>
+                            <span className="text-xs text-indigo-600 uppercase font-bold">Alunos Ativos</span>
                         </div>
-                        <p style={{ color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
-                            Dos leads tornaram-se alunos este mês.
-                        </p>
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center">
+                            <div className="flex justify-center mb-2">
+                                <div className="bg-white p-2 rounded-full shadow-sm text-indigo-600">
+                                    <CalendarCheck size={20} />
+                                </div>
+                            </div>
+                            <h4 className="text-2xl font-bold font-heading text-indigo-900 dark:text-indigo-100">{stats.pedagogical?.activeClasses || 0}</h4>
+                            <span className="text-xs text-indigo-600 uppercase font-bold">Turmas Ativas</span>
+                        </div>
                     </div>
-                </div>
-
+                </DataCard>
             </div>
 
-
-            {/* Security Modal - First Access */}
-            {
-                user?.forcePasswordChange && (
-                    <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', zIndex: 9999 }}>
-                        <div className="modal-content" style={{ maxWidth: '450px', textAlign: 'center', padding: '40px' }}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <Shield size={64} className="text-warning" style={{ color: '#f59e0b' }} />
+            {/* TOP SELLER */}
+            {topSeller ? (
+                <div className="mt-8">
+                    <DataCard title="Destaque do Mês" subtitle="Top Performance em Vendas" status="active" statusColor="border-amber-400">
+                        <div className="flex flex-col md:flex-row items-center gap-6">
+                            <div className="h-24 w-24 bg-amber-100 rounded-full flex items-center justify-center text-3xl font-bold text-amber-700 border-4 border-white shadow-xl">
+                                {topSeller.profilePicture ? (
+                                    <img src={topSeller.profilePicture} alt={topSeller.name} className="w-full h-full rounded-full object-cover" />
+                                ) : (
+                                    topSeller.name?.charAt(0) || 'D'
+                                )}
                             </div>
-                            <h2 style={{ fontSize: '1.5rem', marginBottom: '10px', color: 'var(--text-main)' }}>Ação Necessária</h2>
-                            <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
-                                Detectamos que você está usando uma senha temporária ou padrão. Para garantir a segurança da sua conta e dos dados da escola, é obrigatório criar uma nova senha agora.
-                            </p>
-
-                            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '25px', textAlign: 'left', border: '1px solid #e2e8f0' }}>
-                                <strong style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Como alterar:</strong>
-                                <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '0.9rem', color: '#475569' }}>
-                                    <li>Clique no botão abaixo para ir às Configurações.</li>
-                                    <li>Acesse a aba <strong>Segurança</strong> ou <strong>Meu Perfil</strong>.</li>
-                                    <li>Digite uma nova senha segura.</li>
-                                </ol>
+                            <div className="text-center md:text-left flex-1">
+                                <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white font-heading">{topSeller.name}</h3>
+                                    <Award className="text-amber-500" size={24} />
+                                </div>
+                                <p className="text-amber-600 font-medium font-serif italic mb-3">{topSeller.role || 'Consultor'}</p>
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm">
+                                    <span className="bg-amber-50 text-amber-800 px-3 py-1 rounded-full font-bold">🏆 {topSeller.sales} Vendas</span>
+                                    <span className="bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full font-bold">💰 {formatMoney(topSeller.totalvalue)}</span>
+                                </div>
                             </div>
-
-                            <a href="/settings" className="btn-primary" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', display: 'flex' }}>
-                                Ir para Configurações e Alterar Senha
-                            </a>
                         </div>
+                    </DataCard>
+                </div>
+            ) : (
+                <div className="mt-8">
+                    <DataCard title="Destaque do Mês" subtitle="Aguardando resultados..." statusColor="border-gray-200">
+                        <div className="text-center py-8 text-gray-400">
+                            Nenhum destaque registrado neste período.
+                        </div>
+                    </DataCard>
+                </div>
+            )}
+
+            {/* Security Modal */}
+            {user?.forcePasswordChange && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center shadow-2xl border-t-8 border-rose-500">
+                        <Shield size={64} className="text-rose-500 mx-auto mb-6" />
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Ação Necessária</h2>
+                        <p className="text-gray-600 mb-6">
+                            Você está usando uma senha temporária. Para sua segurança, crie uma nova senha agora.
+                        </p>
+                        <a href="/settings" className="w-full btn-primary bg-rose-600 hover:bg-rose-700 flex items-center justify-center">
+                            Ir para Configurações
+                        </a>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 };
 

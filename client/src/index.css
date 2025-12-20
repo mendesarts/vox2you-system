@@ -3,52 +3,48 @@
 
   /* Backgrounds */
   --bg-app: #0f172a;
-  /* Slate 900 - Deep Blue/Gray */
+  /* Slate 900 */
   --bg-surface: #1e293b;
-  /* Slate 800 - Lighter for Cards */
+  /* Slate 800 */
   --bg-surface-hover: #334155;
   /* Slate 700 */
 
-  /* Primary Brand */
-  --primary: #05AAA8;
-  /* Teal */
+  /* Primary Brand - VOX TEAL */
+  --primary: #05aaa8;
   --primary-hover: #048f8d;
   --primary-light: rgba(5, 170, 168, 0.15);
 
-  /* Text Colors (High Contrast) */
+  /* Secondary Brand - VOX GOLD */
+  --warning: #eda420;
+  /* Gold Premium */
+
+  /* Functional Colors */
+  --success: #05aaa8;
+  /* Teal as Success */
+  --danger: #e11d48;
+  /* Rose Red Elegant */
+  --info: #3b82f6;
+  /* Blue 500 */
+
+  /* Text Colors */
   --text-main: #f1f5f9;
-  /* Slate 100 - Not pure white */
   --text-muted: #94a3b8;
-  /* Slate 400 - Readable Gray */
   --text-inverse: #0f172a;
-  /* For text on light backgrounds */
 
   /* Borders */
   --border: #334155;
-  /* Slate 700 */
   --border-light: #475569;
-  /* Slate 600 */
-
-  /* Functional Colors */
-  --success: #10b981;
-  /* Emerald 500 */
-  --warning: #f59e0b;
-  /* Amber 500 */
-  --danger: #ef4444;
-  /* Red 500 */
-  --info: #3b82f6;
-  /* Blue 500 */
 
   /* Spacing & Radius */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --radius-lg: 1rem;
+  /* More rounded premium look */
   --radius-full: 9999px;
 
   /* Transitions */
   --trans-fast: 150ms ease;
   --trans-normal: 300ms ease;
-  /* Smoother */
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -56,28 +52,31 @@
 }
 
 .light-mode {
-  /* --- LIGHT MODE --- */
+  /* --- LIGHT MODE (PREMIUM) --- */
 
   /* Backgrounds */
-  --bg-app: #f3f4f6;
-  /* Gray 100 - Soft White */
+  --bg-app: #f0f0f0;
+  /* Premium Light Gray */
   --bg-surface: #ffffff;
-  /* Pure White for Cards */
-  --bg-surface-hover: #f9fafb;
-  /* Gray 50 */
+  --bg-surface-hover: #f8fafc;
+  /* Slate 50 */
 
   /* Text Colors */
-  --text-main: #1f2937;
-  /* Gray 800 - Soft Black */
-  --text-muted: #6b7280;
-  /* Gray 500 */
+  --text-main: #121212;
+  /* Deep Black for Contrast */
+  --text-muted: #64748b;
+  /* Slate 500 */
   --text-inverse: #ffffff;
 
   /* Borders */
-  --border: #e5e7eb;
-  /* Gray 200 */
-  --border-light: #d1d5db;
-  /* Gray 300 */
+  --border: #e2e8f0;
+  /* Slate 200 */
+  --border-light: #cbd5e1;
+  /* Slate 300 */
+
+  /* Buttons Light Mode */
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-text: #1e293b;
 }
 
 /* Reset & Base */
@@ -89,13 +88,30 @@
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Gotham', 'Outfit', sans-serif;
+  /* Gotham Primary */
   background-color: var(--bg-app);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   transition: background-color var(--trans-normal), color var(--trans-normal);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: 'Gotham', 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', serif;
 }
 
 a {
@@ -148,7 +164,8 @@ input,
 select,
 textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
+  /* Larger Touch Target */
   background-color: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -164,15 +181,15 @@ textarea {
 .light-mode select,
 .light-mode textarea {
   background-color: #ffffff;
-  border-color: #d1d5db;
-  color: #1f2937;
+  border-color: #cbd5e1;
+  color: #0f172a;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-light);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 ::placeholder {
@@ -180,29 +197,13 @@ textarea:focus {
   opacity: 0.8;
 }
 
-/* Autocomplete Fix (Chrome/Edge) */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px var(--bg-surface) inset !important;
-  -webkit-text-fill-color: var(--text-main) !important;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-.light-mode input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
-  -webkit-text-fill-color: #1f2937 !important;
-}
-
 /* --- BUTTONS (CRITICAL FIX) --- */
 .btn-primary {
   background-color: var(--primary);
   color: #ffffff !important;
-  /* Always White Text */
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: var(--radius-md);
-  font-weight: 600;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -210,6 +211,9 @@ input:-webkit-autofill:active {
   transition: all var(--trans-fast);
   border: 1px solid transparent;
   box-shadow: var(--shadow-sm);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
 }
 
 .btn-primary:hover {
@@ -221,15 +225,18 @@ input:-webkit-autofill:active {
 .btn-secondary {
   background-color: transparent;
   color: var(--text-main);
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: var(--radius-md);
-  font-weight: 500;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   transition: all var(--trans-fast);
   border: 1px solid var(--border);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .btn-secondary:hover {
@@ -237,20 +244,16 @@ input:-webkit-autofill:active {
   border-color: var(--text-muted);
 }
 
-/* Secondary Button - Light Mode Specifics */
 .light-mode .btn-secondary {
   background-color: #ffffff;
-  border-color: #d1d5db;
-  color: #374151;
-  /* Gray 700 */
+  border-color: #e2e8f0;
+  color: #334155;
 }
 
 .light-mode .btn-secondary:hover {
-  background-color: #f3f4f6;
-  /* Gray 100 */
-  border-color: #9ca3af;
-  color: #111827;
-  /* Gray 900 */
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .btn-icon {
@@ -266,7 +269,6 @@ input:-webkit-autofill:active {
 .btn-icon:hover {
   background-color: var(--bg-surface-hover);
   color: var(--primary);
-  /* Highlight with primary color */
 }
 
 /* --- BADGES --- */
@@ -274,14 +276,15 @@ input:-webkit-autofill:active {
   color: #ffffff !important;
   padding: 4px 12px;
   border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.70rem;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display: inline-block;
 }
 
-.status-badge.paid {
+.status-badge.paid,
+.status-badge.active {
   background-color: var(--success);
 }
 
@@ -290,7 +293,9 @@ input:-webkit-autofill:active {
   color: #FFF !important;
 }
 
-.status-badge.overdue {
+.status-badge.overdue,
+.status-badge.inactive,
+.status-badge.error {
   background-color: var(--danger);
 }
 
@@ -311,7 +316,7 @@ input:-webkit-autofill:active {
   color: #ffffff !important;
 }
 
-/* Scrollbar */
+/* Scrollbar - Vox Premium */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -322,12 +327,12 @@ input:-webkit-autofill:active {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--primary);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--warning);
 }
 
 /* Card/Panel Utility */
@@ -337,15 +342,14 @@ input:-webkit-autofill:active {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  padding: 20px;
+  padding: 24px;
 }
 
 .light-mode .control-card,
 .light-mode .card {
   background-color: #ffffff;
-  border-color: #e5e7eb;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  /* Subtle shadow for depth */
+  border-color: #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
 }
 
 /* Page Animations */
@@ -368,7 +372,6 @@ input:-webkit-autofill:active {
 /* --- MOBILE RESPONSIVE GLOBALS --- */
 @media (max-width: 768px) {
 
-  /* Allow tables to scroll horizontally */
   .report-table-container,
   .table-container,
   .finance-table-container {
@@ -382,29 +385,23 @@ input:-webkit-autofill:active {
 
   table {
     min-width: 600px;
-    /* Force min width to trigger scroll */
   }
 
-  /* Adjust padding for main content area */
   .main-content {
     padding: 16px !important;
   }
 
-  /* Stack flex containers that are row by default usually */
   .control-card {
     flex-direction: column;
     align-items: stretch !important;
     gap: 16px !important;
   }
 
-  /* Adjust inputs in control cards to full width */
   .control-card .input-field,
   .control-card select {
     width: 100% !important;
-    min-width: 0 !important;
   }
 
-  /* Hide print headers explicitly */
   .print-header {
     display: none !important;
   }
