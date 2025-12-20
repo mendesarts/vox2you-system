@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, MapPin, Search, ShieldCheck } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Search, ShieldCheck, Lock } from 'lucide-react';
 import RegisterUser from '../components/RegisterUserPremium';
 import { api } from '../services/api';
 import { ROLE_IDS, ROLE_GROUPS } from '../config/roles';
@@ -108,6 +108,16 @@ const UsersPage = () => {
         }
     };
 
+    const handleResetPassword = async (user) => {
+        if (!window.confirm(`Deseja RESETAR a senha de ${user.name} para o padrão 'Vox2You@2025'?`)) return;
+        try {
+            await api.updateUser(user.id, { password: 'Vox2You@2025' });
+            alert(`✅ Senha de ${user.name} resetada com sucesso!\nNova senha: Vox2You@2025`);
+        } catch (e) {
+            alert('Erro ao resetar senha: ' + e.message);
+        }
+    };
+
     const handleDeleteUser = async (id) => {
         if (!window.confirm("Tem certeza?")) return;
         try {
@@ -200,6 +210,13 @@ const UsersPage = () => {
                                         </div>
 
                                         <div className="mt-6 flex gap-2 border-t border-gray-100 pt-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300">
+                                            <button
+                                                onClick={() => handleResetPassword(user)}
+                                                title="Resetar Senha"
+                                                className="w-10 flex items-center justify-center rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                                            >
+                                                <Lock size={16} />
+                                            </button>
                                             <button
                                                 onClick={() => { setEditingUser(user); setIsModalOpen(true); }}
                                                 className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"

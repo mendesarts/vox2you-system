@@ -68,6 +68,24 @@ const RegisterUserPremium = ({ onClose, onSave, currentUser, userToEdit = null }
                         </div>
                     </div>
 
+                    {/* SENHA PADRÃO VISÍVEL (Apenas Criação) */}
+                    {!userToEdit && (
+                        <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                            <label className="text-xs font-bold text-amber-800 uppercase block mb-1">Senha Inicial (Padrão)</label>
+                            <div className="relative">
+                                <input
+                                    readOnly
+                                    value="Vox2You@2025"
+                                    type="text"
+                                    className="w-full px-4 py-2 rounded-lg bg-white border border-amber-200 text-gray-800 font-mono text-sm focus:outline-none cursor-text select-all"
+                                />
+                            </div>
+                            <p className="text-[10px] text-amber-700 mt-2 font-medium">
+                                ⚠️ Esta é a senha padrão. O usuário poderá alterá-la depois.
+                            </p>
+                        </div>
+                    )}
+
                     <div>
                         <label className="text-sm font-bold text-gray-700 block mb-1">Cargo</label>
                         <div className="relative">
@@ -102,8 +120,8 @@ const RegisterUserPremium = ({ onClose, onSave, currentUser, userToEdit = null }
                                 value={formData.unit}
                                 onChange={e => setFormData({ ...formData, unit: e.target.value })}
                                 className={`w-full pl-11 pr-4 py-3 rounded-xl border outline-none font-medium ${!isGlobalAdmin
-                                        ? 'bg-gray-100 text-gray-600 border-gray-200' // Visual Travado Claro
-                                        : 'bg-white border-gray-200 focus:border-indigo-500'
+                                    ? 'bg-gray-100 text-gray-600 border-gray-200' // Visual Travado Claro
+                                    : 'bg-white border-gray-200 focus:border-indigo-500'
                                     }`}
                                 placeholder="Unidade..."
                             />
