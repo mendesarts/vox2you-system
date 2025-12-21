@@ -1,211 +1,346 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, MapPin, Search, Lock } from 'lucide-react';
-import RegisterUserPremium from '../components/RegisterUserPremium';
+import {
+    UserPlus,
+    Edit,
+    Trash2,
+    X,
+    Save,
+    Search,
+    User
+} from 'lucide-react';
 import { api } from '../services/api';
-import { ROLE_IDS, ROLE_GROUPS, ROLE_LABELS, ROLE_COLORS } from '../config/roles';
-import { VoxButton, VoxCard, VoxModal, VoxBadge } from '../components/VoxUI';
+import { ROLE_LABELS, ROLE_COLORS } from '../utils/roles';
 
 const UsersPage = () => {
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingUser, setEditingUser] = useState(null);
-    const [currentUser, setCurrentUser] = useState({ role: 'indefinido', unit: '', roleId: 0, unitId: null });
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // State for Form
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        role: '20', // Default Franqueado
+        whatsapp: '',
+        unitName: '', // For Master creating new units
+        password: 'Vox2You@2025' // Default visible password
+    });
+
+    const [currentUserRole, setCurrentUserRole] = useState(null);
 
     useEffect(() => {
-        detectUser();
         fetchUsers();
+        // Simulate getting current user role from localStorage/Auth context
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser) setCurrentUserRole(storedUser.roleId);
     }, []);
-
-    const detectUser = () => {
-        const keys = ['user', 'vox_user', 'auth_user', 'sb-user', 'usuario'];
-        for (const key of keys) {
-            const data = localStorage.getItem(key);
-            if (data) {
-                try {
-                    const parsed = JSON.parse(data);
-                    const userObj = parsed.user || parsed;
-                    setCurrentUser(userObj || {});
-                    return;
-                } catch (e) { console.error(e); }
-            }
-        }
-    };
 
     const fetchUsers = async () => {
         try {
-            setLoading(true);
-            const res = await api.fetchUsers();
-            const list = Array.isArray(res) ? res : (res.users || res.data || []);
-            setUsers(list);
-        } catch (error) { console.error("Erro busca:", error); }
-        finally { setLoading(false); }
-    };
-
-    const handleSaveUser = async (userData) => {
-        try {
-            const payload = {
-                name: userData.name,
-                email: userData.email,
-                role: userData.role?.toLowerCase() || 'consultor',
-                unit: (userData.unit && userData.unit !== 'Carregando...') ? userData.unit : currentUser.unit,
-                phone: userData.phone || '',
-                id: userData.id || undefined
-            };
-
-            let response;
-            if (userData.id) {
-                response = await api.updateUser(userData.id, payload);
-            } else {
-                const tempPassword = 'Vox2You@2025';
-                const createPayload = { ...payload, password: tempPassword };
-                response = await api.createUser(createPayload);
-                alert(`✅ Usuário criado!\nSenha: ${tempPassword}\n\nCopie agora!`);
-            }
-
-            if (userData.id) alert('Usuário atualizado com sucesso!');
-            setIsModalOpen(false);
-            setEditingUser(null);
-            fetchUsers();
+            const data = await api.fetchUsers();
+            setUsers(data);
         } catch (error) {
-            const serverError = error.message || "Erro desconhecido";
-            alert(`Erro ao salvar: ${serverError}`);
+            console.error('Error fetching users:', error);
+            // alert('Erro ao carregar usuários');
         }
     };
 
-    const handleResetPassword = async (user) => {
-        if (!window.confirm(`Resetar senha de ${user.name} para 'Vox2You@2025'?`)) return;
-        try {
-            await api.updateUser(user.id, { password: 'Vox2You@2025' });
-            alert(`✅ Senha resetada: Vox2You@2025`);
-        } catch (e) { alert('Erro: ' + e.message); }
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleDeleteUser = async (id) => {
-        if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         try {
-            await api.deleteUser(id);
+            if (isEditMode) {
+                await api.updateUser(formData.id, {
+                    name: formData.name,
+                    email: formData.email,
+                    role: formData.role,
+                    whatsapp: formData.whatsapp
+                });
+            } else {
+                await api.createUser({
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    role: formData.role,
+                    whatsapp: formData.whatsapp,
+                    unitName: formData.unitName
+                });
+            }
             fetchUsers();
-        } catch (e) { alert('Erro ao deletar'); }
+            closeModal();
+        } catch (error) {
+            console.error('Operation failed:', error);
+            alert('Erro ao salvar usuário: ' + (error.message));
+        }
     };
 
-    // PERMISSIONS:
-    // Global: sees all.
-    // Admin (Franchisee/Manager): sees only their unit.
-    const isGlobalAdmin = ROLE_GROUPS.GLOBAL.includes(currentUser.roleId || 0);
-    const canCreateUser = ROLE_GROUPS.ADMIN.includes(currentUser.roleId || 0);
+    const handleDelete = async (userId) => {
+        if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
+            try {
+                await api.deleteUser(userId);
+                fetchUsers();
+            } catch (error) {
+                console.error('Delete failed:', error);
+                alert('Erro ao excluir');
+            }
+        }
+    };
 
-    const secureUsers = users.filter(u => {
-        if (isGlobalAdmin) return true;
-        if (!currentUser.unitId) return false;
-        return u.unitId === currentUser.unitId;
-    });
+    const openModal = (user = null) => {
+        if (user) {
+            setIsEditMode(true);
+            setFormData({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.roleId || '20',
+                whatsapp: user.whatsapp || '',
+                password: '' // Don't show hash
+            });
+        } else {
+            setIsEditMode(false);
+            setFormData({
+                name: '',
+                email: '',
+                role: '20',
+                whatsapp: '',
+                unitName: '',
+                password: 'Vox2You@2025'
+            });
+        }
+        setIsModalOpen(true);
+    };
 
-    const filteredUsers = secureUsers.filter(u => u.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setIsEditMode(false);
+    };
+
+    // Filter Users
+    const filteredUsers = users.filter(u =>
+        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
-        <div className="p-8 max-w-7xl mx-auto min-h-screen">
-            {/* HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <div className="p-8 bg-gray-50 min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold text-vox-dark font-heading">Gestão de Usuários</h1>
-                    <p className="text-muted mt-2 font-serif italic text-lg opacity-80">
-                        Gerencie o acesso e permissões da sua equipe.
-                    </p>
+                    <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Gestão de Equipe</h1>
+                    <p className="text-gray-500 mt-1">Gerencie franqueados, gestores e colaboradores.</p>
                 </div>
-                {canCreateUser && (
-                    <VoxButton
-                        variant="primary"
-                        icon={Plus}
-                        onClick={() => {
-                            setEditingUser(null);
-                            setIsModalOpen(true);
-                        }}
-                    >
-                        Novo Usuário
-                    </VoxButton>
-                )}
+
+                <button
+                    onClick={() => openModal()}
+                    className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-semibold"
+                >
+                    <UserPlus size={20} />
+                    Novo Usuário
+                </button>
             </div>
 
-            {/* SEARCH */}
+            {/* Search Bar */}
             <div className="mb-8 relative max-w-md">
-                <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                     type="text"
-                    placeholder="Buscar usuários..."
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm shadow-sm"
+                    placeholder="Buscar por nome ou email..."
                     value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="vox-input pl-10"
+                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
-            {/* GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in zoom-in duration-300">
-                {filteredUsers.length > 0 ? (
-                    filteredUsers.map(user => {
-                        // Brand Color Logic
-                        let brandColor = 'transparent';
-                        if ([ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(user.roleId)) brandColor = 'vox-gold';
-                        else if ([ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER].includes(user.roleId)) brandColor = 'vox-teal';
+            {/* GRID LAYOUT */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredUsers.map((user) => {
+                    const roleStyle = ROLE_COLORS[user.roleId] || 'text-gray-500 bg-gray-100 border-gray-200';
+                    const roleLabel = ROLE_LABELS[user.roleId] || 'Desconhecido';
 
-                        return (
-                            <VoxCard key={user.id} statusColor={brandColor} className="flex flex-col justify-between h-full group hover:shadow-xl transition-all">
+                    return (
+                        <div key={user.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100 flex flex-col">
+                            {/* Card Header (Color Strip) */}
+                            <div className={`h-2 w-full ${roleStyle.split(' ').find(c => c.startsWith('bg-'))?.replace('bg-', 'bg-') || 'bg-gray-200'}`}></div>
+
+                            <div className="p-6 flex-1 flex flex-col">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl">
+                                        {user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${roleStyle}`}>
+                                        {roleLabel}
+                                    </span>
+                                </div>
+
+                                <h3 className="text-lg font-bold text-gray-800 mb-1 truncate">{user.name}</h3>
+                                <p className="text-sm text-gray-500 mb-4 truncate">{user.email}</p>
+
+                                {/* Unit Info (if applicable) */}
+                                {user.unit && (
+                                    <div className="mt-auto mb-4 bg-gray-50 p-2 rounded text-xs text-gray-600">
+                                        🏠 {user.unit}
+                                    </div>
+                                )}
+
+                                <div className="flex gap-2 mt-auto pt-4 border-t border-gray-100">
+                                    <button
+                                        onClick={() => openModal(user)}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        <Edit size={16} /> Editar
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(user.id)}
+                                        className="flex items-center justify-center p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* MODAL (Popup) */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+                        {/* Modal Header */}
+                        <div className="bg-gray-900 px-6 py-4 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                {isEditMode ? <Edit size={20} className="text-amber-400" /> : <UserPlus size={20} className="text-amber-400" />}
+                                {isEditMode ? 'Editar Usuário' : 'Novo Usuário do Sistema'}
+                            </h2>
+                            <button onClick={closeModal} className="text-gray-400 hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        required
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        className="pl-10 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
+                                        placeholder="Ex: Ana Silva"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Corporativo</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
+                                    placeholder="ana@vox2you.com.br"
+                                />
+                            </div>
+
+                            {/* Role Selection */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Cargo / Função</label>
+                                <select
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleInputChange}
+                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border bg-white"
+                                >
+                                    {Object.entries(ROLE_LABELS).map(([id, label]) => (
+                                        <option key={id} value={id}>{id} - {label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Whatsapp */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                                <input
+                                    type="text"
+                                    name="whatsapp"
+                                    value={formData.whatsapp}
+                                    onChange={handleInputChange}
+                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
+                                    placeholder="(11) 99999-9999"
+                                />
+                            </div>
+
+                            {/* Unit Name (Master Only) - Simplified Logic */}
+                            {!isEditMode && (
                                 <div>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="bg-gray-100 p-3 rounded-full text-gray-600 font-bold w-12 h-12 flex items-center justify-center text-xl">
-                                            {user.name.charAt(0)}
-                                        </div>
-                                        <VoxBadge color={brandColor === 'vox-gold' ? 'gold' : 'teal'}>
-                                            {ROLE_LABELS[user.roleId] || user.role}
-                                        </VoxBadge>
-                                    </div>
-
-                                    <h3 className="text-lg font-bold text-vox-dark mb-1">{user.name}</h3>
-                                    <div className="text-sm text-muted mb-4 flex items-center gap-2">
-                                        <span className={`w-2 h-2 rounded-full ${user.active !== false ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                        {user.email}
-                                    </div>
-
-                                    {user.unitName && (
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg mb-4">
-                                            <MapPin size={14} />
-                                            {user.unitName}
-                                        </div>
-                                    )}
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Unidade (Opcional)</label>
+                                    <input
+                                        type="text"
+                                        name="unitName"
+                                        value={formData.unitName}
+                                        onChange={handleInputChange}
+                                        placeholder="Se criar Franqueado/Gestor..."
+                                        className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Preencha apenas se estiver criando uma Nova Unidade.</p>
                                 </div>
+                            )}
 
-                                <div className="pt-4 border-t border-gray-100 flex justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleResetPassword(user)} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg" title="Resetar Senha"><Lock size={18} /></button>
-                                    {canCreateUser && (
-                                        <>
-                                            <button onClick={() => { setEditingUser(user); setIsModalOpen(true); }} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Editar"><Edit2 size={18} /></button>
-                                            <button onClick={() => handleDeleteUser(user.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Excluir"><Trash2 size={18} /></button>
-                                        </>
-                                    )}
-                                </div>
-                            </VoxCard>
-                        );
-                    })
-                ) : (
-                    <div className="col-span-full py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                        <Search size={48} className="text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-gray-600">Nenhum usuário encontrado</h3>
+                            {/* Password Display/Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Senha de Acesso</label>
+                                <input
+                                    type="text" // Visible text as requested
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleInputChange}
+                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border bg-yellow-50 text-amber-900 font-mono"
+                                    placeholder="Senha..."
+                                />
+                                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                    ℹ️ Padrão sugerido: Vox2You@2025
+                                </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-4 pt-4 mt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="flex-1 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 flex items-center justify-center gap-2"
+                                >
+                                    <Save size={18} />
+                                    {isEditMode ? 'Salvar Alterações' : 'Criar Usuário'}
+                                </button>
+                            </div>
+
+                        </form>
                     </div>
-                )}
-            </div>
-
-            <VoxModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={editingUser ? `Editar ${editingUser.name}` : "Novo Usuário"}
-            >
-                <RegisterUserPremium
-                    onClose={() => setIsModalOpen(false)}
-                    onSave={handleSaveUser}
-                    initialData={editingUser || {}}
-                />
-            </VoxModal>
+                </div>
+            )}
         </div>
     );
 };
