@@ -4,15 +4,120 @@ const FinancialRecord = require('../models/FinancialRecord');
 const Student = require('../models/Student');
 const CashRegister = require('../models/CashRegister');
 const User = require('../models/User');
+const auth = require('../middleware/auth');
+const { checkUnitIsolation } = require('../utils/unitIsolation');
+const { ROLE_IDS } = require('../config/roles');
+const { Op } = require('sequelize');
+const crypto = require('crypto');
+const Holidays = require('date-holidays');
+const hd = new Holidays('BR');
+
+const getNextBusinessDay = (dateObj) => {
+    let d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 12, 0, 0);
+
+    const isHolidayOrWeekend = (date) => {
+        const day = date.getDay();
+        if (day === 0 || day === 6) return true; // Sunday or Saturday
+        const h = hd.isHoliday(date);
+        return h && h.some(hol => hol.type === 'public');
+    };
+
+    while (isHolidayOrWeekend(d)) {
+        d.setDate(d.getDate() + 1);
+    }
+
+    const resY = d.getFullYear();
+    const resM = String(d.getMonth() + 1).padStart(2, '0');
+    const resD = String(d.getDate()).padStart(2, '0');
+    return `${resY}-${resM}-${resD}`;
+};
+
+// Apply auth to all routes in this file
+router.use(auth);
+
+// --- Records Routes ---
+
+// PUT /financial/:id - Update record
+router.put('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { description, amount, dueDate, category, status, type, direction, scope, paymentMethod, paymentDate, updatePlan, launchType, periodicity } = req.body;
+
+        const record = await FinancialRecord.findByPk(id);
+        if (!record) return res.status(404).json({ error: 'Registro não encontrado' });
+
+        if (!checkUnitIsolation(res, req.user, record.unitId)) return;
+
+        const updateData = {
+            description,
+            amount,
+            dueDate,
+            category,
+            status
+        };
+
+        if (type) updateData.type = type;
+        if (direction) updateData.direction = direction;
+        if (scope) updateData.scope = scope;
+        if (paymentMethod) updateData.paymentMethod = paymentMethod;
+        if (paymentDate) updateData.paymentDate = paymentDate;
+        if (launchType) updateData.launchType = launchType;
+        if (periodicity) updateData.periodicity = periodicity;
+
+        console.log('🔍 PUT /financial/:id DEBUG:', {
+            id,
+            updatePlan,
+            planId: record.planId,
+            amount: updateData.amount,
+            dueDate: record.dueDate
+        });
+
+        if (updatePlan && record.planId) {
+            // Atualizar apenas este registro e os futuros (não os passados/pagos)
+            const result = await FinancialRecord.update({
+                amount: updateData.amount,
+                category: updateData.category,
+                description: updateData.description,
+                type: updateData.type || record.type,
+                direction: updateData.direction || record.direction,
+                scope: updateData.scope || record.scope,
+                launchType: updateData.launchType || record.launchType,
+                periodicity: updateData.periodicity || record.periodicity
+            }, {
+                where: {
+                    planId: record.planId,
+                    dueDate: {
+                        [Op.gte]: record.dueDate  // Apenas este e futuros
+                    }
+                }
+            });
+
+            console.log('✅ Registros atualizados:', result[0]);
+            await record.reload(); // Recarregar para pegar valores atualizados
+        } else {
+            await record.update(updateData);
+        }
+
+        res.json(record);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // --- Cash Register Routes ---
 
 // GET /financial/cash-register/status - Get current open register
 router.get('/cash-register/status', async (req, res) => {
     try {
+        const { unitId, roleId } = req.user;
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(roleId));
+
+        const where = { status: 'open' };
+        if (!isGlobal) where.unitId = unitId;
+
         // Find if there is an open register
         const openRegister = await CashRegister.findOne({
-            where: { status: 'open' },
+            where,
             include: [{ model: User, as: 'operator', attributes: ['name'] }],
             order: [['openedAt', 'DESC']]
         });
@@ -22,7 +127,11 @@ router.get('/cash-register/status', async (req, res) => {
         }
 
         // If no open register, find the last closed one
+        const lastWhere = {};
+        if (!isGlobal) lastWhere.unitId = unitId;
+
         const lastRegister = await CashRegister.findOne({
+            where: lastWhere,
             order: [['closedAt', 'DESC']],
             include: [{ model: User, as: 'operator', attributes: ['name'] }]
         });
@@ -43,13 +152,16 @@ router.post('/cash-register/open', async (req, res) => {
         }
 
         // Check if already open
-        const existingOpen = await CashRegister.findOne({ where: { status: 'open' } });
+        const existingOpen = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
+        });
         if (existingOpen) {
-            return res.status(400).json({ error: 'Já existe um caixa aberto.' });
+            return res.status(400).json({ error: 'Já existe um caixa aberto para esta unidade.' });
         }
 
         const newRegister = await CashRegister.create({
             userId,
+            unitId: req.user.unitId,
             openingBalance: openingBalance || 0,
             currentBalance: openingBalance || 0,
             notes,
@@ -68,7 +180,9 @@ router.post('/cash-register/close', async (req, res) => {
     try {
         const { closingBalance, notes } = req.body;
 
-        const openRegister = await CashRegister.findOne({ where: { status: 'open' } });
+        const openRegister = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
+        });
         if (!openRegister) {
             return res.status(400).json({ error: 'Não há caixa aberto para fechar.' });
         }
@@ -94,7 +208,9 @@ router.post('/transaction', async (req, res) => {
         const { category, type, description, amount, direction, paymentMethod, paymentDate } = req.body;
 
         // Find open register
-        const openRegister = await CashRegister.findOne({ where: { status: 'open' } });
+        const openRegister = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
+        });
 
         // If cash transaction, require open register? Or allow "pending" expense?
         // If it's paid now, update register.
@@ -126,7 +242,9 @@ router.post('/transaction', async (req, res) => {
             paymentDate: paymentDate || new Date(),
             dueDate: paymentDate || new Date(),
             status: 'paid', // Instant transaction
-            cashRegisterId
+            cashRegisterId,
+            userId: req.user.id,
+            unitId: req.user.unitId
         });
 
         res.status(201).json(record);
@@ -138,33 +256,136 @@ router.post('/transaction', async (req, res) => {
 // POST /financial/record - Create generic record (Bill/Revenue)
 router.post('/record', async (req, res) => {
     try {
-        const { type, category, description, amount, direction, dueDate, status, paymentMethod, paymentDate } = req.body;
+        const { type, category, description, amount, direction, dueDate, status, paymentMethod, paymentDate, scope, installments, launchType, periodicity } = req.body;
 
-        const openRegister = await CashRegister.findOne({ where: { status: 'open' } });
-        let cashRegisterId = null;
-
-        if (status === 'paid' && openRegister) {
-            cashRegisterId = openRegister.id;
-            const val = parseFloat(amount);
-            const current = parseFloat(openRegister.currentBalance);
-            const newBal = direction === 'income' ? current + val : current - val;
-            await openRegister.update({ currentBalance: newBal });
-        }
-
-        const record = await FinancialRecord.create({
-            type: type || 'outros',
-            category,
-            description,
-            amount,
-            direction,
-            dueDate,
-            status: status || 'pending',
-            paymentDate: status === 'paid' ? (paymentDate || new Date()) : null,
-            paymentMethod: status === 'paid' ? paymentMethod : null,
-            cashRegisterId
+        const openRegister = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
         });
 
-        res.status(201).json(record);
+        const numInstallments = parseInt(installments) || 1;
+        const totalAmount = parseFloat(amount);
+
+        console.log('🔍 DEBUG /record:', {
+            installments,
+            numInstallments,
+            amount,
+            totalAmount,
+            launchType,
+            periodicity,
+            dueDate
+        });
+
+        // Date Handling: Use noon to avoid TZ shift
+        const dateParts = dueDate.split('-').map(Number);
+        const baseDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 12, 0, 0);
+
+        if (numInstallments > 1) {
+            const planId = crypto.randomUUID();
+
+            // Para recorrente: usar o valor direto (já é o valor da parcela)
+            // Para parcelado: dividir o total pelo número de parcelas
+            const installmentAmount = (launchType === 'recorrente')
+                ? totalAmount.toFixed(2)
+                : (totalAmount / numInstallments).toFixed(2);
+
+            const records = [];
+
+            for (let i = 1; i <= numInstallments; i++) {
+                let currentIterationDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), 12, 0, 0);
+
+                // Add interval based on periodicity
+                if (i > 1) {
+                    const p = (periodicity || 'mensal').toLowerCase();
+                    if (p === 'diaria') currentIterationDate.setDate(baseDate.getDate() + (i - 1));
+                    else if (p === 'semanal') currentIterationDate.setDate(baseDate.getDate() + (i - 1) * 7);
+                    else if (p === 'quinzenal') currentIterationDate.setDate(baseDate.getDate() + (i - 1) * 15);
+                    else if (p === 'mensal') currentIterationDate.setMonth(baseDate.getMonth() + (i - 1));
+                    else if (p === 'bimestral') currentIterationDate.setMonth(baseDate.getMonth() + (i - 1) * 2);
+                    else if (p === 'trimestral') currentIterationDate.setMonth(baseDate.getMonth() + (i - 1) * 3);
+                    else if (p === 'semestral') currentIterationDate.setMonth(baseDate.getMonth() + (i - 1) * 6);
+                    else if (p === 'anual') currentIterationDate.setFullYear(baseDate.getFullYear() + (i - 1));
+                    else currentIterationDate.setMonth(baseDate.getMonth() + (i - 1)); // Default monthly
+                }
+
+                // Adjust for next business day
+                const currentDueDateStr = getNextBusinessDay(currentIterationDate);
+
+                // Only the first installment can be 'paid' if status was 'paid'
+                const currentStatus = (i === 1 && status === 'paid') ? 'paid' : (i > 1 && status === 'paid' ? 'pending' : status);
+
+                let cashRegisterId = null;
+                if (currentStatus === 'paid' && openRegister) {
+                    cashRegisterId = openRegister.id;
+                    const val = parseFloat(installmentAmount);
+                    const current = parseFloat(openRegister.currentBalance);
+                    const newBal = direction === 'income' ? current + val : current - val;
+                    await openRegister.update({ currentBalance: newBal });
+                }
+
+                // Only show numbering for "parcelado"
+                const finalDescription = launchType === 'parcelado'
+                    ? `${description} (${i}/${numInstallments})`
+                    : description;
+
+                records.push({
+                    type: type || 'outros',
+                    category,
+                    description: finalDescription,
+                    amount: installmentAmount,
+                    direction,
+                    dueDate: currentDueDateStr,
+                    scope: scope || 'business',
+                    status: currentStatus,
+                    paymentDate: currentStatus === 'paid' ? (paymentDate || new Date()) : null,
+                    paymentMethod: currentStatus === 'paid' ? paymentMethod : null,
+                    cashRegisterId,
+                    userId: req.user.id,
+                    unitId: req.user.unitId,
+                    installments: numInstallments,
+                    currentInstallment: i,
+                    planId,
+                    launchType: launchType || 'parcelado',
+                    periodicity: periodicity || 'mensal'
+                });
+            }
+
+            const createdRecords = await FinancialRecord.bulkCreate(records);
+            return res.status(201).json(createdRecords[0]);
+        } else {
+            // Single Record: Still adjust for next business day
+            const finalDueDate = getNextBusinessDay(baseDate);
+
+            let cashRegisterId = null;
+            if (status === 'paid' && openRegister) {
+                cashRegisterId = openRegister.id;
+                const val = parseFloat(totalAmount);
+                const current = parseFloat(openRegister.currentBalance);
+                const newBal = direction === 'income' ? current + val : current - val;
+                await openRegister.update({ currentBalance: newBal });
+            }
+
+            const record = await FinancialRecord.create({
+                type: type || 'outros',
+                category,
+                description,
+                amount: totalAmount,
+                direction,
+                dueDate: finalDueDate,
+                scope: scope || 'business',
+                status: status || 'pending',
+                paymentDate: status === 'paid' ? (paymentDate || new Date()) : null,
+                paymentMethod: status === 'paid' ? paymentMethod : null,
+                cashRegisterId,
+                userId: req.user.id,
+                unitId: req.user.unitId,
+                installments: 1,
+                currentInstallment: 1,
+                launchType: launchType || 'unico',
+                periodicity: periodicity || 'mensal'
+            });
+
+            return res.status(201).json(record);
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -173,19 +394,26 @@ router.post('/record', async (req, res) => {
 // GET /financial/dre - DRE Report
 router.get('/dre', async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        const { Op } = require('sequelize');
+        const { unitId, roleId } = req.user;
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(roleId));
 
-        const start = startDate ? new Date(startDate) : new Date(new Date().setDate(1)); // Default first day of month
-        const end = endDate ? new Date(endDate) : new Date(); // Default today
+        const { startDate, endDate } = req.query;
+        const start = startDate ? new Date(startDate) : new Date(new Date().setDate(1));
+        const end = endDate ? new Date(endDate) : new Date();
+
+        const where = {
+            status: 'paid',
+            paymentDate: {
+                [Op.between]: [start, end]
+            }
+        };
+
+        if (!isGlobal) {
+            where.unitId = unitId;
+        }
 
         const records = await FinancialRecord.findAll({
-            where: {
-                status: 'paid',
-                paymentDate: {
-                    [Op.between]: [start, end]
-                }
-            },
+            where,
             attributes: ['direction', 'category', 'amount']
         });
 
@@ -221,7 +449,36 @@ router.get('/dre', async (req, res) => {
 // GET /financial - List all records
 router.get('/', async (req, res) => {
     try {
+        const { unitId, roleId } = req.user;
+        const { scope, startDate, endDate } = req.query; // Filter by scope and date range
+
+        const where = {};
+        if (scope) {
+            where.scope = scope;
+        }
+
+        // Filtro de data
+        if (startDate && endDate) {
+            where.dueDate = {
+                [Op.between]: [startDate, endDate]
+            };
+        } else if (startDate) {
+            where.dueDate = {
+                [Op.gte]: startDate
+            };
+        } else if (endDate) {
+            where.dueDate = {
+                [Op.lte]: endDate
+            };
+        }
+
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(roleId));
+        if (!isGlobal) {
+            where.unitId = unitId;
+        }
+
         const records = await FinancialRecord.findAll({
+            where,
             include: [
                 { model: Student, attributes: ['id', 'name'] },
                 // Include Enrollment->Class->Course if needed, but remove if Enrollment invalid
@@ -252,8 +509,12 @@ router.post('/:id/settle', async (req, res) => {
         const record = await FinancialRecord.findByPk(req.params.id);
         if (!record) return res.status(404).json({ error: 'Registro não encontrado' });
 
+        if (!checkUnitIsolation(res, req.user, record.unitId)) return;
+
         // Check for open register if paying
-        const openRegister = await CashRegister.findOne({ where: { status: 'open' } });
+        const openRegister = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
+        });
 
         let cashRegisterId = record.cashRegisterId;
 
@@ -282,7 +543,11 @@ router.post('/:id/settle', async (req, res) => {
             status: 'paid',
             paymentDate: paymentDate || new Date(),
             paymentMethod: paymentMethod || record.paymentMethod,
-            cashRegisterId
+            cashRegisterId,
+            discount: req.body.discount || 0,
+            interest: req.body.interest || 0,
+            fine: req.body.fine || 0,
+            amount: req.body.amount || record.amount // Update amount to the final paid value if provided
         });
         res.json({ message: 'Pagamento quitado', record });
     } catch (error) {
@@ -294,73 +559,62 @@ router.post('/:id/settle', async (req, res) => {
 router.post('/batch', async (req, res) => {
     try {
         const { enrollmentId, studentId, fees } = req.body;
+        const { id: userId, unitId } = req.user;
         const { enrollmentFee, courseFee, materialFee } = fees;
 
         // Check open register for any paid-up-front fees
-        const openRegister = await CashRegister.findOne({ where: { status: 'open' } });
+        const openRegister = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
+        });
 
         const records = [];
         let totalIncomeToAdd = 0;
 
         // Helper to check if paid and process
         const processFee = (fee, type, category) => {
-            if (fee && fee.amount > 0) {
-                const isPaid = fee.isPaid;
-                if (isPaid && openRegister) {
-                    totalIncomeToAdd += parseFloat(fee.amount);
+            if (!fee || !fee.amount || parseFloat(fee.amount) <= 0) return;
+            if (fee.source === 'publisher') return; // Skip publisher material
+
+            const totalAmount = parseFloat(fee.amount);
+            const numInstallments = parseInt(fee.installments) || 1;
+            const installmentValue = (totalAmount / numInstallments).toFixed(2);
+            const baseDate = new Date(fee.dueDate || new Date());
+
+            for (let i = 0; i < numInstallments; i++) {
+                const dueDate = new Date(baseDate);
+                dueDate.setMonth(dueDate.getMonth() + i);
+
+                // If it's the first installment and 'isPaid' is checked
+                const isFirstPaid = (i === 0 && fee.isPaid);
+
+                if (isFirstPaid && openRegister) {
+                    // Only add to current cash if paid now
+                    totalIncomeToAdd += parseFloat(installmentValue);
                 }
 
-                // For course installments
-                if (type === 'curso') {
-                    const total = parseFloat(fee.amount);
-                    const inst = parseInt(fee.installments) || 1;
-                    const instalmentValue = total / inst;
-                    const baseDate = new Date(fee.dueDate || new Date());
-
-                    for (let i = 0; i < inst; i++) {
-                        const dueDate = new Date(baseDate);
-                        dueDate.setMonth(dueDate.getMonth() + i);
-                        const thisPaid = isPaid && i === 0; // Only first is paid if isPaid checked? Or all? Usually just first/entrance. Assuming 'isPaid' means first installment/downpayment.
-                        // Actually, 'courseFee.isPaid' usually means the first payment. 
-                        // Let's assume isPaid applies to the *first* installment only for now, unless fully paid. 
-                        // But for simplicity, if 'isPaid' is true, let's assume just the first one.
-
-                        if (thisPaid && openRegister) totalIncomeToAdd += instalmentValue;
-
-                        records.push({
-                            enrollmentId, studentId, type, category,
-                            amount: instalmentValue.toFixed(2),
-                            dueDate: dueDate,
-                            direction: 'income',
-                            paymentMethod: fee.method,
-                            installments: inst,
-                            currentInstallment: i + 1,
-                            status: thisPaid ? 'paid' : 'pending',
-                            paymentDate: thisPaid ? new Date() : null,
-                            cashRegisterId: thisPaid && openRegister ? openRegister.id : null
-                        });
-                    }
-                } else {
-                    // Single fee (Matricula, Material)
-                    records.push({
-                        enrollmentId, studentId, type, category,
-                        amount: fee.amount,
-                        dueDate: fee.dueDate || new Date(),
-                        direction: 'income',
-                        paymentMethod: fee.method,
-                        installments: 1,
-                        currentInstallment: 1,
-                        status: isPaid ? 'paid' : 'pending',
-                        paymentDate: isPaid ? new Date() : null,
-                        cashRegisterId: isPaid && openRegister ? openRegister.id : null
-                    });
-                }
+                records.push({
+                    enrollmentId,
+                    studentId,
+                    type,
+                    category,
+                    amount: installmentValue,
+                    dueDate: dueDate,
+                    paymentDate: isFirstPaid ? new Date() : null,
+                    status: isFirstPaid ? 'paid' : 'pending',
+                    direction: 'income',
+                    paymentMethod: fee.method,
+                    installments: numInstallments,
+                    installmentNumber: i + 1,
+                    unitId,
+                    userId,
+                    description: `${category} (${i + 1}/${numInstallments})`
+                });
             }
         };
 
         processFee(enrollmentFee, 'matricula', 'Matrícula');
+        processFee(courseFee, 'curso', 'Curso');
         processFee(materialFee, 'material', 'Material Didático');
-        processFee(courseFee, 'curso', 'Mensalidade');
 
         if (records.length > 0) {
             await FinancialRecord.bulkCreate(records);
@@ -379,8 +633,6 @@ router.post('/batch', async (req, res) => {
     }
 });
 
-const auth = require('../middleware/auth');
-
 // --- Data Tools Middleware ---
 const checkDataToolsAccess = (req, res, next) => {
     // Only Financial Leadership/Admin/Manager/Master
@@ -394,23 +646,12 @@ const checkDataToolsAccess = (req, res, next) => {
 // GET /financial/export/csv
 router.get('/export/csv', auth, checkDataToolsAccess, async (req, res) => {
     try {
-        const { unitId, role } = req.user;
+        const { unitId, roleId } = req.user;
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(roleId));
         const where = {};
-        // If not master, filter by unit (via CashRegister or indirect? FinancialRecord has no unitId directly usually?)
-        // Wait, FinancialRecord logic in 'financial.js' didn't show unit checks in listing '/' route!
-        // That's a security hole I should fix or assume handled.
-        // FinancialRecord usually links to Enrollment -> Class -> Unit? Or User -> Unit?
-        // The default findAll in '/' doesn't filter! 
-        // I should fix that too, but let's stick to CSV.
-        // I'll filter if I can. FinancialRecord has `cashRegisterId` -> CashRegister -> userId -> unitId?
-        // Or if simple, just dump all for now if logic is missing.
-        // Users said "for each sector".
-        // I will dump all for now as I can't easily traverse deep relations without `include` hell.
-        // Actually, let's filter by `req.user.unitId` if role !== master by assuming `unitId` column if it exists or empty if not.
-        // FinancialRecord usually doesn't have `unitId`.
-        // I'll just export all for now (MVP). Backend needs refactor for Unit Security on Finance later.
+        if (!isGlobal) where.unitId = unitId;
 
-        const records = await FinancialRecord.findAll({ raw: true });
+        const records = await FinancialRecord.findAll({ where, raw: true });
 
         const fields = ['description', 'category', 'amount', 'type', 'direction', 'status', 'dueDate', 'paymentDate'];
         let csv = fields.join(',') + '\n';
@@ -466,6 +707,7 @@ router.post('/import/csv', auth, checkDataToolsAccess, async (req, res) => {
             // Create Record
             await FinancialRecord.create({
                 ...data,
+                unitId: req.user.unitId,
                 dueDate: data.dueDate || new Date(),
                 paymentDate: data.status === 'paid' ? new Date() : null,
                 // cashRegisterId: null // Import doesn't link to cash register
@@ -473,6 +715,97 @@ router.post('/import/csv', auth, checkDataToolsAccess, async (req, res) => {
             success++;
         }
         res.json({ message: 'Importado', success, failed });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /financial/advance - Antecipação de Recebíveis
+router.post('/advance', auth, async (req, res) => {
+    try {
+        const { recordIds, totalFee } = req.body;
+        const { unitId, roleId, id: userId } = req.user;
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(roleId));
+        const where = { id: recordIds };
+        if (!isGlobal) where.unitId = unitId;
+
+        const records = await FinancialRecord.findAll({ where });
+        if (!records.length) return res.status(404).json({ error: 'Nenhum registro encontrado' });
+
+        const openRegister = await CashRegister.findOne({
+            where: { status: 'open', unitId: req.user.unitId }
+        });
+        if (!openRegister) return res.status(400).json({ error: 'É necessário ter um caixa aberto para realizar a antecipação.' });
+
+        let totalGross = 0;
+        for (const record of records) {
+            totalGross += parseFloat(record.amount);
+            // Mark record as paid (advanced)
+            await record.update({
+                status: 'paid',
+                paymentDate: new Date(),
+                description: record.description + ' (Antecipado)'
+            });
+        }
+
+        const netAmount = totalGross - parseFloat(totalFee || 0);
+
+        // Add to cash register
+        await openRegister.update({
+            currentBalance: parseFloat(openRegister.currentBalance) + netAmount
+        });
+
+        // Add a fee record (expense)
+        await FinancialRecord.create({
+            type: 'outros',
+            category: 'Taxa Bancária',
+            amount: totalFee,
+            dueDate: new Date(),
+            paymentDate: new Date(),
+            status: 'paid',
+            direction: 'expense',
+            unitId,
+            userId,
+            description: `Taxa de antecipação de ${records.length} títulos`
+        });
+
+        res.json({ success: true, netAmount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE /financial/:id - Delete record
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { deleteFutures } = req.query;
+
+        const record = await FinancialRecord.findByPk(id);
+        if (!record) return res.status(404).json({ error: 'Registro não encontrado' });
+
+        if (!checkUnitIsolation(res, req.user, record.unitId)) return;
+
+        let deletedCount = 1;
+
+        // Se deleteFutures=true e o registro tem planId, excluir este e todos os futuros
+        if (deleteFutures === 'true' && record.planId) {
+            // Excluir este registro e todos com mesmo planId e dueDate >= atual
+            const result = await FinancialRecord.destroy({
+                where: {
+                    planId: record.planId,
+                    dueDate: {
+                        [Op.gte]: record.dueDate
+                    }
+                }
+            });
+            deletedCount = result;
+        } else {
+            // Excluir apenas este registro
+            await record.destroy();
+        }
+
+        res.json({ message: 'Registro(s) excluído(s) com sucesso', count: deletedCount });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
