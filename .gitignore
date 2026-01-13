@@ -1,4 +1,13 @@
 node_modules
 dist
 .env
+.env.local
 .DS_Store
+*.log
+*.sqlite
+wpp_session
+auth_info_baileys
+server/wpp_session
+server/auth_info_baileys
+client/dist
+server/backups
