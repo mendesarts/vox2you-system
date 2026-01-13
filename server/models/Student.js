@@ -4,18 +4,23 @@ const { validateCPF, validatePhone } = require('../utils/validators');
 
 const Student = sequelize.define('Student', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     // Lead info (optional link)
     leadId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
     },
     unitId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
+    },
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'Creator or Responsible Consultant'
     },
     // Personal Info
     registrationNumber: {
@@ -87,6 +92,14 @@ const Student = sequelize.define('Student', {
     paymentStatus: {
         type: DataTypes.ENUM('pending', 'paid', 'late'),
         defaultValue: 'pending'
+    },
+    classId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    courseId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 });
 

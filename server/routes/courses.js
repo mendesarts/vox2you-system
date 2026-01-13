@@ -3,8 +3,20 @@ const router = express.Router();
 const Course = require('../models/Course');
 const Module = require('../models/Module');
 
-// GET /courses - Include modules
-router.get('/', async (req, res) => {
+const auth = require('../middleware/auth');
+const { ROLE_IDS } = require('../config/roles');
+
+// Middleware for Global Admin Check
+const checkGlobalAccess = (req, res, next) => {
+    if ([ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(req.user.roleId)) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Acesso restrito a Contas Globais.' });
+    }
+};
+
+// GET /courses - Include modules (Access: All Users)
+router.get('/', auth, async (req, res) => {
     try {
         const courses = await Course.findAll({
             include: [{ model: Module, as: 'Modules' }],
@@ -19,18 +31,34 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST /courses - Create Course (category fixed to Oratória)
-router.post('/', async (req, res) => {
+// GET /courses/:id (Access: All Users)
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const course = await Course.findByPk(req.params.id, {
+            include: [{ model: Module, as: 'Modules' }],
+            order: [[{ model: Module, as: 'Modules' }, 'order', 'ASC']]
+        });
+        if (!course) return res.status(404).json({ error: 'Curso não encontrado' });
+        res.json(course);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /courses - Create Course (Global Only)
+router.post('/', auth, checkGlobalAccess, async (req, res) => {
     try {
         // Ensure numeric fields are stored as numbers
-        const { name, workload, weeklyFrequency } = req.body;
+        const { name, workload, weeklyFrequency, mentorshipsIncluded } = req.body;
         const parsedWorkload = parseInt(workload, 10);
         const parsedFrequency = weeklyFrequency ? parseInt(weeklyFrequency, 10) : 2; // Default to 2 if missing
+        const parsedMentorships = mentorshipsIncluded ? parseInt(mentorshipsIncluded, 10) : 0;
 
         const course = await Course.create({
             name,
             workload: parsedWorkload,
             weeklyFrequency: parsedFrequency,
+            mentorshipsIncluded: parsedMentorships,
             category: 'Oratória'
         });
         res.status(201).json(course);
@@ -40,8 +68,8 @@ router.post('/', async (req, res) => {
 });
 
 
-// POST /courses/:id/modules - Add Module (lesson) to Course
-router.post('/:id/modules', async (req, res) => {
+// POST /courses/:id/modules - Add Module (Global Only)
+router.post('/:id/modules', auth, checkGlobalAccess, async (req, res) => {
     try {
         const course = await Course.findByPk(req.params.id);
         if (!course) return res.status(404).json({ error: 'Curso não encontrado' });
@@ -55,8 +83,8 @@ router.post('/:id/modules', async (req, res) => {
     }
 });
 
-// PUT /courses/modules/:id - Update Module
-router.put('/modules/:id', async (req, res) => {
+// PUT /courses/modules/:id - Update Module (Global Only)
+router.put('/modules/:id', auth, checkGlobalAccess, async (req, res) => {
     try {
         const module = await Module.findByPk(req.params.id);
         if (!module) return res.status(404).json({ error: 'Módulo não encontrado' });
@@ -67,8 +95,8 @@ router.put('/modules/:id', async (req, res) => {
     }
 });
 
-// DELETE /courses/modules/:id - Delete Module
-router.delete('/modules/:id', async (req, res) => {
+// DELETE /courses/modules/:id - Delete Module (Global Only)
+router.delete('/modules/:id', auth, checkGlobalAccess, async (req, res) => {
     try {
         const module = await Module.findByPk(req.params.id);
         if (!module) return res.status(404).json({ error: 'Módulo não encontrado' });
@@ -80,8 +108,8 @@ router.delete('/modules/:id', async (req, res) => {
     }
 });
 
-// PUT /courses/:id - Update Course (cannot change category)
-router.put('/:id', async (req, res) => {
+// PUT /courses/:id - Update Course (Global Only)
+router.put('/:id', auth, checkGlobalAccess, async (req, res) => {
     try {
         const course = await Course.findByPk(req.params.id);
         if (!course) return res.status(404).json({ error: 'Curso não encontrado' });
@@ -100,8 +128,8 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// DELETE /courses/:id - Delete Course with confirmation handled on client side
-router.delete('/:id', async (req, res) => {
+// DELETE /courses/:id - Delete Course (Global Only)
+router.delete('/:id', auth, checkGlobalAccess, async (req, res) => {
     try {
         const course = await Course.findByPk(req.params.id);
         if (!course) return res.status(404).json({ error: 'Curso não encontrado' });
@@ -112,13 +140,11 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// POST /courses/:id/launch - Launch program of classes (placeholder)
-router.post('/:id/launch', async (req, res) => {
+// POST /courses/:id/launch - Launch program (Global Only)
+router.post('/:id/launch', auth, checkGlobalAccess, async (req, res) => {
     try {
-        // Placeholder logic: just acknowledge launch
         const course = await Course.findByPk(req.params.id);
         if (!course) return res.status(404).json({ error: 'Curso não encontrado' });
-        // In real implementation, would trigger program generation
         res.json({ message: 'Programa de aulas lançado para o curso', courseId: course.id });
     } catch (error) {
         res.status(500).json({ error: error.message });

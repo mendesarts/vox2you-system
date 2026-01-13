@@ -1,0 +1,118 @@
+Database Storage Path: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/voxflow.sqlite
+--- ESTRUTURA DA TABELA LEADS ---
+┌───────────────────┬────────────────┬───────────┬──────────────┬────────────┬────────┬───────────────────────────────┐
+│ (index)           │ type           │ allowNull │ defaultValue │ primaryKey │ unique │ references                    │
+├───────────────────┼────────────────┼───────────┼──────────────┼────────────┼────────┼───────────────────────────────┤
+│ id                │ 'INTEGER'      │ true      │ undefined    │ true       │ false  │                               │
+│ name              │ 'VARCHAR(255)' │ false     │ undefined    │ false      │ false  │                               │
+│ phone             │ 'VARCHAR(255)' │ false     │ undefined    │ false      │ false  │                               │
+│ email             │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ source            │ 'VARCHAR(255)' │ true      │ 'Organic'    │ false      │ false  │                               │
+│ campaign          │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ status            │ 'TEXT'         │ true      │ 'new'        │ false      │ false  │                               │
+│ handledBy         │ 'TEXT'         │ true      │ 'AI'         │ false      │ false  │                               │
+│ consultant_id     │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │ { model: 'Users', key: 'id' } │
+│ unitId            │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │ { model: 'Units', key: 'id' } │
+│ aiStatus          │ 'VARCHAR(255)' │ true      │ 'active'     │ false      │ false  │                               │
+│ attemptCount      │ 'INTEGER'      │ true      │ '0'          │ false      │ false  │                               │
+│ lastContactAt     │ 'DATETIME'     │ true      │ undefined    │ false      │ false  │                               │
+│ nextActionAt      │ 'DATETIME'     │ true      │ undefined    │ false      │ false  │                               │
+│ appointmentDate   │ 'DATETIME'     │ true      │ undefined    │ false      │ false  │                               │
+│ notes             │ 'TEXT'         │ true      │ undefined    │ false      │ false  │                               │
+│ history           │ 'TEXT'         │ true      │ '[]'         │ false      │ false  │                               │
+│ title             │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ value             │ 'FLOAT'        │ true      │ undefined    │ false      │ false  │                               │
+│ company           │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ city              │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ neighborhood      │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ tags              │ 'TEXT'         │ true      │ undefined    │ false      │ false  │                               │
+│ attempts          │ 'TEXT'         │ true      │ '[]'         │ false      │ false  │                               │
+│ contactSummary    │ 'TEXT'         │ true      │ undefined    │ false      │ false  │                               │
+│ nextTaskType      │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ createdAt         │ 'DATETIME'     │ false     │ undefined    │ false      │ false  │                               │
+│ updatedAt         │ 'DATETIME'     │ false     │ undefined    │ false      │ false  │                               │
+│ temperature       │ 'TEXT'         │ true      │ 'cold'       │ false      │ false  │                               │
+│ nextTaskDate      │ 'DATETIME'     │ true      │ undefined    │ false      │ false  │                               │
+│ cpf               │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ rg                │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ birthDate         │ 'DATE'         │ true      │ undefined    │ false      │ false  │                               │
+│ profession        │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ address           │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ courseInterest    │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ lossReason        │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ tracking          │ 'TEXT'         │ true      │ '{}'         │ false      │ false  │                               │
+│ metadata          │ 'TEXT'         │ true      │ '{}'         │ false      │ false  │                               │
+│ painPoint         │ 'TEXT'         │ true      │ undefined    │ false      │ false  │                               │
+│ objective         │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ proposalPlan      │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ proposalValue     │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ paymentConditions │ 'TEXT'         │ true      │ undefined    │ false      │ false  │                               │
+│ consultancyDate   │ 'DATETIME'     │ true      │ undefined    │ false      │ false  │                               │
+│ consultancyType   │ 'TEXT'         │ true      │ 'presencial' │ false      │ false  │                               │
+│ funnel            │ 'VARCHAR(255)' │ true      │ 'crm'        │ false      │ false  │                               │
+│ utm_source        │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ utm_medium        │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ utm_campaign      │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ utm_term          │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ sales_value       │ 'FLOAT'        │ true      │ undefined    │ false      │ false  │                               │
+│ enrollment_value  │ 'FLOAT'        │ true      │ undefined    │ false      │ false  │                               │
+│ payment_method    │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ course_interest   │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+│ date_of_birth     │ 'DATETIME'     │ true      │ undefined    │ false      │ false  │                               │
+│ loss_reason       │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                               │
+└───────────────────┴────────────────┴───────────┴──────────────┴────────────┴────────┴───────────────────────────────┘
+
+--- ESTRUTURA DA TABELA STUDENTS ---
+┌────────────────────┬────────────────┬───────────┬──────────────┬────────────┬────────┬─────────────────────────────────┐
+│ (index)            │ type           │ allowNull │ defaultValue │ primaryKey │ unique │ references                      │
+├────────────────────┼────────────────┼───────────┼──────────────┼────────────┼────────┼─────────────────────────────────┤
+│ id                 │ 'INTEGER'      │ true      │ undefined    │ true       │ false  │                                 │
+│ leadId             │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │                                 │
+│ unitId             │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │ { model: 'Units', key: 'id' }   │
+│ userId             │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │                                 │
+│ registrationNumber │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │                                 │
+│ name               │ 'VARCHAR(255)' │ false     │ undefined    │ false      │ false  │                                 │
+│ gender             │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ birthDate          │ 'DATE'         │ true      │ undefined    │ false      │ false  │                                 │
+│ profession         │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ workplace          │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ cpf                │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ true   │                                 │
+│ cep                │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ address            │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ neighborhood       │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ city               │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ mobile             │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ phone              │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ email              │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ responsibleName    │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ responsiblePhone   │ 'VARCHAR(255)' │ true      │ undefined    │ false      │ false  │                                 │
+│ status             │ 'TEXT'         │ true      │ 'active'     │ false      │ false  │                                 │
+│ contractStatus     │ 'TEXT'         │ true      │ 'pending'    │ false      │ false  │                                 │
+│ paymentStatus      │ 'TEXT'         │ true      │ 'pending'    │ false      │ false  │                                 │
+│ createdAt          │ 'DATETIME'     │ false     │ undefined    │ false      │ false  │                                 │
+│ updatedAt          │ 'DATETIME'     │ false     │ undefined    │ false      │ false  │                                 │
+│ classId            │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │ { model: 'Classes', key: 'id' } │
+│ courseId           │ 'INTEGER'      │ true      │ undefined    │ false      │ false  │ { model: 'Courses', key: 'id' } │
+└────────────────────┴────────────────┴───────────┴──────────────┴────────────┴────────┴─────────────────────────────────┘
+
+--- ESTRUTURA DA TABELA UNITS ---
+┌───────────────────┬────────────────┬───────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────┬────────────┬────────┐
+│ (index)           │ type           │ allowNull │ defaultValue                                                                                        │ primaryKey │ unique │
+├───────────────────┼────────────────┼───────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┼────────────┼────────┤
+│ id                │ 'INTEGER'      │ true      │ undefined                                                                                           │ true       │ false  │
+│ name              │ 'VARCHAR(255)' │ false     │ undefined                                                                                           │ false      │ false  │
+│ address           │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ city              │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ active            │ 'TINYINT(1)'   │ true      │ true                                                                                                │ false      │ false  │
+│ cnpj              │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ state             │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ zipCode           │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ phone             │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ email             │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ directorName      │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ directorEmail     │ 'VARCHAR(255)' │ true      │ undefined                                                                                           │ false      │ false  │
+│ businessHours     │ 'JSON'         │ true      │ '{}'                                                                                                │ false      │ false  │
+│ createdAt         │ 'DATETIME'     │ false     │ undefined                                                                                           │ false      │ false  │
+│ updatedAt         │ 'DATETIME'     │ false     │ undefined                                                                                           │ false      │ false  │
+│ financialSettings │ 'JSON'         │ true      │ '{"cardFees":{"credit":{"base":2.99,"perInstallment":1.5},"debit":{"base":1.2}},"advanceRate":1.5}' │ false      │ false  │
+└───────────────────┴────────────────┴───────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────┴────────────┴────────┘

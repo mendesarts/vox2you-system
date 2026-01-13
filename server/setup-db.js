@@ -3,6 +3,8 @@ const Lead = require('./models/Lead');
 const AIConfig = require('./models/AIConfig');
 const Unit = require('./models/Unit');
 const User = require('./models/User');
+const Holiday = require('./models/Holiday');
+const ClassSession = require('./models/ClassSession');
 const FinancialRecord = require('./models/FinancialRecord');
 // Pedagogical Models
 const Student = require('./models/Student');
@@ -78,9 +80,20 @@ async function initDb() {
         await sequelize.authenticate();
         console.log('📦 Conectado ao banco de dados SQLite.');
 
-        await sequelize.query("PRAGMA foreign_keys = OFF");
+        // Prevent accidental wipe
+        const existingUnits = await Unit.count();
+        if (existingUnits > 0) {
+            console.log('⚠️ Database already initialized (Units found). Aborting wipe/seed.');
+            return;
+        }
+
+        // await sequelize.query("PRAGMA foreign_keys = OFF");
+        // await sequelize.sync({ force: true }); // Sync all models including Holiday and ClassSession
+        // await sequelize.query("PRAGMA foreign_keys = ON");
+
+        // Use safe sync if really needed here, or just fail safely above.
+        // If we are here, it means DB is empty of units hopefully.
         await sequelize.sync({ force: true });
-        await sequelize.query("PRAGMA foreign_keys = ON");
 
         console.log('✅ Tabelas (re)criadas com sucesso!');
 

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const AIConfig = require('../models/AIConfig');
 
+const { reloadAIConfig } = require('../services/whatsappBot');
+
 // GET /api/ai-config
 router.get('/', async (req, res) => {
     try {
@@ -29,7 +31,11 @@ router.put('/', async (req, res) => {
                 knowledgeBase: JSON.stringify(knowledgeBase)
             });
         }
-        res.json(config);
+
+        // Força a atualização imediata do Bot
+        await reloadAIConfig();
+
+        res.json({ success: true, message: 'Configurações salvas e IA atualizada instantaneamente!', config });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

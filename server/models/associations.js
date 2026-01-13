@@ -1,5 +1,4 @@
 const Student = require('./Student');
-const Professor = require('./Professor');
 const User = require('./User');
 const Course = require('./Course');
 const Class = require('./Class');
@@ -14,6 +13,11 @@ const Holiday = require('./Holiday');
 const Enrollment = require('./Enrollment');
 const Unit = require('./Unit');
 const Lead = require('./Lead');
+const StudentLog = require('./StudentLog');
+const UnitConfig = require('./UnitConfig');
+const CadenceLog = require('./CadenceLog');
+const ContactAttempt = require('./ContactAttempt');
+
 
 function defineAssociations() {
     // Unit Associations
@@ -22,6 +26,9 @@ function defineAssociations() {
 
     Unit.hasMany(Lead, { foreignKey: 'unitId' });
     Lead.belongsTo(Unit, { foreignKey: 'unitId' });
+
+    Lead.belongsTo(User, { as: 'consultant', foreignKey: 'consultant_id' });
+    User.hasMany(Lead, { foreignKey: 'consultant_id' });
 
     Unit.hasMany(Student, { foreignKey: 'unitId' });
     Student.belongsTo(Unit, { foreignKey: 'unitId' });
@@ -55,15 +62,18 @@ function defineAssociations() {
     Attendance.belongsTo(Student, { foreignKey: 'studentId' });
     Student.hasMany(Attendance, { foreignKey: 'studentId' });
 
+    Student.hasMany(StudentLog, { foreignKey: 'studentId' });
+    StudentLog.belongsTo(Student, { foreignKey: 'studentId' });
+
     Attendance.belongsTo(Class, { foreignKey: 'classId' });
     Class.hasMany(Attendance, { foreignKey: 'classId' });
 
-    // Mentorship -> Student, Professor
+    // Mentorship -> Student, User (as Mentor)
     Mentorship.belongsTo(Student, { foreignKey: 'studentId' });
     Student.hasMany(Mentorship, { foreignKey: 'studentId' });
 
-    Mentorship.belongsTo(Professor, { as: 'mentor', foreignKey: 'mentorId' });
-    Professor.hasMany(Mentorship, { foreignKey: 'mentorId' });
+    Mentorship.belongsTo(User, { as: 'mentor', foreignKey: 'mentorId' });
+    User.hasMany(Mentorship, { foreignKey: 'mentorId' });
 
     // Transfer -> Student, fromClass, toClass
     Transfer.belongsTo(Student, { foreignKey: 'studentId' });
@@ -84,6 +94,9 @@ function defineAssociations() {
 
     Enrollment.belongsTo(Class, { foreignKey: 'classId' });
     Class.hasMany(Enrollment, { foreignKey: 'classId' });
+
+    Enrollment.belongsTo(Course, { foreignKey: 'courseId' });
+    Course.hasMany(Enrollment, { foreignKey: 'courseId' });
 
     // FinancialRecord -> Enrollment, Student
     FinancialRecord.belongsTo(Enrollment, { foreignKey: 'enrollmentId' });
@@ -108,13 +121,23 @@ function defineAssociations() {
     UserAvailability.belongsTo(User, { foreignKey: 'userId' });
 
     User.hasMany(CalendarBlock, { foreignKey: 'userId' });
-    CalendarBlock.belongsTo(User, { foreignKey: 'userId' });
+    CalendarBlock.belongsTo(User, { foreignKey: 'userId', as: 'owner' });
 
     User.hasMany(Task, { foreignKey: 'userId' });
     Task.belongsTo(User, { foreignKey: 'userId' });
 
-    Lead.hasMany(Task, { foreignKey: 'leadId' });
-    Task.belongsTo(Lead, { foreignKey: 'leadId' });
+    Lead.hasMany(Task, { foreignKey: 'leadId', onDelete: 'CASCADE' });
+    Task.belongsTo(Lead, { foreignKey: 'leadId', onDelete: 'CASCADE' });
+
+    Unit.hasOne(UnitConfig, { foreignKey: 'unitId' });
+    UnitConfig.belongsTo(Unit, { foreignKey: 'unitId' });
+
+    // Importado Import History
+    Lead.hasMany(CadenceLog, { foreignKey: 'leadId', as: 'cadenceLogs' });
+    CadenceLog.belongsTo(Lead, { foreignKey: 'leadId' });
+
+    Lead.hasMany(ContactAttempt, { foreignKey: 'leadId', as: 'contactAttempts' });
+    ContactAttempt.belongsTo(Lead, { foreignKey: 'leadId' });
 }
 
 module.exports = defineAssociations;

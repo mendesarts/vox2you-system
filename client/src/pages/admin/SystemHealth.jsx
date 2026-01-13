@@ -26,13 +26,14 @@ const SystemHealth = () => {
         checkHealth();
     }, []);
 
-    // Access Control
-    if (user && user.role !== 'master') {
+    // Access Control - Exclusivo Master
+    const isMaster = Number(user?.roleId) === 1;
+    if (user && !isMaster) {
         return (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
                 <AlertTriangle size={48} style={{ marginBottom: '1rem', color: '#ef4444' }} />
                 <h2>Acesso Restrito</h2>
-                <p>Esta área é exclusiva para usuários MASTER.</p>
+                <p>Esta área é de monitoramento técnico exclusivo para a conta Master.</p>
             </div>
         );
     }
@@ -64,7 +65,7 @@ const SystemHealth = () => {
     );
 
     return (
-        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ width: '100%', margin: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -72,11 +73,11 @@ const SystemHealth = () => {
                     </h1>
                     <p style={{ opacity: 0.7, marginTop: '0.5rem' }}>Status em tempo real da infraestrutura VoxFlow</p>
                 </div>
-                <button onClick={checkHealth} disabled={loading} style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem',
-                    background: 'var(--primary-color)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
-                    opacity: loading ? 0.7 : 1
-                }}>
+                <button
+                    onClick={checkHealth}
+                    disabled={loading}
+                    className="btn-primary flex items-center gap-2"
+                >
                     <RefreshCw size={18} className={loading ? 'spin' : ''} />
                     {loading ? 'Verificando...' : 'Atualizar Status'}
                 </button>

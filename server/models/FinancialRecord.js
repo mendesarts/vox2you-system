@@ -3,8 +3,8 @@ const sequelize = require('../config/database');
 
 const FinancialRecord = sequelize.define('FinancialRecord', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     type: {
@@ -20,6 +20,10 @@ const FinancialRecord = sequelize.define('FinancialRecord', {
         type: DataTypes.ENUM('income', 'expense'),
         allowNull: false,
         defaultValue: 'income'
+    },
+    scope: {
+        type: DataTypes.ENUM('business', 'personal'),
+        defaultValue: 'business'
     },
     description: {
         type: DataTypes.TEXT,
@@ -51,14 +55,47 @@ const FinancialRecord = sequelize.define('FinancialRecord', {
         type: DataTypes.ENUM('pending', 'paid', 'overdue', 'cancelled'),
         defaultValue: 'pending'
     },
+    discount: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0
+    },
+    interest: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0
+    },
+    fine: {
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0
+    },
     cashRegisterId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
         // FK to CashRegister
     },
     unitId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
+    },
+    // Link to User (who created) or Student (payer)
+    userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    studentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    planId: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    launchType: {
+        type: DataTypes.ENUM('unico', 'parcelado', 'recorrente'),
+        defaultValue: 'unico'
+    },
+    periodicity: {
+        type: DataTypes.STRING, // 'diaria', 'semanal', 'mensal', etc.
+        defaultValue: 'mensal'
     }
 });
 

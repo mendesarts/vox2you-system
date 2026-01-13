@@ -3,13 +3,21 @@ const sequelize = require('../config/database');
 
 const Attendance = sequelize.define('Attendance', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     date: {
         type: DataTypes.DATEONLY,
         allowNull: false
+    },
+    studentId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    classId: { // Optional if not linked to ClassSession
+        type: DataTypes.INTEGER,
+        allowNull: true
     },
     present: {
         type: DataTypes.BOOLEAN,

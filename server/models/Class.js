@@ -4,8 +4,8 @@ const Course = require('./Course');
 
 const Class = sequelize.define('Class', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     name: { // Nome da turma (Ex: Turma A)
@@ -43,15 +43,15 @@ const Class = sequelize.define('Class', {
         type: DataTypes.DATEONLY
     },
     courseId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
     },
     professorId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
     },
     unitId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: true
     }
 });

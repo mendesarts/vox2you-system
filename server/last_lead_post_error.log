@@ -1,0 +1,18 @@
+
+Time: 2026-01-13T18:58:26.222Z
+User: {"id":2,"role":"20","roleId":20,"name":"Mendes Silva Santos","unitId":2,"iat":1768327650,"exp":1768414050}
+Body: {"title":"Negócio - teste mendes","value":0,"name":"teste mendes","phone":"61999199999","email":"","company":"","city":"","neighborhood":"","address":"","cpf":"","rg":"","birthDate":"","profession":"","courseInterest":"","lossReason":"","source":"Instagram","campaign":"","tags":[],"unit":"Brasília.ÁguasClaras","responsible":"Mendes Silva Santos","responsibleId":2,"status":"new","attempts":[{"date":"","result":""},{"date":"","result":""},{"date":"","result":""},{"date":"","result":""},{"date":"","result":""}],"nextTaskDate":"2026-01-13T18:58:26.145Z","nextTaskType":"Nova Tentativa","observation":"","contactSummary":"","temperature":"cold","unitId":2,"id":0,"consultant_id":"2","sales_value":0}
+Error: SQLITE_ERROR: no such column: Lead.origin_id_importado
+Stack: Error
+    at Database.<anonymous> (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/dialects/sqlite/query.js:185:27)
+    at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/dialects/sqlite/query.js:183:50
+    at new Promise (<anonymous>)
+    at Query.run (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/dialects/sqlite/query.js:183:12)
+    at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/sequelize.js:315:28
+    at async SQLiteQueryInterface.select (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/dialects/abstract/query-interface.js:407:12)
+    at async Lead.findAll (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/model.js:1140:21)
+    at async Lead.findOne (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/model.js:1240:12)
+    at async Lead.findByPk (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/node_modules/sequelize/lib/model.js:1221:12)
+    at async /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/routes/crm.js:513:27
+Validation Errors: []
+----------------------------------------

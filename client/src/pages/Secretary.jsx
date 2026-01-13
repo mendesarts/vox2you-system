@@ -1,350 +1,209 @@
 import React, { useState, useEffect } from 'react';
 import {
-    LayoutDashboard,
-    Users,
-    GraduationCap,
-    FileText,
-    Settings,
-    UserPlus,
-    LogOut,
-    Menu,
-    X,
-    Bell,
-    Receipt,
-    Briefcase,
-    DollarSign,
-    BookOpen,
-    HelpCircle,
-    BrainCircuit // Added
+    Users, GraduationCap, FileText, Briefcase, DollarSign, BookOpen, BrainCircuit, Activity, UserPlus, ChevronRight, PieChart as PieIcon, BarChart2, TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import StudentsManager from './pedagogical/StudentsManager';
 import ClassesManager from './pedagogical/ClassesManager';
 import ReportsDashboard from './administrative/ReportsDashboard';
-import FinancialDashboard from './administrative/FinancialDashboard';
-import EnrollmentWizard from './pedagogical/StudentRegistrationWizard'; // Import Wizard
+import EnrollmentWizard from './pedagogical/StudentRegistrationWizard';
 import HelpButton from '../components/HelpButton';
-import AIAdvisorModal from './components/AIAdvisorModal';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import './dashboard.css'; // Import dashboard styles
+import DataCard from '../components/DataCard';
 
-// StatCard component adapted from Dashboard.jsx
-const StatCard = ({ title, value, icon: Icon, color, desc, onClick, details }) => (
-    <div className="stat-card" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-        <div className="stat-header">
-            <div className="stat-icon" style={{ backgroundColor: `${color}20`, color: color }}>
-                <Icon size={24} />
-            </div>
-        </div>
-        <div className="stat-content">
-            <h3 className="stat-value">{value}</h3>
-            <p className="stat-title">{title}</p>
-            {desc && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{desc}</p>}
-            {/* Course Breakdown specific for Secretary page */}
-            {details && Object.keys(details).length > 0 && (
-                <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--border)', fontSize: '0.75rem' }}>
-                    {Object.entries(details).slice(0, 3).map(([course, count]) => (
-                        <div key={course} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', color: 'var(--text-secondary)' }}>
-                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>{course}</span>
-                            <span style={{ fontWeight: 600 }}>{count}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    </div>
-);
+import DashboardFilters from '../components/DashboardFilters';
 
 const Secretary = () => {
+    const { user, selectedUnit } = useAuth();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('administrative'); // 'administrative', 'financial'
     const [adminSubTab, setAdminSubTab] = useState('dashboard'); // 'dashboard', 'students', 'classes', 'reports'
     const [showEnrollmentWizard, setShowEnrollmentWizard] = useState(false);
-    const [studentFilters, setStudentFilters] = useState({}); // To pass filters to StudentsManager
-    const [showAIAdvisor, setShowAIAdvisor] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
 
-    // Filter Stats Data
     const [stats, setStats] = useState({
-        activeStudents: 0,
-        activeStudentsByCourse: {},
-        activeClasses: 0,
-        activeClassesByCourse: {},
-        plannedClasses: 0,
-        pendingContracts: 0
+        activeStudents: 0, activeStudentsByCourse: {}, activeClasses: 0, activeClassesByCourse: {}, plannedClasses: 0, pendingContracts: 0, startedClasses: 0, finishedClasses: 0
     });
 
-    const [charts, setCharts] = useState({
-        genderData: [],
-        ageData: [],
-        neighborhoodData: [],
-        courseData: []
-    });
+    const [charts, setCharts] = useState({ genderData: [], ageData: [], neighborhoodData: [], courseData: [] });
+
+    const displayName = user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Admin';
+
+    const fetchAdminData = async (unitId = '', startDate = '', endDate = '') => {
+        setLoading(true);
+        try {
+            const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+            const token = localStorage.getItem('token');
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            const targetUnit = unitId || (unitId === 0 ? 0 : 'all');
+            let query = `?unitId=${targetUnit}`;
+            if (startDate) query += `&startDate=${startDate}`;
+            if (endDate) query += `&endDate=${endDate}`;
+
+            const [s, c] = await Promise.all([
+                fetch(`${apiBase}/dashboard/admin-stats${query}`, { headers }).then(r => r.json()),
+                fetch(`${apiBase}/dashboard/admin-charts${query}`, { headers }).then(r => r.json())
+            ]);
+            if (s) setStats(s);
+            if (c) {
+                setCharts(c);
+            }
+        } catch (error) { console.error(error); } finally { setLoading(false); }
+    };
+
+    const handleFilterChange = ({ startDate, endDate }) => {
+        setDateRange({ startDate, endDate });
+    };
 
     useEffect(() => {
-        if (activeTab === 'administrative' && adminSubTab === 'dashboard') {
-            fetchAdminData();
+        if (adminSubTab === 'dashboard') {
+            fetchAdminData(selectedUnit, dateRange.startDate, dateRange.endDate);
         }
-    }, [activeTab, adminSubTab]);
+    }, [selectedUnit, dateRange, adminSubTab]);
 
-    const fetchAdminData = async () => {
-        try {
-            const resStats = await fetch('http://localhost:3000/api/dashboard/admin-stats');
-            const statsData = await resStats.json();
-            if (resStats.ok && statsData) setStats(statsData);
+    const renderDashboard = () => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
-            const resCharts = await fetch('http://localhost:3000/api/dashboard/admin-charts');
-            const chartsData = await resCharts.json();
-            if (resCharts.ok && chartsData) setCharts(chartsData);
+            {/* Quick Actions Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                <button onClick={() => setAdminSubTab('students')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(52, 199, 89, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', borderRadius: '12px' }}><Users size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Gerenciar Alunos</span></div>
+                </button>
+                <button onClick={() => setAdminSubTab('classes')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(175, 82, 222, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(175, 82, 222, 0.1)', color: '#AF52DE', borderRadius: '12px' }}><BookOpen size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Gerenciar Turmas</span></div>
+                </button>
+                <button onClick={() => setAdminSubTab('reports')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255, 149, 0, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(255, 149, 0, 0.1)', color: '#FF9500', borderRadius: '12px' }}><FileText size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Relatórios</span></div>
+                </button>
+            </div>
 
-        } catch (error) {
-            console.error('Error loading admin data:', error);
-        }
-    };
+            <DashboardFilters
+                onFilterChange={handleFilterChange}
+                loading={loading}
+            />
 
-    const getHelpContext = () => {
-        if (activeTab === 'financial') return null;
-        switch (adminSubTab) {
-            case 'students': return 'students_manager';
-            case 'classes': return 'classes_manager';
-            default: return 'secretary_dashboard';
-        }
-    };
+            {/* Stats Summary */}
+            <div className="vox-card-glass" style={{ padding: '24px', background: 'rgba(255,255,255,0.4)', marginTop: '-16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '12px' }}>
+                    <FileText size={18} color="#AF52DE" />
+                    <h3 style={{ fontSize: '13px', fontWeight: '900', margin: 0, letterSpacing: '1px', color: '#1C1C1E' }}>ADMINISTRATIVO</h3>
+                </div>
 
-    const handleStatClick = (statTitle) => {
-        if (statTitle === 'Alunos Ativos') {
-            setStudentFilters({ status: 'active' });
-            setAdminSubTab('students');
-        } else if (statTitle === 'Turmas Ativas') {
-            setAdminSubTab('classes');
-        } else if (statTitle === 'Turmas em Formação') {
-            setAdminSubTab('classes');
-        } else if (statTitle === 'Contratos Pendentes') {
-            setStudentFilters({ status: 'active' });
-            setAdminSubTab('students'); // Ideally pass filter for "issue" students
-            // For now, just go to students list
-        }
-    };
-
-    const tabs = [
-        { id: 'administrative', label: 'Administrativo', icon: Briefcase },
-        { id: 'financial', label: 'Financeiro', icon: DollarSign },
-    ];
-
-    const adminStats = [
-        {
-            title: 'Alunos Ativos',
-            value: stats.activeStudents,
-            icon: Users,
-            color: '#3b82f6',
-            desc: 'Matrículas vigentes',
-            details: stats.activeStudentsByCourse,
-            onClick: () => handleStatClick('Alunos Ativos')
-        },
-        {
-            title: 'Turmas Ativas',
-            value: stats.activeClasses,
-            icon: BookOpen,
-            color: '#8b5cf6',
-            desc: 'Classes em andamento',
-            details: stats.activeClassesByCourse,
-            onClick: () => handleStatClick('Turmas Ativas')
-        },
-        {
-            title: 'Turmas em Formação',
-            value: stats.plannedClasses,
-            icon: CalendarCheck => <Receipt size={24} />, // Check icon workaround or use imported
-            color: '#f59e0b', // Amber
-            desc: 'Aguardando início',
-            onClick: () => handleStatClick('Turmas em Formação')
-        },
-        {
-            title: 'Contratos Pendentes',
-            value: stats.pendingContracts,
-            icon: FileText,
-            color: '#ef4444', // Red
-            desc: 'Contrato ou Taxa pendente',
-            onClick: () => handleStatClick('Contratos Pendentes')
-        }
-    ];
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'administrative':
-                return (
-                    <div>
-                        {/* Sub-tab Navigation (Only visible if NOT in Dashboard to allow back?) 
-                            Actually, preserving the sidebar-like buttons or top tabs is better.
-                            Let's keep the dashboard as the 'home' of this tab. 
-                        */}
-
-                        {adminSubTab === 'dashboard' && (
-                            <div className="dashboard-content animate-fade-in" style={{ padding: 0 }}>
-                                {/* Quick Navigation - Preserved Buttons */}
-                                <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', width: '100%' }}>
-                                    <button className="nav-card-btn theme-teal" onClick={() => setAdminSubTab('students')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><Users size={20} /></div>
-                                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Gerenciar Alunos</span>
-                                    </button>
-                                    <button className="nav-card-btn theme-purple" onClick={() => setAdminSubTab('classes')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><BookOpen size={20} /></div>
-                                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Gerenciar Turmas</span>
-                                    </button>
-                                    <button className="nav-card-btn theme-orange" onClick={() => setAdminSubTab('reports')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><FileText size={20} /></div>
-                                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Relatórios</span>
-                                    </button>
-                                </div>
-
-                                {/* Stats Grid */}
-                                <div className="stats-grid">
-                                    {adminStats.map((stat, index) => (
-                                        <StatCard key={index} {...stat} />
-                                    ))}
-                                </div>
-
-                                {/* Charts Section */}
-                                <h3 style={{ marginBottom: '24px', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)' }}>Análise Demográfica e Acadêmica</h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
-                                    {/* Pie Charts Row */}
-                                    <div className="chart-card" style={{ height: '350px' }}>
-                                        <h3 className="card-title">Distribuição por Gênero</h3>
-                                        <ResponsiveContainer width="100%" height="90%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={charts.genderData}
-                                                    cx="50%" cy="50%"
-                                                    innerRadius={60}
-                                                    outerRadius={100}
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                >
-                                                    {charts.genderData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#ec4899', '#9ca3af'][index % 3]} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }} />
-                                                <Legend verticalAlign="bottom" height={36} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-
-                                    <div className="chart-card" style={{ height: '350px' }}>
-                                        <h3 className="card-title">Faixa Etária</h3>
-                                        <ResponsiveContainer width="100%" height="90%">
-                                            <BarChart data={charts.ageData} layout="vertical" margin={{ left: 20 }}>
-                                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.5} />
-                                                <XAxis type="number" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
-                                                <YAxis dataKey="name" type="category" stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={80} />
-                                                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }} />
-                                                <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-
-                                    {/* Bar Charts Row */}
-                                    <div className="chart-card" style={{ height: '400px', gridColumn: 'span 2' }}>
-                                        <h3 className="card-title">Alunos por Bairro (Top 10)</h3>
-                                        <ResponsiveContainer width="100%" height="90%">
-                                            <BarChart data={charts.neighborhoodData} margin={{ bottom: 20 }}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                                                <XAxis dataKey="name" stroke="var(--text-secondary)" tickLine={false} axisLine={false} angle={-15} textAnchor="end" interval={0} height={60} />
-                                                <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
-                                                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }} />
-                                                <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {adminSubTab === 'students' && (
-                            <div>
-                                <button onClick={() => setAdminSubTab('dashboard')} className="btn-secondary" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <span>←</span> Voltar ao Painel
-                                </button>
-                                <StudentsManager initialFilters={studentFilters} />
-                            </div>
-                        )}
-
-                        {adminSubTab === 'classes' && (
-                            <div>
-                                <button onClick={() => setAdminSubTab('dashboard')} className="btn-secondary" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <span>←</span> Voltar ao Painel
-                                </button>
-                                <ClassesManager />
-                            </div>
-                        )}
-
-                        {adminSubTab === 'reports' && (
-                            <div>
-                                <button onClick={() => setAdminSubTab('dashboard')} className="btn-secondary" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <span>←</span> Voltar ao Painel
-                                </button>
-                                <ReportsDashboard />
-                            </div>
-                        )}
-
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#AF52DE', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Turmas</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div style={{ background: 'rgba(175, 82, 222, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '8px', fontWeight: '900', color: '#AF52DE', marginBottom: '8px', textTransform: 'uppercase' }}>Ativas</div>
+                        <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.activeClasses || 0}</h4>
                     </div>
-                );
-            case 'financial':
-                return <FinancialDashboard />;
-            default:
-                return null;
-        }
-    };
+                    <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '8px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Iniciadas</div>
+                        <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.startedClasses || 0}</h4>
+                    </div>
+                    <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '8px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Encerradas</div>
+                        <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.finishedClasses || 0}</h4>
+                    </div>
+                </div>
+
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#AF52DE', marginTop: '20px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Taxas</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '8px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Cancelam.</div>
+                        <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.cancellationRate || '0.0%'}</h4>
+                    </div>
+                    <div style={{ background: 'rgba(255, 149, 0, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '8px', fontWeight: '900', color: '#FF9500', marginBottom: '8px', textTransform: 'uppercase' }}>Evasão</div>
+                        <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.evasionRate || '0.0%'}</h4>
+                    </div>
+                    <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                        <div style={{ fontSize: '8px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Trancam.</div>
+                        <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.lockRate || '0.0%'}</h4>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '16px', background: 'rgba(142, 142, 147, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#8E8E93', marginBottom: '8px', textTransform: 'uppercase' }}>Contratos Pendentes</div>
+                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.pendingContracts || 0}</h4>
+                </div>
+            </div>
+
+            {/* Analysis Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                <div className="vox-card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                        <PieIcon size={18} color="var(--ios-teal)" />
+                        <h3 style={{ fontWeight: '900', margin: 0 }}>Gênero & Idade</h3>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={charts.genderData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                    {charts.genderData.map((e, i) => <Cell key={i} fill={['#007AFF', '#FF2D55', '#8E8E93'][i % 3]} />)}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="vox-card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                        <BarChart2 size={18} color="var(--ios-teal)" />
+                        <h3 style={{ fontWeight: '900', margin: 0 }}>Bairros Populares</h3>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={charts.neighborhoodData} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.2} />
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" width={100} style={{ fontSize: '11px', fontWeight: '800' }} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="var(--ios-teal)" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    );
 
     if (showEnrollmentWizard) {
-        return <EnrollmentWizard onClose={() => { setShowEnrollmentWizard(false); fetchAdminData(); }} />;
+        return <EnrollmentWizard classes={[]} onClose={() => { setShowEnrollmentWizard(false); fetchAdminData(); }} />;
     }
 
     return (
-        <div className="secretary-page page-fade-in">
-            {/* Header styled like Dashboard */}
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h2 className="page-title">Administrativo</h2>
-                    <p className="page-subtitle">Gestão burocrática, acadêmica e financeira.</p>
-                </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    {/* AI Advisor Button */}
-                    <button
-                        onClick={() => setShowAIAdvisor(true)}
-                        className="btn-primary btn-ai-analysis"
-                        style={{
-                            background: 'linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%)',
-                            border: 'none',
-                            boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
-                        }}
-                    >
-                        <BrainCircuit size={18} /> Análise IA
-                    </button>
-
-                    <button onClick={() => setShowEnrollmentWizard(true)} className="btn-primary">
-                        <UserPlus size={18} /> Nova Matrícula
-                    </button>
-                </div>
+            {/* Header Master */}
+            <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
+                <button onClick={() => setShowEnrollmentWizard(true)} className="btn-primary">
+                    <UserPlus size={18} /> Nova Matrícula
+                </button>
             </header>
 
-            {/* Tabs Row */}
-            <div className="secretary-tabs" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
-                {tabs.map((tab) => (
-                    <button key={tab.id} className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`} onClick={() => { setActiveTab(tab.id); setAdminSubTab('dashboard'); }}>
-                        <tab.icon size={18} /> {tab.label}
-                    </button>
-                ))}
+            {/* Administrativo Sub-navigation is handled inside the content area or keep it as header */}
+            {/* Removing the main tab toggle as financial is now its own page */}
+
+
+            {/* Content Area */}
+            <div style={{ transition: 'all 0.4s ease' }}>
+                {adminSubTab === 'dashboard' ? renderDashboard() : (
+                    <div>
+                        {adminSubTab === 'students' && <StudentsManager />}
+                        {adminSubTab === 'classes' && <ClassesManager />}
+                        {adminSubTab === 'reports' && <ReportsDashboard />}
+                    </div>
+                )}
             </div>
 
-            <div className="secretary-content">
-                {renderContent()}
-            </div>
-
-            {/* Help Button - Context sensitive */}
-            {getHelpContext() && <HelpButton context={getHelpContext()} />}
-
-            {showAIAdvisor && <AIAdvisorModal onClose={() => setShowAIAdvisor(false)} />}
         </div>
     );
 };

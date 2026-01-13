@@ -14,6 +14,7 @@ const verifyMaster = (req, res, next) => {
     next();
 };
 
+router.get('/', (req, res) => res.json({ status: 'online', timestamp: new Date() }));
 router.get('/full', auth, verifyMaster, healthController.getSystemHealth);
 
 module.exports = router;

@@ -1,3 +1,4 @@
+process.env.TZ = 'America/Sao_Paulo';
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
@@ -13,6 +14,7 @@ const Holiday = require('../models/Holiday');
 const User = require('../models/User');
 const Mentorship = require('../models/Mentorship');
 const Student = require('../models/Student');
+const { rescheduleAffectedClasses } = require('../utils/scheduleGenerator');
 
 // Helper for Numeric ID compatibility - REMOVED (Strict Integer System)
 
@@ -21,7 +23,18 @@ const Student = require('../models/Student');
 router.get('/holidays', auth, async (req, res) => {
     try {
         const { unitId, roleId, email } = req.user;
-        const numericUnitId = unitId ? parseInt(unitId) : null;
+
+        // Consistent Hash Logic for UUID -> Integer (Matches Frontend)
+        const getNumericId = (id) => {
+            if (!id) return null;
+            if (!isNaN(Number(id))) return Number(id);
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+            return Math.abs(hash);
+        };
+
+        const numericUnitId = unitId ? getNumericId(unitId) : null;
 
         const logPath = path.join(__dirname, '../debug_holidays.log');
         const logMsg = `[${new Date().toISOString()}] User:${email} ID:${roleId} Unit:${unitId} NumUnit:${numericUnitId}\n`;
@@ -78,14 +91,31 @@ router.post('/holidays', auth, async (req, res) => {
     try {
         const { name, startDate, endDate, type, isGlobal, unitId } = req.body;
 
+        // Consistent Hash Logic
+        const getNumericId = (id) => {
+            if (!id) return null;
+            if (!isNaN(Number(id))) return Number(id);
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+            return Math.abs(hash);
+        };
+
         // Allow overriding unitId (for numeric ID compatibility)
-        let targetUnitId = unitId ? parseInt(unitId) : (req.user.unitId ? parseInt(req.user.unitId) : null);
+        let targetUnitId = unitId ? parseInt(unitId) : (req.user.unitId ? getNumericId(req.user.unitId) : null);
 
         // Allow Master/Director to create Global Holidays (unitId = null)
         const canCreateGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(req.user.roleId);
 
         if (isGlobal && canCreateGlobal) {
             targetUnitId = null;
+        }
+
+        // PERMISSION CHECK
+        // Consultants (41) and Instructors (51) CANNOT create holidays/recesses
+        const restrictedRoles = [ROLE_IDS.CONSULTANT, ROLE_IDS.INSTRUCTOR];
+        if (restrictedRoles.includes(Number(req.user.roleId))) {
+            return res.status(403).json({ error: 'Acesso negado. Apenas gestão pode criar feriados/recessos.' });
         }
 
         const holiday = await Holiday.create({
@@ -95,6 +125,10 @@ router.post('/holidays', auth, async (req, res) => {
             type: type || 'holiday',
             unitId: targetUnitId
         });
+
+        // Trigger rescheduling
+        await rescheduleAffectedClasses(targetUnitId);
+
         res.json(holiday);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -105,7 +139,16 @@ router.post('/holidays', auth, async (req, res) => {
 router.put('/holidays/:id', auth, async (req, res) => {
     try {
         const { unitId, roleId } = req.user;
-        const numericUnitId = unitId ? parseInt(unitId) : null;
+        const getNumericId = (id) => {
+            if (!id) return null;
+            if (!isNaN(Number(id))) return Number(id);
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+            return Math.abs(hash);
+        };
+        const numericUnitId = unitId ? getNumericId(unitId) : null;
+
         const { name, startDate, endDate, type } = req.body;
         // Master/Director can edit any (Global or Local found by ID)
         // Others can only edit their own Unit's items
@@ -125,6 +168,10 @@ router.put('/holidays/:id', auth, async (req, res) => {
         holiday.type = type || holiday.type;
 
         await holiday.save();
+
+        // Trigger rescheduling
+        await rescheduleAffectedClasses(holiday.unitId);
+
         res.json(holiday);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -136,7 +183,16 @@ router.delete('/holidays/:id', auth, async (req, res) => {
     try {
         // Can only delete if it belongs to user's unit (can't delete National default)
         const { unitId, roleId } = req.user;
-        const numericUnitId = unitId ? parseInt(unitId) : null;
+        const getNumericId = (id) => {
+            if (!id) return null;
+            if (!isNaN(Number(id))) return Number(id);
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+            return Math.abs(hash);
+        };
+        const numericUnitId = unitId ? getNumericId(unitId) : null;
+
         const isMaster = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(roleId);
 
         const whereClause = { id: req.params.id };
@@ -151,7 +207,12 @@ router.delete('/holidays/:id', auth, async (req, res) => {
             return res.status(404).json({ error: 'Feriado não encontrado ou sem permissão.' });
         }
 
+        const unitIdToReschedule = holiday.unitId;
         await holiday.destroy();
+
+        // Trigger rescheduling
+        await rescheduleAffectedClasses(unitIdToReschedule);
+
         res.json({ message: 'Deleted' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -169,13 +230,46 @@ const ClassSession = require('../models/ClassSession');
 router.get('/events', auth, async (req, res) => {
     try {
         const { start, end, targetUserId } = req.query;
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+
         const { unitId, role, roleId, id } = req.user;
 
-        const startDate = start ? new Date(start) : new Date();
-        const endDate = end ? new Date(end) : new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
+        // Hash Logic
+        const getNumericId = (id) => {
+            if (!id) return null;
+            if (!isNaN(Number(id))) return Number(id);
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+            return Math.abs(hash);
+        };
+        let numericUnitId = unitId ? getNumericId(unitId) : null;
+
+        const numericRoleId = Number(roleId);
+        try { fs.appendFileSync(path.join(__dirname, '../debug_calendar_scope.log'), `[${new Date().toISOString()}] User:${req.user.email} Role:${roleId} NumRole:${numericRoleId} MasterCheck:${[ROLE_IDS.MASTER].includes(numericRoleId)}\n`); } catch (e) { }
+
+        // Allow Unit Override for Master/Director
+        if ([ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(numericRoleId) && req.query.unitId !== undefined) {
+            if (req.query.unitId === '' || req.query.unitId === 'all') {
+                numericUnitId = null;
+            } else {
+                numericUnitId = getNumericId(req.query.unitId);
+            }
+        }
+
+        // Role Filter Logic
+        const roleWhere = {};
+        if (req.query.roleFilter) {
+            const rf = Number(req.query.roleFilter);
+            if (!isNaN(rf)) {
+                roleWhere.roleId = rf;
+            }
+        }
 
         let scope = 'own';
-        if ([ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR, ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER, ROLE_IDS.ADMIN_FINANCIAL, ROLE_IDS.LEADER_PEDAGOGICAL, ROLE_IDS.LEADER_SALES].includes(roleId)) {
+        // Managers, Admins, Franchisees see Unit Scope
+        if ([ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR, ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER, ROLE_IDS.ADMIN_FINANCIAL, ROLE_IDS.LEADER_PEDAGOGICAL, ROLE_IDS.LEADER_SALES].includes(numericRoleId)) {
             scope = 'unit';
         }
         if (targetUserId) scope = 'target';
@@ -186,13 +280,19 @@ router.get('/events', auth, async (req, res) => {
             status: 'scheduled'
         };
         let taskWhere = {
-            dueDate: { [Op.between]: [startDate, endDate] }
+            dueDate: { [Op.between]: [startDate, endDate] },
+            status: 'pending'
         };
         let blockWhere = {
             startTime: { [Op.gte]: startDate },
             endTime: { [Op.lte]: endDate }
         };
-        let mentorshipWhere = {
+        // Owner filter: only show blocks owned by the logged user unless privileged
+        if (scope === 'own') {
+            blockWhere.userId = Number(id);
+        }
+        // Include owner user for display
+        const blockInclude = [{ model: User, as: 'owner', attributes: ['name', 'roleId'] }]; let mentorshipWhere = {
             scheduledDate: { [Op.between]: [startDate, endDate] },
             status: 'scheduled'
         };
@@ -210,55 +310,77 @@ router.get('/events', auth, async (req, res) => {
 
         // Apply Scope
         if (scope === 'unit' || scope === 'own') {
-            if (unitId) {
-                // Models using UUID UnitID
-                leadWhere.unitId = unitId;
-                taskWhere.unitId = unitId;
-                blockWhere.unitId = unitId;
-                classIncludeWhere.unitId = unitId;
+            if (numericUnitId) {
+                leadWhere.unitId = numericUnitId;
+                taskWhere.unitId = numericUnitId;
+                blockWhere.unitId = numericUnitId;
+                classIncludeWhere.unitId = numericUnitId;
             }
         }
 
-        if (scope === 'own') {
-            // Use UUID 'id'
-            leadWhere.consultantId = id;
-            taskWhere.userId = id;
-            blockWhere.userId = id;
+        // --- SPECIFIC ROLE REFINEMENTS ---
 
-            if (roleId === ROLE_IDS.CONSULTANT) {
+        // 1. INSTRUCTORS & CONSULTANTS (Strict Own Scope)
+        if (scope === 'own') {
+            leadWhere.consultant_id = Number(id);
+            taskWhere.userId = Number(id);
+            blockWhere.userId = Number(id);
+
+            if (numericRoleId === ROLE_IDS.CONSULTANT) {
+                // Consultant sees Unit Classes/Mentorships (via defaultUnit logic), plus Own Leads/Tasks
+            } else if (numericRoleId === ROLE_IDS.INSTRUCTOR || role === 'instructor') {
+                classIncludeWhere.professorId = id;
+                mentorshipWhere.mentorId = id; // STRICT: Only own mentorships
+            }
+        }
+        // 2. LEADERS (Unit Scope but Department Focused)
+        else if (scope === 'unit') {
+            // SALES LEADER (40): Focus on Commercial
+            if (numericRoleId === ROLE_IDS.LEADER_SALES) {
                 mentorshipWhere = null;
                 classSessionWhere = null;
-            } else {
-                if (roleId === ROLE_IDS.INSTRUCTOR || role === 'instructor' || role === 'professor') {
-                    classIncludeWhere.professorId = id;
-                }
+                // Sees all Unit Leads & Tasks (Set by generic unit logic above)
             }
-        } else if (scope === 'target') {
-            const uid = targetUserId; // Use raw UUID
-            leadWhere.consultantId = uid;
+            // PEDAGOGICAL LEADER (50): Focus on Pedagogical
+            else if (numericRoleId === ROLE_IDS.LEADER_PEDAGOGICAL) {
+                leadWhere = null; // Hide Sales Leads to avoid clutter? Or keep? Usually separate.
+                // Sees all Unit Classes & Mentorships
+            }
+            // MANAGER/FRANCHISEE/GLOBAL: See Everything
+        }
+
+        // 3. TARGET (Admin Inspecting User)
+        else if (scope === 'target') {
+            const uid = Number(targetUserId);
+            leadWhere.consultant_id = uid;
             taskWhere.userId = uid;
             blockWhere.userId = uid;
-            mentorshipWhere = null;
+            mentorshipWhere = null; // Simplify target view
             classSessionWhere = null;
         }
 
         // FETCHING
         const promises = [
-            Lead.findAll({
+            leadWhere ? Lead.findAll({
                 where: leadWhere,
-                include: [{ model: User, as: 'consultant', attributes: ['roleId', 'name'] }]
-            }),
-            Task.findAll({
+                include: [{ model: User, as: 'consultant', attributes: ['roleId', 'name'], where: roleWhere }]
+            }) : Promise.resolve([]),
+
+            taskWhere ? Task.findAll({
                 where: taskWhere,
-                include: [{ model: User, attributes: ['name', 'roleId'] }]
-            }),
-            CalendarBlock.findAll({ where: blockWhere }),
+                include: [{ model: User, attributes: ['name', 'roleId'], where: roleWhere }]
+            }) : Promise.resolve([]),
+
+            blockWhere ? CalendarBlock.findAll({
+                where: blockWhere,
+                include: [{ model: User, as: 'owner', attributes: ['name', 'roleId'], where: roleWhere }]
+            }) : Promise.resolve([]),
         ];
 
         if (mentorshipWhere) {
             const mWhere = { ...mentorshipWhere };
             const sWhere = {};
-            if (unitId) sWhere.unitId = unitId;
+            if (numericUnitId) sWhere.unitId = numericUnitId;
 
             promises.push(Mentorship.findAll({
                 where: mWhere,
@@ -268,9 +390,38 @@ router.get('/events', auth, async (req, res) => {
             promises.push(Promise.resolve([]));
         }
 
-        // Add Holidays Fetch (Unit + National)
+        // Helper: split an event that spans multiple months into separate month‑bounded pieces
+        const splitByMonth = (ev) => {
+            const start = new Date(ev.start);
+            const end = new Date(ev.end);
+            const parts = [];
+            let cur = new Date(start);
+            let partIndex = 0;
+            while (cur <= end) {
+                // End of the current month
+                const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+                const partEnd = monthEnd < end ? monthEnd : end;
+                parts.push({
+                    ...ev,
+                    id: `${ev.id}_p${partIndex}`,
+                    start: cur.toISOString().split('T')[0],
+                    end: partEnd.toISOString().split('T')[0]
+                });
+                // Move to next day after this part
+                cur = new Date(partEnd);
+                cur.setDate(cur.getDate() + 1);
+                partIndex++;
+            }
+            return parts;
+        };
+        // Include holidays/recesses that overlap the requested interval.
+        // An event should be returned if its startDate is before the end of the range
+        // AND its endDate is after the start of the range.
         const dbHolidayWhere = {
-            startDate: { [Op.between]: [startDate, endDate] }
+            [Op.and]: [
+                { startDate: { [Op.lte]: endDate } },
+                { endDate: { [Op.gte]: startDate } }
+            ]
         };
 
         // Strict Holiday Visibility:
@@ -282,7 +433,12 @@ router.get('/events', auth, async (req, res) => {
                 { unitId: null }
             ];
         } else {
-            dbHolidayWhere.unitId = null; // Globals Only (Master without context sees only Globals)
+            // If Master/Director and NO unit selected (All), show ALL holidays (Global + Any Unit)
+            // Otherwise (e.g. unassigned user?), show only Globals
+            if (![ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(numericRoleId)) {
+                dbHolidayWhere.unitId = null;
+            }
+            // If Master, we leave unitId unconstrained (shows all)
         }
 
         promises.push(Holiday.findAll({ where: dbHolidayWhere }));
@@ -299,11 +455,12 @@ router.get('/events', auth, async (req, res) => {
                     {
                         model: Class,
                         where: classIncludeWhere,
-                        attributes: ['name']
+                        attributes: ['name'],
+                        include: [{ model: Course, attributes: ['name'] }]
                     },
                     {
                         model: Module,
-                        attributes: ['title']
+                        attributes: ['title', 'order']
                     }
                 ]
             }));
@@ -315,58 +472,131 @@ router.get('/events', auth, async (req, res) => {
 
         const events = [];
 
-        // Leads -> Commercial
+        // Leads -> Commercial (Consultorias Agendadas)
         leads.forEach(l => events.push({
-            id: `lead_${l.id}`, title: `Reunião: ${l.name}`, start: l.appointmentDate,
+            id: `lead_${l.id}`,
+            title: 'Consultoria', // Fixed title per user request
+            start: l.appointmentDate,
             end: new Date(new Date(l.appointmentDate).getTime() + 60 * 60000),
             type: 'commercial',
-            roleId: l.consultant?.roleId, // Pass Owner Role
+            roleId: l.consultant?.roleId,
+            responsibleName: l.consultant ? l.consultant.name : null,
+            responsibleRoleId: l.consultant ? l.consultant.roleId : null,
             data: l
-        }));
-
-        // Tasks -> check category
-        tasks.forEach(t => events.push({
-            id: `task_${t.id}`, title: `${t.title} (${t.User?.name || 'User'})`,
-            start: t.dueDate, end: new Date(new Date(t.dueDate).getTime() + 30 * 60000),
-            type: t.category || 'task',
-            roleId: t.User?.roleId, // Pass User Role
-            data: t
         }));
 
         // Blocks -> Block
         blocks.forEach(b => events.push({
-            id: `block_${b.id}`, title: `Bloqueio: ${b.reason}`,
-            start: b.startTime, end: b.endTime,
-            type: 'block', data: b
+            id: `block_${b.id}`,
+            userId: b.userId,
+            title: `Bloqueio: ${b.reason}`,
+            start: b.startTime,
+            end: b.endTime,
+            type: 'block',
+            userId: b.userId,
+            responsibleName: b.owner ? b.owner.name : null,
+            responsibleRoleId: b.owner ? b.owner.roleId : null,
+            data: b
         }));
 
         // Mentorships -> Pedagogical
         mentorships.forEach(m => events.push({
-            id: `ment_${m.id}`, title: `Mentoria: ${m.Student?.name}`,
-            start: m.scheduledDate, end: new Date(new Date(m.scheduledDate).getTime() + 60 * 60000),
-            type: 'pedagogical', data: m
+            id: `ment_${m.id}`,
+            title: `🎓 Mentoria: ${m.Student?.name}`,
+            start: m.scheduledDate,
+            end: new Date(new Date(m.scheduledDate).getTime() + 60 * 60000),
+            type: 'mentorship',
+            data: m
         }));
 
-        // Holidays
-        // Local (DB) and Global (DB)
-        dbHolidays.forEach(h => {
-            let prefix = '';
-            if (!h.unitId) {
-                // Global
-                prefix = h.type === 'recess' ? '🏖️ ' : '🇧🇷 ';
-            } else {
-                // Local
-                prefix = h.type === 'recess' ? 'Recesso: ' : 'Feriado: ';
-            }
+        // Holidays & Recesses (Intelligence: Feriado > Recesso)
+        const holidayDatesFound = new Set();
+        const holidayEventsProcessed = [];
+        const recessEventsProcessed = [];
 
-            events.push({
+        dbHolidays.forEach(h => {
+            const isRecess = h.type === 'recess' || (h.name && h.name.toLowerCase().includes('recesso'));
+            const emojiPrefix = isRecess ? '🌴 ' : '✨ ';
+            const effectiveType = isRecess ? 'recess' : 'holiday';
+
+            const baseEvent = {
                 id: `hol_${h.id}`,
-                title: `${prefix}${h.name}`,
-                start: h.startDate, end: h.endDate,
-                type: h.type || 'holiday',
+                title: `${emojiPrefix}${h.name}`,
+                start: h.startDate,
+                end: h.endDate,
+                type: effectiveType,
                 isAllDay: true,
                 global: !h.unitId
-            });
+            };
+
+            if (!isRecess) {
+                holidayEventsProcessed.push(baseEvent);
+                // Mark dates covered by this REAL holiday
+                let curr = new Date(h.startDate + 'T12:00:00');
+                let last = new Date(h.endDate + 'T12:00:00');
+                while (curr <= last) {
+                    holidayDatesFound.add(curr.toISOString().split('T')[0]);
+                    curr.setDate(curr.getDate() + 1);
+                }
+            } else {
+                recessEventsProcessed.push(baseEvent);
+            }
+        });
+
+        // 1. Add Holidays (Always shown)
+        holidayEventsProcessed.forEach(he => {
+            const isRange = new Date(he.end) > new Date(he.start);
+            if (isRange) {
+                const parts = splitByMonth(he);
+                parts.forEach(p => events.push(p));
+            } else {
+                events.push(he);
+            }
+        });
+
+        // 2. Add Recesses (Split or skipped if holiday exists on same day)
+        recessEventsProcessed.forEach((re, idx) => {
+            let curr = new Date(re.start + 'T12:00:00');
+            let endD = new Date(re.end + 'T12:00:00');
+            let segmentStart = null;
+            let segmentIndex = 0;
+
+            while (curr <= endD) {
+                const dateStr = curr.toISOString().split('T')[0];
+                const hasHoliday = holidayDatesFound.has(dateStr);
+
+                if (!hasHoliday) {
+                    if (!segmentStart) segmentStart = dateStr;
+                } else {
+                    if (segmentStart) {
+                        // Close segment before the holiday
+                        let segEnd = new Date(curr);
+                        segEnd.setDate(segEnd.getDate() - 1);
+                        const segEndStr = segEnd.toISOString().split('T')[0];
+                        const sub = { ...re, id: `${re.id}_seg${segmentIndex}`, start: segmentStart, end: segEndStr };
+                        const isRange = new Date(segEndStr) > new Date(segmentStart);
+                        if (isRange) {
+                            const parts = splitByMonth(sub);
+                            parts.forEach(p => events.push(p));
+                        } else {
+                            events.push(sub);
+                        }
+                        segmentStart = null;
+                        segmentIndex++;
+                    }
+                }
+                curr.setDate(curr.getDate() + 1);
+            }
+            if (segmentStart) {
+                const sub = { ...re, id: `${re.id}_seg${segmentIndex}`, start: segmentStart, end: re.end };
+                const isRange = new Date(re.end) > new Date(segmentStart);
+                if (isRange) {
+                    const parts = splitByMonth(sub);
+                    parts.forEach(p => events.push(p));
+                } else {
+                    events.push(sub);
+                }
+            }
         });
 
         // Classes (Sessions)
@@ -374,10 +604,10 @@ router.get('/events', auth, async (req, res) => {
             fs.appendFileSync(logPath, `[CLASSES] Found ${classSessions.length} sessions.\n`);
         } catch (e) { }
         classSessions.forEach(cs => {
-            // const className = cs.Class?.name || 'Turma'; // Removed per user request
+            const courseName = cs.Class?.Course?.name || 'Curso';
             const moduleTitle = cs.Module?.title || 'Aula';
-            const timePrefix = cs.startTime.substring(0, 5);
-            const fullTitle = `${timePrefix} - ${courseName} - ${moduleTitle}`;
+            const timePrefix = (cs.startTime || '00:00').substring(0, 5);
+            const fullTitle = `${cs.Class?.name} - ${moduleTitle}`;
 
             // If endTime is missing, assume 2h duration or use startTime + 2h
             // Class model has endTime usually, session might override or duplicate.
@@ -412,12 +642,17 @@ router.get('/events', auth, async (req, res) => {
 
                 events.push({
                     id: `class_${cs.id}`,
-                    title: `${cs.Class?.name || 'Turma'} - ${cs.Module?.title || 'Aula'}`,
+                    title: `📚 ${cs.Class?.name || 'Turma'} - ${moduleTitle}`,
                     start: startDateTime,
                     end: endDateTime,
                     type: 'pedagogical',
                     isAllDay: false,
                     global: false,
+                    courseName: courseName,
+                    className: cs.Class?.name || 'Turma',
+                    moduleTitle: moduleTitle,
+                    moduleOrder: cs.Module?.order,
+                    classId: cs.classId,
                     data: { ...cs.toJSON(), isClass: true }
                 });
             } catch (err) {
@@ -446,6 +681,34 @@ router.post('/blocks', auth, async (req, res) => {
             endTime,
             reason
         });
+        res.json(block);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT /api/calendar/blocks/:id
+router.put('/blocks/:id', auth, async (req, res) => {
+    try {
+        const { id, roleId, unitId } = req.user;
+        const { startTime, endTime, reason } = req.body;
+        const isPrivileged = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR, ROLE_IDS.MANAGER, ROLE_IDS.ADMIN_FINANCIAL].includes(roleId);
+
+        const whereClause = { id: req.params.id };
+        if (!isPrivileged) {
+            whereClause.userId = id;
+        } else if (roleId !== ROLE_IDS.MASTER) {
+            whereClause.unitId = unitId;
+        }
+
+        const block = await CalendarBlock.findOne({ where: whereClause });
+        if (!block) return res.status(404).json({ error: 'Bloqueio não encontrado ou sem permissão.' });
+
+        if (startTime) block.startTime = startTime;
+        if (endTime) block.endTime = endTime;
+        if (reason) block.reason = reason;
+
+        await block.save();
         res.json(block);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -518,12 +781,15 @@ router.post('/holidays/import-national', auth, async (req, res) => {
                     name: h.name,
                     startDate: h.date,
                     endDate: h.date,
-                    type: 'national',
+                    type: 'holiday',
                     unitId: null
                 });
                 count++;
             }
         }
+
+        // Trigger rescheduling for all units as national holidays are global
+        await rescheduleAffectedClasses(null);
 
         res.json({ message: `Importados ${count} feriados nacionais para ${targetYear}.` });
 

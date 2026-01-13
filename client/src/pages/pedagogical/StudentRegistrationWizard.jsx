@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, AlertTriangle } from 'lucide-react';
 import { validateCPF, formatCPF, validatePhone, formatPhone, validateCEP, formatCEP, fetchAddressByCEP } from '../../utils/validators';
+import { useAuth } from '../../context/AuthContext';
 
 const CurrencyInput = ({ value, onChange, placeholder, className }) => {
     const handleChange = (e) => {
@@ -39,28 +40,69 @@ const paymentOptions = [
     { value: 'cheque', label: 'Cheque' }
 ];
 
-const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
+const StudentRegistrationWizard = ({ onClose, onSave, classes = [], initialData = null }) => {
+    const isEdit = !!initialData;
+    const { user } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [loadingCep, setLoadingCep] = useState(false);
 
+    // Standard UI Colors
+    const COLORS = {
+        primary: 'var(--ios-teal)',
+        success: '#34C759',
+        bg: 'var(--ios-bg)',
+        text: 'var(--ios-text)',
+        border: 'rgba(0,0,0,0.1)'
+    };
+
     // Form States
     const [studentData, setStudentData] = useState({
-        name: '', gender: '', birthDate: '', profession: '', workplace: '',
-        cpf: '', cep: '', address: '', neighborhood: '', city: '',
-        mobile: '', phone: '', email: '',
-        responsibleName: '', responsiblePhone: ''
+        name: initialData?.name || '',
+        gender: initialData?.gender || '',
+        birthDate: initialData?.birthDate ? initialData.birthDate.split('T')[0] : (initialData?.data_de_nascimento___responsavel_financeiro || ''),
+        profession: initialData?.profession || initialData?.profissão || initialData?.posicao__contato_ || '',
+        workplace: initialData?.workplace || initialData?.company || '',
+        cpf: initialData?.cpf || initialData?.cpf__contato_ || initialData?.cpf___responsavel_financeiro || '',
+        cep: initialData?.cep || '',
+        address: initialData?.address || initialData?.real_address || '',
+        neighborhood: initialData?.neighborhood || '',
+        city: initialData?.city || '',
+        mobile: initialData?.mobile || initialData?.phone || initialData?.telefone___responsavel_financeiro || '',
+        phone: initialData?.phone || '',
+        email: initialData?.email || initialData?.email___responsavel_financeiro || '',
+        responsibleName: initialData?.responsibleName || initialData?.responsibleName || '',
+        responsiblePhone: initialData?.responsiblePhone || initialData?.telefone___responsavel_financeiro || ''
     });
 
     const [enrollmentData, setEnrollmentData] = useState({
-        classId: '',
-        courseId: '' // Will be derived from class
+        classId: initialData?.classId || '',
+        courseId: initialData?.courseId || ''
     });
 
     const [financialData, setFinancialData] = useState({
-        enrollmentFee: { amount: '', dueDate: '', method: 'pix', installments: 1, isPaid: false },
-        courseFee: { amount: '', dueDate: '', method: 'boleto', installments: 1, isPaid: false },
-        materialFee: { amount: '', dueDate: '', method: 'credit', installments: 1, isPaid: false, source: 'stock' },
+        enrollmentFee: {
+            amount: initialData?.enrollment_value || '',
+            dueDate: initialData?.data_vencimento || '',
+            method: initialData?.payment_method?.toLowerCase() || 'pix',
+            installments: 1,
+            isPaid: false
+        },
+        courseFee: {
+            amount: initialData?.sales_value || initialData?.venda || '',
+            dueDate: initialData?.data_vencimento || '',
+            method: initialData?.payment_method?.toLowerCase() || 'boleto',
+            installments: initialData?.installments || initialData?.qtd__de_parcela__cartao_de_credito_ || 1,
+            isPaid: false
+        },
+        materialFee: {
+            amount: initialData?.material_value || initialData?.valor_material_didatico || '',
+            dueDate: initialData?.data_vencimento || '',
+            method: initialData?.payment_method?.toLowerCase() || 'credit',
+            installments: 1,
+            isPaid: false,
+            source: 'stock'
+        },
         contractSigned: false
     });
 
@@ -120,11 +162,11 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
     // Validation & Next Step
     const nextStep = () => {
         if (step === 1) {
-            if (!studentData.name || !studentData.mobile) {
-                alert('Nome e Celular são obrigatórios.');
+            if (!studentData.name || !studentData.mobile || !studentData.cpf || !studentData.email) {
+                alert('Nome, Celular, CPF e Email são obrigatórios.');
                 return;
             }
-            if (studentData.cpf && !validateCPF(studentData.cpf)) {
+            if (!validateCPF(studentData.cpf)) {
                 alert('CPF inválido.');
                 return;
             }
@@ -142,10 +184,10 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                 alert('Selecione uma turma.');
                 return;
             }
-            // Capacity Check
-            const selectedClass = classes.find(c => c.id === enrollmentData.classId);
+            // Capacity Check - Use == for ID comparison
+            const selectedClass = classes.find(c => String(c.id) === String(enrollmentData.classId));
             if (selectedClass) {
-                const currentCount = selectedClass.Students?.length || 0;
+                const currentCount = (selectedClass.Students || selectedClass.students || selectedClass.Enrollments || selectedClass.enrollments || []).length;
                 if (currentCount >= selectedClass.capacity) {
                     if (!window.confirm(`A turma ${selectedClass.name} está cheia (${currentCount}/${selectedClass.capacity}). Deseja continuar mesmo assim?`)) {
                         return;
@@ -161,35 +203,47 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
     const handleFinalSubmit = async () => {
         setLoading(true);
         try {
-            // 1. Create Student
+            // 1. Create or Update Student
             const studentPayload = {
                 ...studentData,
-                contractStatus: financialData.contractSigned ? 'signed' : 'pending'
+                contractStatus: financialData.contractSigned ? 'signed' : 'pending',
+                unit: user?.unit
             };
-            const resStudent = await fetch('http://localhost:3000/api/students', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const token = localStorage.getItem('token');
+            const url = isEdit
+                ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students/${initialData.id}`
+                : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students`;
+
+            const resStudent = await fetch(url, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(studentPayload)
             });
             if (!resStudent.ok) {
                 const errData = await resStudent.json();
                 throw new Error(errData.error || 'Erro ao salvar aluno');
             }
-            const createdStudent = await resStudent.json();
+            const savedStudent = await resStudent.json();
 
             // 2. Create Enrollment
-            // Find courseId from class
-            const selectedClass = classes.find(c => c.id === enrollmentData.classId);
+            // Use == for ID comparison
+            const selectedClass = classes.find(c => String(c.id) == String(enrollmentData.classId));
 
             const enrollmentPayload = {
-                studentId: createdStudent.id,
+                studentId: savedStudent.id,
                 classId: enrollmentData.classId,
                 courseId: selectedClass?.courseId
             };
 
-            const resEnrollment = await fetch('http://localhost:3000/api/enrollments', { // Need to create this route
+            const resEnrollment = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/enrollments`, { // Need to create this route
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(enrollmentPayload)
             });
             if (!resEnrollment.ok) {
@@ -201,13 +255,16 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
             // 3. Create Financial Records (Batch)
             const financialPayload = {
                 enrollmentId: createdEnrollment.id,
-                studentId: createdStudent.id,
+                studentId: savedStudent.id,
                 fees: financialData
             };
 
-            const resFinancial = await fetch('http://localhost:3000/api/financial/batch', { // Need to create this route
+            const resFinancial = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/batch`, { // Need to create this route
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(financialPayload)
             });
             if (!resFinancial.ok) {
@@ -230,7 +287,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
         <div className="modal-overlay">
             <div className="modal-content" style={{ width: '800px', maxWidth: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
                 <div className="modal-header">
-                    <h3>Nova Matrícula - Passo {step}/3</h3>
+                    <h3>{isEdit ? 'Editar Matrícula' : 'Nova Matrícula'} - Passo {step}/3</h3>
                     <button onClick={onClose}><X size={20} /></button>
                 </div>
 
@@ -239,7 +296,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                     {/* STEP 1: DADOS PESSOAIS */}
                     {step === 1 && (
                         <div className="form-grid">
-                            <h4 style={{ gridColumn: '1/-1', marginBottom: '10px', borderBottom: '1px solid var(--border)' }}>Dados Pessoais</h4>
+                            <h4 style={{ gridColumn: '1/-1', marginBottom: '10px', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '8px', color: 'var(--ios-teal)', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}>Dados Pessoais</h4>
 
                             <div className="form-group">
                                 <label>Nome Completo *</label>
@@ -259,8 +316,8 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                 <input type="date" name="birthDate" value={studentData.birthDate} onChange={handleStudentChange} className="input-field" />
                             </div>
                             <div className="form-group">
-                                <label>CPF</label>
-                                <input name="cpf" value={studentData.cpf} onChange={handleStudentChange} className="input-field" placeholder="000.000.000-00" maxLength={14} />
+                                <label>CPF *</label>
+                                <input name="cpf" value={studentData.cpf} onChange={handleStudentChange} className="input-field" placeholder="000.000.000-00" maxLength={14} required />
                             </div>
 
                             <div className="form-group">
@@ -272,7 +329,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                 <input name="workplace" value={studentData.workplace} onChange={handleStudentChange} className="input-field" />
                             </div>
 
-                            <h4 style={{ gridColumn: '1/-1', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid var(--border)' }}>Endereço e Contato</h4>
+                            <h4 style={{ gridColumn: '1/-1', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '8px', color: 'var(--ios-teal)', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}>Endereço e Contato</h4>
 
                             <div className="form-group">
                                 <label>CEP {loadingCep && <span className="text-muted text-sm">(Buscando...)</span>}</label>
@@ -295,13 +352,13 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                 <input name="mobile" value={studentData.mobile} onChange={handleStudentChange} className="input-field" placeholder="(00) 00000-0000" maxLength={15} required />
                             </div>
                             <div className="form-group">
-                                <label>Email</label>
-                                <input name="email" value={studentData.email} onChange={handleStudentChange} className="input-field" type="email" />
+                                <label>Email *</label>
+                                <input name="email" value={studentData.email} onChange={handleStudentChange} className="input-field" type="email" required />
                             </div>
 
                             {isMinor && (
                                 <>
-                                    <h4 style={{ gridColumn: '1/-1', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid var(--border)', color: 'var(--primary)' }}>Dados do Responsável (Menor de Idade)</h4>
+                                    <h4 style={{ gridColumn: '1/-1', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '8px', color: 'var(--ios-teal)', fontWeight: '900', textTransform: 'uppercase', fontSize: '12px' }}>Dados do Responsável (Menor de Idade)</h4>
                                     <div className="form-group">
                                         <label>Nome do Responsável *</label>
                                         <input name="responsibleName" value={studentData.responsibleName} onChange={handleStudentChange} className="input-field" required />
@@ -319,31 +376,53 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                     {step === 2 && (
                         <div>
                             <h4 style={{ marginBottom: '20px' }}>Selecione a Turma</h4>
+
+                            <div className="form-group" style={{ marginBottom: '15px' }}>
+                                <label>Curso</label>
+                                <select
+                                    className="input-field"
+                                    value={enrollmentData.courseId}
+                                    onChange={e => setEnrollmentData({ ...enrollmentData, courseId: e.target.value, classId: '' })}
+                                    style={{ fontSize: '1rem', padding: '10px' }}
+                                >
+                                    <option value="">Selecione o Curso...</option>
+                                    {Array.from(new Set(classes.map(c => c.Course?.id))).map(cid => {
+                                        const course = classes.find(c => c.Course?.id === cid)?.Course;
+                                        return course ? <option key={cid} value={cid}>{course.name}</option> : null;
+                                    })}
+                                </select>
+                            </div>
+
                             <div className="form-group">
-                                <label>Turma Disponível</label>
+                                <label>Turmas Disponíveis {enrollmentData.courseId ? '(Filtrado por curso)' : ''}</label>
                                 <select
                                     className="input-field"
                                     value={enrollmentData.classId}
                                     onChange={e => setEnrollmentData({ ...enrollmentData, classId: e.target.value })}
                                     style={{ fontSize: '1rem', padding: '10px' }}
+                                    disabled={!enrollmentData.courseId}
                                 >
-                                    <option value="">Selecione...</option>
-                                    {classes.map(c => {
-                                        const count = c.Students?.length || 0;
-                                        const isFull = count >= c.capacity;
-                                        return (
-                                            <option key={c.id} value={c.id} style={{ color: isFull ? 'red' : 'inherit' }}>
-                                                {c.name} - {c.Course?.name} ({count}/{c.capacity} alunos) {isFull ? '[CHEIA]' : ''}
-                                            </option>
-                                        )
-                                    })}
+                                    <option value="">{enrollmentData.courseId ? 'Selecione a Turma...' : 'Selecione um curso primeiro'}</option>
+                                    {classes
+                                        .filter(c => !enrollmentData.courseId || String(c.Course?.id) === String(enrollmentData.courseId))
+                                        .map(c => {
+                                            const count = (c.Students || c.students || c.Enrollments || c.enrollments || []).length;
+                                            const isFull = count >= c.capacity;
+                                            const courseName = c.Course?.name || 'N/A';
+                                            const classNum = c.classNumber || '-';
+                                            return (
+                                                <option key={c.id} value={c.id} style={{ color: isFull ? 'red' : 'inherit' }}>
+                                                    {courseName} - {classNum} - {c.name} ({count}/{c.capacity} alunos) {isFull ? '[CHEIA]' : ''}
+                                                </option>
+                                            )
+                                        })}
                                 </select>
                             </div>
                             {enrollmentData.classId && (
-                                <div style={{ padding: '15px', background: 'var(--bg-app)', borderRadius: '8px', marginTop: '20px' }}>
+                                <div style={{ padding: '20px', background: 'rgba(0,0,0,0.03)', borderRadius: '16px', marginTop: '20px', border: '1px solid rgba(0,0,0,0.05)' }}>
                                     <strong>Detalhes da Turma:</strong>
                                     {(() => {
-                                        const c = classes.find(x => x.id === enrollmentData.classId);
+                                        const c = classes.find(x => String(x.id) === String(enrollmentData.classId));
                                         return c ? (
                                             <div style={{ marginTop: '10px', fontSize: '0.9rem' }}>
                                                 <p>Curso: {c.Course?.name}</p>
@@ -365,9 +444,9 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
                                 {/* Matrícula */}
-                                <div className="control-card" style={{ padding: '15px' }}>
-                                    <h5 style={{ marginBottom: '10px', color: 'var(--primary)' }}>Taxa de Matrícula</h5>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                                <div className="vox-card" style={{ padding: '24px' }}>
+                                    <h5 style={{ marginBottom: '16px', color: 'var(--ios-teal)', fontWeight: '900', fontSize: '14px', textTransform: 'uppercase' }}>Taxa de Matrícula</h5>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                                         <div>
                                             <label style={{ fontSize: '0.8rem' }}>Valor (R$)</label>
                                             <CurrencyInput
@@ -396,20 +475,30 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                                     <option key={i + 1} value={i + 1}>{i + 1}x</option>
                                                 ))}
                                             </select>
+                                            {financialData.enrollmentFee.installments > 1 && (
+                                                <div style={{ fontSize: '0.7rem', color: '#6366f1', marginTop: '2px', fontWeight: 600 }}>
+                                                    {financialData.enrollmentFee.installments}x de R$ {(financialData.enrollmentFee.amount / financialData.enrollmentFee.installments).toFixed(2).replace('.', ',')}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'end' }}>
-                                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem' }}>
-                                                <input type="checkbox" checked={financialData.enrollmentFee.isPaid} onChange={e => handleFinancialChange('enrollmentFee', 'isPaid', e.target.checked)} />
-                                                Já pago
+                                        <div style={{ display: 'flex', alignItems: 'end', paddingBottom: '4px' }}>
+                                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, userSelect: 'none' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                    checked={financialData.enrollmentFee.isPaid}
+                                                    onChange={e => handleFinancialChange('enrollmentFee', 'isPaid', e.target.checked)}
+                                                />
+                                                <span>Já pago</span>
                                             </label>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Curso */}
-                                <div className="control-card" style={{ padding: '15px' }}>
-                                    <h5 style={{ marginBottom: '10px', color: 'var(--primary)' }}>Curso (Valor Total)</h5>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                                <div className="vox-card" style={{ padding: '24px' }}>
+                                    <h5 style={{ marginBottom: '16px', color: 'var(--ios-teal)', fontWeight: '900', fontSize: '14px', textTransform: 'uppercase' }}>Curso (Valor Total)</h5>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                                         <div>
                                             <label style={{ fontSize: '0.8rem' }}>Valor Total (R$)</label>
                                             <CurrencyInput
@@ -438,44 +527,58 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                                     <option key={i + 1} value={i + 1}>{i + 1}x</option>
                                                 ))}
                                             </select>
+                                            {financialData.courseFee.installments > 1 && (
+                                                <div style={{ fontSize: '0.7rem', color: '#6366f1', marginTop: '2px', fontWeight: 600 }}>
+                                                    {financialData.courseFee.installments}x de R$ {(financialData.courseFee.amount / financialData.courseFee.installments).toFixed(2).replace('.', ',')}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'end' }}>
-                                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem' }}>
-                                                <input type="checkbox" checked={financialData.courseFee.isPaid} onChange={e => handleFinancialChange('courseFee', 'isPaid', e.target.checked)} />
-                                                1ª Paga
+                                        <div style={{ display: 'flex', alignItems: 'end', paddingBottom: '4px' }}>
+                                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, userSelect: 'none' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                    checked={financialData.courseFee.isPaid}
+                                                    onChange={e => handleFinancialChange('courseFee', 'isPaid', e.target.checked)}
+                                                />
+                                                <span>1ª Paga</span>
                                             </label>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Material */}
-                                <div className="control-card" style={{ padding: '15px' }}>
-                                    <h5 style={{ marginBottom: '10px', color: 'var(--primary)' }}>Material Didático</h5>
+                                <div className="vox-card" style={{ padding: '24px' }}>
+                                    <h5 style={{ marginBottom: '16px', color: 'var(--ios-teal)', fontWeight: '900', fontSize: '14px', textTransform: 'uppercase' }}>Material Didático</h5>
 
                                     <div style={{ marginBottom: '15px' }}>
-                                        <label style={{ fontSize: '0.9rem', marginRight: '10px' }}>Origem do Material:</label>
-                                        <label style={{ marginRight: '15px', cursor: 'pointer' }}>
-                                            <input
-                                                type="radio"
-                                                name="materialSource"
-                                                value="stock"
-                                                checked={financialData.materialFee.source === 'stock'}
-                                                onChange={() => handleFinancialChange('materialFee', 'source', 'stock')}
-                                            /> Estoque da Escola
-                                        </label>
-                                        <label style={{ cursor: 'pointer' }}>
-                                            <input
-                                                type="radio"
-                                                name="materialSource"
-                                                value="publisher"
-                                                checked={financialData.materialFee.source === 'publisher'}
-                                                onChange={() => handleFinancialChange('materialFee', 'source', 'publisher')}
-                                            /> Direto com Editora
-                                        </label>
+                                        <label style={{ fontSize: '0.9rem', marginBottom: '8px', display: 'block' }}>Origem do Material:</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', background: 'white', border: '1px solid var(--border)', borderRadius: '6px' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="materialSource"
+                                                    value="stock"
+                                                    checked={financialData.materialFee.source === 'stock'}
+                                                    onChange={() => handleFinancialChange('materialFee', 'source', 'stock')}
+                                                />
+                                                <span style={{ fontSize: '0.9rem' }}>Estoque da Escola</span>
+                                            </label>
+                                            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', background: 'white', border: '1px solid var(--border)', borderRadius: '6px' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="materialSource"
+                                                    value="publisher"
+                                                    checked={financialData.materialFee.source === 'publisher'}
+                                                    onChange={() => handleFinancialChange('materialFee', 'source', 'publisher')}
+                                                />
+                                                <span style={{ fontSize: '0.9rem' }}>Direto com Editora</span>
+                                            </label>
+                                        </div>
                                     </div>
 
                                     {financialData.materialFee.source === 'stock' ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                                             <div>
                                                 <label style={{ fontSize: '0.8rem' }}>Valor (R$)</label>
                                                 <CurrencyInput
@@ -504,11 +607,21 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                                         <option key={i + 1} value={i + 1}>{i + 1}x</option>
                                                     ))}
                                                 </select>
+                                                {financialData.materialFee.installments > 1 && (
+                                                    <div style={{ fontSize: '0.7rem', color: '#6366f1', marginTop: '2px', fontWeight: 600 }}>
+                                                        {financialData.materialFee.installments}x de R$ {(financialData.materialFee.amount / financialData.materialFee.installments).toFixed(2).replace('.', ',')}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'end' }}>
-                                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem' }}>
-                                                    <input type="checkbox" checked={financialData.materialFee.isPaid} onChange={e => handleFinancialChange('materialFee', 'isPaid', e.target.checked)} />
-                                                    Já pago
+                                            <div style={{ display: 'flex', alignItems: 'end', paddingBottom: '4px' }}>
+                                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, userSelect: 'none' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                        checked={financialData.materialFee.isPaid}
+                                                        onChange={e => handleFinancialChange('materialFee', 'isPaid', e.target.checked)}
+                                                    />
+                                                    <span>Já pago</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -520,14 +633,14 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                 </div>
 
                                 {/* Contrato */}
-                                <div className="control-card" style={{ padding: '15px', borderLeft: financialData.contractSigned ? '5px solid var(--success)' : '5px solid var(--warning)' }}>
-                                    <h5 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>Status do Contrato</h5>
+                                <div className="vox-card" style={{ padding: '24px', borderLeft: financialData.contractSigned ? '5px solid #34C759' : '5px solid #FF9500' }}>
+                                    <h5 style={{ marginBottom: '10px', color: '#1C1C1E', fontWeight: '900' }}>Status do Contrato</h5>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                         <div style={{
                                             padding: '8px 12px',
                                             borderRadius: '6px',
                                             backgroundColor: financialData.contractSigned ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                            color: financialData.contractSigned ? 'var(--success)' : 'var(--warning)',
+                                            color: financialData.contractSigned ? '#10b981' : '#f59e0b',
                                             fontWeight: 'bold',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -536,12 +649,12 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                                             {financialData.contractSigned ? <Check size={18} /> : <AlertTriangle size={18} />}
                                             {financialData.contractSigned ? 'CONTRATO ASSINADO' : 'PENDENTE DE ASSINATURA'}
                                         </div>
-                                        <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                             <input
                                                 type="checkbox"
                                                 checked={financialData.contractSigned}
                                                 onChange={e => setFinancialData(prev => ({ ...prev, contractSigned: e.target.checked }))}
-                                                style={{ width: '18px', height: '18px' }}
+                                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                             />
                                             Confirmar assinatura do contrato agora
                                         </label>
@@ -553,7 +666,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                     )}
 
                     {/* ACTIONS */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', paddingTop: '20px', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
                         {step > 1 ? (
                             <button onClick={prevStep} className="btn-secondary" disabled={loading}><ArrowLeft size={16} /> Voltar</button>
                         ) : <div></div>}
@@ -561,7 +674,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [] }) => {
                         {step < 3 ? (
                             <button onClick={nextStep} className="btn-primary">Próximo <ArrowRight size={16} /></button>
                         ) : (
-                            <button onClick={handleFinalSubmit} className="btn-primary" disabled={loading} style={{ backgroundColor: 'var(--success)', borderColor: 'var(--success)' }}>
+                            <button onClick={handleFinalSubmit} className="btn-primary" disabled={loading} style={{ backgroundColor: '#34C759', boxShadow: '0 4px 10px rgba(52, 199, 89, 0.4)' }}>
                                 {loading ? 'Salvando...' : <><Check size={16} /> Finalizar Matrícula</>}
                             </button>
                         )}

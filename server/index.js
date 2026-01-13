@@ -1,12 +1,16 @@
+console.log('\n\n🚀🚀🚀 VX-SYSTEM STARTING ON PORT ' + (process.env.PORT || 3000) + ' 🚀🚀🚀\n\n');
 global.crypto = require('crypto');
 
 require('dotenv').config();
-const express = require('express');
+const express = require('express'); // Trigger Restart 125
 const cors = require('cors');
 const { Sequelize } = require('sequelize');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+
+// Initialize Database Models & Associations
+require('./models');
 
 const app = express();
 const server = http.createServer(app);
@@ -100,161 +104,169 @@ app.get('/api/setup/run-migration', async (req, res) => {
 });
 
 // Rotas do Sistema (Para quando formos mexer no resto)
-try {
-    app.use('/api/tasks', require('./routes/tasks'));
-    app.use('/api/auth', require('./routes/auth'));
-    app.use('/api/users', require('./routes/users'));
-    app.use('/api/students', require('./routes/students'));
-    app.use('/api/classes', require('./routes/classes'));
-    app.use('/api/financial', require('./routes/financial'));
-    app.use('/api/dashboard', require('./routes/dashboard'));
-    app.use('/api/ai-config', require('./routes/ai-config'));
-    app.use('/api/crm', require('./routes/crm'));
-    app.use('/api/leads', require('./routes/leads'));
-    app.use('/api/pedagogical', require('./routes/pedagogical'));
-    app.use('/api/calendar', require('./routes/calendar'));
-    app.use('/api/health', require('./routes/health'));
-    app.use('/api/units', require('./routes/units'));
-    app.use('/api', require('./routes/rescue'));
-    app.use('/api/migration', require('./routes/migration')); // SETUP ONLY
-} catch (e) { console.log('Erro ao carregar rotas:', e); }
+// Rotas do Sistema (Carregamento Independente)
+const safeLoadRoute = (path, name) => {
+    try {
+        app.use(path, require(`./routes/${name}`));
+        console.log(`✅ Rota carregada: ${path}`);
+    } catch (e) {
+        console.error(`❌ Erro ao carregar rota ${path}:`, e.message);
+    }
+};
+
+safeLoadRoute('/api/tasks', 'tasks');
+safeLoadRoute('/api/auth', 'auth');
+safeLoadRoute('/api/users', 'users');
+safeLoadRoute('/api/students', 'students');
+safeLoadRoute('/api/courses', 'courses');
+safeLoadRoute('/api/classes', 'classes');
+safeLoadRoute('/api/financial', 'financial');
+safeLoadRoute('/api/dashboard', 'dashboard');
+safeLoadRoute('/api/ai-config', 'ai-config');
+safeLoadRoute('/api/crm', 'crm');
+safeLoadRoute('/api/leads', 'leads');
+safeLoadRoute('/api/pedagogical', 'pedagogical');
+safeLoadRoute('/api/calendar', 'calendar');
+safeLoadRoute('/api/health', 'health');
+safeLoadRoute('/api/units', 'units');
+safeLoadRoute('/api/sdr', 'sdr');
+safeLoadRoute('/api/enrollments', 'enrollments');
+safeLoadRoute('/api/rescue', 'rescue');
+safeLoadRoute('/api/migration', 'migration');
+safeLoadRoute('/api/integrations', 'integrations');
+
+// GLOBAL 404 - Return JSON for API routes
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: `Rota API não encontrada: ${req.originalUrl}` });
+});
 
 app.get('/', (req, res) => res.send('Vox2you System Active'));
+
+// GLOBAL ERROR HANDLER
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(500).json({ error: 'Erro interno no servidor', details: err.message });
+});
 
 // ... includes
 const sequelize = require('./config/database');
 require('./models/associations'); // Load Associations
 // ...
 
-// --- MOTOR WHATSAPP HÍBRIDO ---
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
-const fs = require('fs');
-const QRCode = require('qrcode');
-const pino = require('pino');
+// --- MOTOR WHATSAPP SDR IA (Brasília) ---
+const { startWhatsAppBot } = require('./services/whatsappBot');
 
-let sock = null;
-
-async function startWhatsApp() {
-    console.log('--- Iniciando WhatsApp ---');
-
-    const authPath = 'auth_info_baileys';
-    if (!fs.existsSync(authPath)) fs.mkdirSync(authPath);
-
-    const { state, saveCreds } = await useMultiFileAuthState(authPath);
-    const { version } = await fetchLatestBaileysVersion();
-
-    sock = makeWASocket({
-        version,
-        auth: state,
-        printQRInTerminal: true,
-        logger: pino({ level: 'silent' }),
-        browser: Browsers.macOS('Desktop'), // Identidade estável
-        connectTimeoutMs: 60000,
-        keepAliveIntervalMs: 10000,
-        syncFullHistory: false
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) {
-            QRCode.toDataURL(qr, (err, url) => {
-                if (!err) io.emit('qr', url);
-            });
-        }
-
-        if (connection === 'close') {
-            const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log('Conexao fechada. Reconectar?', shouldReconnect);
-            if (shouldReconnect) {
-                setTimeout(() => startWhatsApp(), 5000);
-            }
-        } else if (connection === 'open') {
-            console.log('✅ WhatsApp CONECTADO!');
-            io.emit('status', 'Conectado!');
-        }
-    });
-}
-
-// Lógica Híbrida via Socket
+// Lógica de Socket básica
 io.on('connection', (socket) => {
     console.log('Cliente Web conectado');
-
-    if (sock && sock.user) {
-        socket.emit('status', 'Conectado!');
-    }
-
-    // Ouve o pedido de Pairing Code vindo do site
-    socket.on('request_pairing_code', async (phoneNumber) => {
-        console.log('Solicitação de Pairing Code para:', phoneNumber);
-        if (sock && !sock.user) {
-            try {
-                // A biblioteca pede um pequeno delay antes de solicitar
-                setTimeout(async () => {
-                    const code = await sock.requestPairingCode(phoneNumber);
-                    console.log('Código gerado:', code);
-                    socket.emit('pairing_code_response', code);
-                }, 2000);
-            } catch (err) {
-                console.error('Erro ao gerar code:', err);
-                socket.emit('error', 'Erro ao gerar código. Verifique o número.');
-            }
-        }
-    });
 });
 
 const startServer = async () => {
     try {
+        server.listen(PORT, () => console.log(`🚀 Server UP on ${PORT} (Optimistic Start)`));
+
+        console.log('Connecting to DB...');
         await sequelize.authenticate();
-        console.log('Banco de dados conectado.');
+        console.log('DB Connected.');
 
-        // --- FORCE DB SCHEMA UPDATE (EMERGENCY FIX) ---
-        try {
-            console.log("🛠️ INICIANDO CORREÇÃO FORÇADA DO BANCO...");
+        // --- UNIVERSAL SCHEMA FIXES (Dialect Aware) ---
+        const qi = sequelize.getQueryInterface();
+        const dialect = sequelize.getDialect();
+        console.log(`🛠️ INICIANDO CORREÇÃO DO BANCO (Dialect: ${dialect})...`);
 
-            // 1. FORÇA A CRIAÇÃO DA COLUNA UNIT (Se não existir)
-            // Tenta sintaxe Postgres (DO block)
+        const safeAddColumn = async (tableName, columnName, definition) => {
             try {
-                await sequelize.query(`
-                DO $$ 
-                BEGIN 
-                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Users' AND column_name='unit') THEN 
-                    ALTER TABLE "Users" ADD COLUMN "unit" VARCHAR(255); 
-                    END IF; 
-                END $$;
-                `);
-            } catch (ignore) {
-                // Fallback simples
-                await sequelize.query('ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "unit" VARCHAR(255);');
+                const tableInfo = await qi.describeTable(tableName);
+                if (!tableInfo[columnName]) {
+                    await qi.addColumn(tableName, columnName, definition);
+                    console.log(`✅ Coluna '${columnName}' adicionada a '${tableName}'.`);
+                }
+            } catch (err) {
+                // If table doesn't exist yet, sync will handle it
+                if (!err.message.includes('does not exist')) {
+                    console.log(`⚠️ Erro ao verificar/adicionar ${columnName} em ${tableName}:`, err.message);
+                }
             }
-            console.log("✅ COLUNA 'unit' GARANTIDA NA TABELA USERS.");
+        };
 
-            // 2. FORÇA A ATUALIZAÇÃO DOS CARGOS (Enums)
-            const roles = ['franqueado', 'diretor', 'manager', 'lider_comercial', 'lider_pedagogico', 'admin_financeiro', 'consultor', 'pedagogico'];
-            for (const role of roles) {
-                await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS '${role}'`).catch(() => { });
+        // 1. Ensure Columns in Users
+        const { DataTypes } = require('sequelize');
+        await safeAddColumn('Users', 'unit', { type: DataTypes.STRING, allowNull: true, defaultValue: 'Sem Unidade' });
+        await safeAddColumn('Users', 'secondaryRoles', { type: DataTypes.JSON, defaultValue: [], allowNull: true });
+
+        // 2. Ensure Columns in Leads
+        await safeAddColumn('Leads', 'consultant_id', { type: DataTypes.INTEGER, allowNull: true });
+
+        // 2.1 Ensure Financial Columns
+        await safeAddColumn('FinancialRecords', 'launchType', { type: DataTypes.ENUM('unico', 'parcelado', 'recorrente'), defaultValue: 'unico' });
+        await safeAddColumn('FinancialRecords', 'periodicity', { type: DataTypes.STRING, defaultValue: 'mensal' });
+        await safeAddColumn('FinancialRecords', 'discount', { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 });
+        await safeAddColumn('FinancialRecords', 'interest', { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 });
+        await safeAddColumn('FinancialRecords', 'fine', { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 });
+
+        // 3. Dialect Specific Fixes
+        if (dialect === 'postgres') {
+            console.log("🐘 Executando correções específicas para PostgreSQL...");
+            try {
+                // Update Role Enums
+                const roles = ['franqueado', 'diretor', 'manager', 'lider_comercial', 'lider_pedagogico', 'admin_financeiro', 'consultor', 'pedagogico'];
+                for (const role of roles) {
+                    await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS '${role}'`).catch(() => { });
+                }
+                // Update Lead Status Enums
+                const leadStatuses = ['social_comment', 'social_direct', 'social_prospect', 'internal_other', 'internal_team'];
+                for (const s of leadStatuses) {
+                    await sequelize.query(`ALTER TYPE "enum_Leads_status" ADD VALUE IF NOT EXISTS '${s}'`).catch(() => { });
+                }
+                // Update Transfer Type Enums
+                await sequelize.query(`ALTER TYPE "enum_Transfers_type" ADD VALUE IF NOT EXISTS 'class_transfer'`).catch(() => { });
+
+                // Drop problematic legacy constraints
+                await sequelize.query('ALTER TABLE "Classes" DROP CONSTRAINT IF EXISTS "Classes_professorId_fkey"').catch(() => { });
+                console.log("✅ Correções Postgres concluídas.");
+            } catch (err) {
+                console.log("⚠️ Erro em correções Postgres:", err.message);
             }
-            console.log("✅ ENUMS DE CARGOS ATUALIZADOS.");
-
-        } catch (err) {
-            console.error("❌ ERRO GERAL AO ALTERAR BANCO:", err.message);
+        } else if (dialect === 'sqlite') {
+            console.log("💾 Ambiente SQLite detectado. Pulando ajustes de ENUM/Type do Postgres.");
+            // SQLite specific tweaks if needed (currently safe mode sync handles most)
         }
+
+        // 4. Force StudentLogs Table (If sync fails)
+        try {
+            await sequelize.query(`
+                CREATE TABLE IF NOT EXISTS "StudentLogs" (
+                    "id" ${dialect === 'sqlite' ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'SERIAL PRIMARY KEY'},
+                    "studentId" INTEGER NOT NULL,
+                    "action" VARCHAR(255) NOT NULL,
+                    "description" TEXT NOT NULL,
+                    "details" ${dialect === 'sqlite' ? 'TEXT' : 'JSON'},
+                    "date" ${dialect === 'sqlite' ? 'DATETIME DEFAULT CURRENT_TIMESTAMP' : 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()'},
+                    "createdAt" ${dialect === 'sqlite' ? 'DATETIME DEFAULT CURRENT_TIMESTAMP' : 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()'},
+                    "updatedAt" ${dialect === 'sqlite' ? 'DATETIME DEFAULT CURRENT_TIMESTAMP' : 'TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()'}
+                );
+            `);
+            console.log("✅ Tabela 'StudentLogs' verificada.");
+        } catch (err) {
+            console.log("⚠️ Erro ao garantir StudentLogs:", err.message);
+        }
+
         // ---------------------------------------
 
         // Force Sync (Auto-Healing)
-        console.log('Executando Auto-Healing do Schema...');
-        // await sequelize.sync({ alter: true });
-        console.log('Schema Sync (Alter) skipped to prevent type errors. Manual migration ran.');
-        console.log('Schema sincronizado!');
+        console.log('Executando Sync (Safe Mode)...');
+        try {
+            await sequelize.sync({ alter: true });
+            console.log('Schema sincronizado!');
+        } catch (syncErr) {
+            console.error('⚠️ Aviso: Erro no sync (Auto-Healing), mas tentando continuar:', syncErr.message);
+        }
 
-        server.listen(PORT, async () => {
-            console.log(`Servidor online na porta ${PORT}`);
-            const authPath = 'auth_info_baileys';
-            if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true });
-            startWhatsApp();
-        });
+        // Server already listening (Optimistic)
+        console.log(`DB & Sync Complete.`);
+        const authPath = 'auth_info_baileys';
+        // if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true }); // Disabled cleaning to prevent loop
+        startWhatsAppBot();
     } catch (err) {
         console.error("Erro critico:", err);
     }

@@ -27,6 +27,7 @@ if (databaseUrl) {
         storage: path.join(__dirname, '..', 'voxflow.sqlite'),
         logging: false
     });
+    console.log('Database Storage Path:', path.join(__dirname, '..', 'voxflow.sqlite'));
 }
 
 module.exports = sequelize;

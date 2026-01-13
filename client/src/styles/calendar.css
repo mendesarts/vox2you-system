@@ -1,270 +1,160 @@
-/* Calendar Page Styles */
-.calendar-page {
-    height: 100vh;
+/* CALENDAR PAGE - iOS 26 Premium Glassmorphism */
+
+.calendar-page-container {
     display: flex;
     flex-direction: column;
-    padding: 24px;
-    box-sizing: border-box;
+    height: 100%;
+    gap: 24px;
 }
 
-.calendar-header {
+.calendar-main-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+}
+
+.calendar-nav-header {
+    background: var(--ios-teal);
+    padding: 24px;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 24px;
-}
-
-.calendar-controls {
-    display: flex;
     align-items: center;
-    gap: 12px;
+    color: #fff;
 }
 
-.nav-btn,
-.fc-button {
-    background-color: #f3f4f6 !important;
-    color: #1f2937 !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    font-weight: 500;
+.calendar-nav-title {
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.nav-btn:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-}
-
-.current-date-label {
-    font-size: 1.1rem;
-    font-weight: 600;
-    width: 200px;
-    text-align: center;
-    text-transform: capitalize;
-}
-
-/* Main Grid Container */
-.calendar-container {
-    flex: 1;
-    display: flex;
-    background: white;
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-    /* Scroll inside */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.time-column {
-    width: 60px;
-    border-right: 1px solid var(--border);
-    flex-shrink: 0;
-    background: #fdfdfd;
-}
-
-.time-header-cell {
-    height: 60px;
-    /* Header height match */
-    border-bottom: 1px solid var(--border);
-}
-
-.time-slot-label {
-    height: 60px;
-    /* Hour height */
-    display: flex;
-    align-items: start;
-    justify-content: center;
-    padding-top: 8px;
-    /* Offset label */
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    position: relative;
-    top: -10px;
-    /* Align with line */
-}
-
-.days-grid {
-    flex: 1;
+.calendar-grid-header {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    overflow-y: auto;
-    position: relative;
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
 }
 
-.day-column {
-    border-right: 1px solid var(--border);
-    position: relative;
-    min-width: 120px;
-}
-
-.day-column:last-child {
-    border-right: none;
-}
-
-.day-column.today {
-    background: #fcfaff;
-    /* Subtle highlight */
-}
-
-.day-header {
-    height: 60px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 10;
-}
-
-.day-column.today .day-header {
-    background: #fcfaff;
-}
-
-.day-name {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-muted);
+.calendar-weekday {
+    padding: 12px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 900;
+    color: #8E8E93;
     text-transform: uppercase;
 }
 
-.day-number {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-main);
+/* CSS Updates for Calendar Fit & Compactness */
+
+.calendar-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    /* Fixed 6 rows to ensure month fits the page strictly without scroll if possible */
+    grid-template-rows: repeat(6, 1fr);
+    flex: 1;
+    overflow-y: auto;
+    /* Allow scroll if absolutely needed, but aim to fit */
+    align-content: stretch;
 }
 
-.day-column.today .day-number {
-    color: var(--primary);
-    background: #eef2ff;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+.calendar-day-cell {
+    border-right: 0.5px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
+    padding: 2px;
+    /* Very compact cell padding */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background 0.2s;
+    background: #fff;
+    min-height: 80px;
+    /* Reduced min-height */
+}
+
+/* ... existing 7n ... */
+
+/* ... existing .other-month ... */
+
+/* ... existing .today ... */
+
+.calendar-day-number {
+    width: 20px;
+    /* Smaller day number */
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-/* Slots Area */
-.day-slots-container {
-    position: relative;
-    height: 720px;
-    /* (20 - 8) * 60 = 12 hours * 60px = 720px */
-}
-
-.hour-guide {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: #f1f5f9;
-    z-index: 1;
-    pointer-events: none;
-}
-
-/* Events */
-.calendar-event {
-    position: absolute;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    overflow: hidden;
-    cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    z-index: 2;
-    transition: transform 0.1s;
-    border-left: 3px solid transparent;
-}
-
-.calendar-event:hover {
-    transform: scale(1.02);
-    z-index: 5;
-}
-
-.event-time {
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 50%;
+    align-self: flex-end;
+    /* Move to corner to save vertical space? Or keep center but small */
+    margin-right: 4px;
+    margin-top: 2px;
     margin-bottom: 2px;
-    opacity: 0.9;
 }
 
-.event-title {
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* ... existing .today .calendar-day-number ... */
+
+.calendar-events-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    padding-right: 1px;
+    flex: 1;
 }
 
-/* Event Types */
-.calendar-event.type-appointment {
-    background: #dbeafe;
-    /* Blue 100 */
-    color: #1e40af;
-    /* Blue 800 */
-    border-color: #2563eb;
+/* Event Chips - Compact */
+.event-premium-chip {
+    padding: 2px 4px;
+    /* Super compact */
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    width: 100%;
+    min-height: 0;
+    line-height: 1.1;
 }
 
-.calendar-event.type-task {
-    background: #f3e8ff;
-    /* Purple 100 */
-    color: #6b21a8;
-    /* Purple 800 */
-    border-color: #9333ea;
+.event-premium-chip:hover {
+    filter: brightness(0.95);
+    transform: scale(1.02);
 }
 
-.calendar-event.type-block {
-    background: #f1f5f9;
-    /* Slate 100 */
-    color: #475569;
-    /* Slate 600 */
-    border-color: #94a3b8;
-    background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0, 0, 0, 0.03) 5px, rgba(0, 0, 0, 0.03) 10px);
+.event-time-badge {
+    opacity: 0.6;
+    font-family: 'SF Mono', monospace;
+    font-size: 8px;
 }
 
-/* --- MOBILE RESPONSIVE --- */
-@media (max-width: 768px) {
-    .calendar-page {
-        padding: 12px;
-        padding-top: 60px;
-        /* Space for hamburger */
-        height: auto;
-        /* Allow natural scroll if needed */
-        min-height: 100vh;
-    }
+/* Scrollbar iOS Style */
+.calendar-days-grid::-webkit-scrollbar,
+.calendar-events-container::-webkit-scrollbar {
+    width: 4px;
+}
 
-    .calendar-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
+.calendar-days-grid::-webkit-scrollbar-track,
+.calendar-events-container::-webkit-scrollbar-track {
+    background: transparent;
+}
 
-    .calendar-controls {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-    }
-
-    .current-date-label {
-        width: auto;
-        font-size: 1rem;
-    }
-
-    /* Enable horizontal scroll for calendar grid */
-    .calendar-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Keep columns wide enough to be readable */
-    .days-grid {
-        min-width: 700px;
-    }
+.calendar-days-grid::-webkit-scrollbar-thumb,
+.calendar-events-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
 }

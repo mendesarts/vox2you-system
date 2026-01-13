@@ -1,345 +1,190 @@
 import React, { useState, useEffect } from 'react';
-import {
-    UserPlus,
-    Edit,
-    Trash2,
-    X,
-    Save,
-    Search,
-    User
-} from 'lucide-react';
+import { UserPlus, Edit, Trash2, Search, Store, Mail, Shield, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
-import { ROLE_LABELS, ROLE_COLORS } from '../utils/roles';
+import { useAuth } from '../context/AuthContext';
+import RegisterUserPremium from '../components/RegisterUserPremium';
 
 const UsersPage = () => {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-
-    // State for Form
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        role: '20', // Default Franqueado
-        whatsapp: '',
-        unitName: '', // For Master creating new units
-        password: 'Vox2You@2025' // Default visible password
-    });
-
-    const [currentUserRole, setCurrentUserRole] = useState(null);
+    const [units, setUnits] = useState([]);
+    const [unitFilter, setUnitFilter] = useState('all');
 
     useEffect(() => {
         fetchUsers();
-        // Simulate getting current user role from localStorage/Auth context
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        if (storedUser) setCurrentUserRole(storedUser.roleId);
+        if ([1, 10].includes(Number(currentUser?.roleId))) {
+            fetchUnits();
+        }
     }, []);
+
+    const fetchUnits = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (Array.isArray(data)) setUnits(data);
+        } catch (error) { console.error(error); }
+    };
 
     const fetchUsers = async () => {
         try {
             const data = await api.fetchUsers();
-            setUsers(data);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            // alert('Erro ao carregar usuários');
-        }
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (isEditMode) {
-                await api.updateUser(formData.id, {
-                    name: formData.name,
-                    email: formData.email,
-                    role: formData.role,
-                    whatsapp: formData.whatsapp
-                });
+            if (Array.isArray(data)) {
+                setUsers(data);
             } else {
-                await api.createUser({
-                    name: formData.name,
-                    email: formData.email,
-                    password: formData.password,
-                    role: formData.role,
-                    whatsapp: formData.whatsapp,
-                    unitName: formData.unitName
-                });
+                console.error("Expected array of users, got:", data);
+                setUsers([]);
             }
-            fetchUsers();
-            closeModal();
         } catch (error) {
-            console.error('Operation failed:', error);
-            alert('Erro ao salvar usuário: ' + (error.message));
+            console.error("Failed to fetch users:", error);
+            setUsers([]);
         }
     };
 
-    const handleDelete = async (userId) => {
-        if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
-            try {
-                await api.deleteUser(userId);
-                fetchUsers();
-            } catch (error) {
-                console.error('Delete failed:', error);
-                alert('Erro ao excluir');
-            }
-        }
+    const handleSaveFromModal = async (userData) => {
+        try {
+            const payload = { ...userData, roleId: Number(userData.role), whatsapp: userData.phone || userData.whatsapp };
+            if (userData.id || selectedUser?.id) await api.updateUser(userData.id || selectedUser.id, payload);
+            else await api.createUser(payload);
+            fetchUsers();
+            setIsModalOpen(false);
+            setSelectedUser(null);
+        } catch (error) { alert('Erro ao salvar usuário'); }
     };
 
-    const openModal = (user = null) => {
-        if (user) {
-            setIsEditMode(true);
-            setFormData({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.roleId || '20',
-                whatsapp: user.whatsapp || '',
-                password: '' // Don't show hash
-            });
-        } else {
-            setIsEditMode(false);
-            setFormData({
-                name: '',
-                email: '',
-                role: '20',
-                whatsapp: '',
-                unitName: '',
-                password: 'Vox2You@2025'
-            });
-        }
-        setIsModalOpen(true);
+    const getRoleGroup = (roleId) => {
+        const id = Number(roleId);
+        if ([1, 10].includes(id)) return 'Governança & Master';
+        if (id === 20) return 'Proprietários & Franqueados';
+        if (id === 30) return 'Direção de Unidade';
+        if ([40, 41].includes(id)) return 'Executivos Comerciais';
+        if ([50, 51].includes(id)) return 'Corpo Docente & Pedagógico';
+        return 'Suporte & Operações';
     };
 
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setIsEditMode(false);
-    };
+    const groupOrder = ['Governança & Master', 'Proprietários & Franqueados', 'Direção de Unidade', 'Executivos Comerciais', 'Corpo Docente & Pedagógico', 'Suporte & Operações'];
 
-    // Filter Users
-    const filteredUsers = users.filter(u =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(u => {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = (u.name || '').toLowerCase().includes(term) || (u.email || '').toLowerCase().includes(term);
+        const matchesUnit = unitFilter === 'all' || Number(u.unitId) === Number(unitFilter);
+        return matchesSearch && matchesUnit;
+    });
+
+    const groupedUsers = filteredUsers.reduce((acc, user) => {
+        const group = getRoleGroup(user.roleId);
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(user);
+        return acc;
+    }, {});
 
     return (
-        <div className="p-8 bg-gray-50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '40px' }}>
+
+            {/* Header Master */}
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Gestão de Equipe</h1>
-                    <p className="text-gray-500 mt-1">Gerencie franqueados, gestores e colaboradores.</p>
+                    <h1 style={{ fontSize: '32px', fontWeight: '900', letterSpacing: '-1px' }}>Gestão de <span style={{ color: 'var(--ios-teal)' }}>Equipe</span></h1>
+                    <p style={{ opacity: 0.5 }}>Configuração de acessos e cargos da rede Vox2You</p>
                 </div>
-
-                <button
-                    onClick={() => openModal()}
-                    className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-semibold"
-                >
-                    <UserPlus size={20} />
-                    Novo Usuário
-                </button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="mb-8 relative max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                    type="text"
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 sm:text-sm shadow-sm"
-                    placeholder="Buscar por nome ou email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-
-            {/* GRID LAYOUT */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredUsers.map((user) => {
-                    const roleStyle = ROLE_COLORS[user.roleId] || 'text-gray-500 bg-gray-100 border-gray-200';
-                    const roleLabel = ROLE_LABELS[user.roleId] || 'Desconhecido';
-
-                    return (
-                        <div key={user.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100 flex flex-col">
-                            {/* Card Header (Color Strip) */}
-                            <div className={`h-2 w-full ${roleStyle.split(' ').find(c => c.startsWith('bg-'))?.replace('bg-', 'bg-') || 'bg-gray-200'}`}></div>
-
-                            <div className="p-6 flex-1 flex flex-col">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold text-xl">
-                                        {user.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${roleStyle}`}>
-                                        {roleLabel}
-                                    </span>
-                                </div>
-
-                                <h3 className="text-lg font-bold text-gray-800 mb-1 truncate">{user.name}</h3>
-                                <p className="text-sm text-gray-500 mb-4 truncate">{user.email}</p>
-
-                                {/* Unit Info (if applicable) */}
-                                {user.unit && (
-                                    <div className="mt-auto mb-4 bg-gray-50 p-2 rounded text-xs text-gray-600">
-                                        🏠 {user.unit}
-                                    </div>
-                                )}
-
-                                <div className="flex gap-2 mt-auto pt-4 border-t border-gray-100">
-                                    <button
-                                        onClick={() => openModal(user)}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                        <Edit size={16} /> Editar
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(user.id)}
-                                        className="flex items-center justify-center p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    {[1, 10].includes(Number(currentUser?.roleId)) && (
+                        <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Store size={16} color="#8E8E93" />
+                            <select
+                                value={unitFilter}
+                                onChange={e => setUnitFilter(e.target.value)}
+                                style={{ background: 'transparent', border: 'none', fontWeight: '800', fontSize: '13px', outline: 'none', cursor: 'pointer' }}
+                            >
+                                <option value="all">Todas as Unidades</option>
+                                {units.map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
                         </div>
-                    );
-                })}
-            </div>
-
-            {/* MODAL (Popup) */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
-                        {/* Modal Header */}
-                        <div className="bg-gray-900 px-6 py-4 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                {isEditMode ? <Edit size={20} className="text-amber-400" /> : <UserPlus size={20} className="text-amber-400" />}
-                                {isEditMode ? 'Editar Usuário' : 'Novo Usuário do Sistema'}
-                            </h2>
-                            <button onClick={closeModal} className="text-gray-400 hover:text-white transition-colors">
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        {/* Modal Body */}
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-
-                            {/* Name */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-2.5 text-gray-400 h-5 w-5" />
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        required
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        className="pl-10 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
-                                        placeholder="Ex: Ana Silva"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Corporativo</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
-                                    placeholder="ana@vox2you.com.br"
-                                />
-                            </div>
-
-                            {/* Role Selection */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Cargo / Função</label>
-                                <select
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleInputChange}
-                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border bg-white"
-                                >
-                                    {Object.entries(ROLE_LABELS).map(([id, label]) => (
-                                        <option key={id} value={id}>{id} - {label}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Whatsapp */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                                <input
-                                    type="text"
-                                    name="whatsapp"
-                                    value={formData.whatsapp}
-                                    onChange={handleInputChange}
-                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
-                                    placeholder="(11) 99999-9999"
-                                />
-                            </div>
-
-                            {/* Unit Name (Master Only) - Simplified Logic */}
-                            {!isEditMode && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Unidade (Opcional)</label>
-                                    <input
-                                        type="text"
-                                        name="unitName"
-                                        value={formData.unitName}
-                                        onChange={handleInputChange}
-                                        placeholder="Se criar Franqueado/Gestor..."
-                                        className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">Preencha apenas se estiver criando uma Nova Unidade.</p>
-                                </div>
-                            )}
-
-                            {/* Password Display/Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Senha de Acesso</label>
-                                <input
-                                    type="text" // Visible text as requested
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    className="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-amber-500 focus:border-amber-500 sm:text-sm p-2.5 border bg-yellow-50 text-amber-900 font-mono"
-                                    placeholder="Senha..."
-                                />
-                                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                                    ℹ️ Padrão sugerido: Vox2You@2025
-                                </p>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-4 pt-4 mt-2">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="flex-1 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 py-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 flex items-center justify-center gap-2"
-                                >
-                                    <Save size={18} />
-                                    {isEditMode ? 'Salvar Alterações' : 'Criar Usuário'}
-                                </button>
-                            </div>
-
-                        </form>
+                    )}
+                    <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px 16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Search size={16} color="#8E8E93" />
+                        <input
+                            placeholder="Buscar colaborador..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ background: 'transparent', border: 'none', fontWeight: '800', fontSize: '13px', outline: 'none' }}
+                        />
                     </div>
+                    <button onClick={() => { setSelectedUser(null); setIsModalOpen(true); }} className="btn-primary" style={{ height: '40px', padding: '0 20px', borderRadius: '14px' }}>
+                        <UserPlus size={18} /> Novo Usuário
+                    </button>
                 </div>
+            </header>
+
+            {/* Listagem Consolidada */}
+            <div className="vox-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead style={{ background: 'rgba(0,0,0,0.01)', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+                        <tr>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '1px' }}>Colaborador</th>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '1px' }}>Alocação</th>
+                            <th style={{ textAlign: 'right', padding: '16px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '1px' }}>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {groupOrder.map(groupName => {
+                            const groupUsers = groupedUsers[groupName];
+                            if (!groupUsers || groupUsers.length === 0) return null;
+                            return (
+                                <React.Fragment key={groupName}>
+                                    <tr style={{ background: 'rgba(52, 199, 89, 0.05)' }}>
+                                        <td colSpan="3" style={{ padding: '8px 24px', fontSize: '10px', fontWeight: '900', color: '#248A3D', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            {groupName}
+                                        </td>
+                                    </tr>
+                                    {groupUsers.map((u, idx) => (
+                                        <tr key={u.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+                                            <td style={{ padding: '16px 24px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <div>
+                                                        <div style={{ fontWeight: '900', fontSize: '16px' }}>{u.name}</div>
+                                                        <div style={{ fontSize: '12px', opacity: 0.5, display: 'flex', alignItems: 'center', gap: '6px' }}><Mail size={12} /> {u.email}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '16px 24px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '800' }}>
+                                                    <Store size={14} color="#8E8E93" /> {u.unit || 'Matriz Global'}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                    <button onClick={() => { setSelectedUser(u); setIsModalOpen(true); }} style={{ border: 'none', background: 'rgba(0,122,255,0.1)', color: '#007AFF', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}>
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button style={{ border: 'none', background: 'rgba(255,59,48,0.1)', color: '#FF3B30', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}>
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {isModalOpen && (
+                <RegisterUserPremium
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={handleSaveFromModal}
+                    currentUser={currentUser}
+                    userToEdit={selectedUser}
+                />
             )}
         </div>
     );

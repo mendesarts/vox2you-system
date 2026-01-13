@@ -1,120 +1,384 @@
-import React, { useState } from 'react';
-import { Save, Building, MapPin, Phone, Mail, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Building, MapPin, Phone, User, Clock, Edit2, ArrowUpCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import Toast from '../../components/Toast';
+import DataCard from '../../components/DataCard';
+import { VoxModal } from '../../components/VoxUI';
 
 const UnitManagement = () => {
-    // Mock initial data - In a real app, this would be fetched from an API
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+
     const [unitInfo, setUnitInfo] = useState({
-        unitName: 'Vox2You - Unidade Matriz',
-        cnpj: '12.345.678/0001-90',
-        address: 'Av. Paulista, 1000 - Bela Vista',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01310-100',
-        phone: '(11) 3333-4444',
-        email: 'contato@vox2you-matriz.com.br',
-        directorName: 'Carlos Silva',
-        directorEmail: 'carlos.diretor@vox2you.com.br'
+        name: '',
+        cnpj: '',
+        address: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        phone: '',
+        email: '',
+        directorName: '',
+        directorEmail: '',
+        businessHours: {
+            weekdays: '',
+            saturday: ''
+        },
+        financialSettings: {
+            cardFees: {
+                credit: { base: 2.99, perInstallment: 1.5 },
+                debit: { base: 1.2 }
+            },
+            advanceRate: 1.5
+        }
     });
 
-    const [loading, setLoading] = useState(false);
+    useEffect(() => {
+        if (user && user.unitId) {
+            fetchUnitData();
+        }
+    }, [user]);
+
+    const fetchUnitData = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units/${user.unitId}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUnitInfo(prev => ({
+                    ...prev,
+                    ...data,
+                    businessHours: (typeof data.businessHours === 'string' ? JSON.parse(data.businessHours) : data.businessHours) || { weekdays: '', saturday: '' }
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching unit:', error);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setUnitInfo(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        if (name.startsWith('hours_')) {
+            const key = name.replace('hours_', '');
+            setUnitInfo(prev => ({
+                ...prev,
+                businessHours: { ...prev.businessHours, [key]: value }
+            }));
+        } else if (name.startsWith('fin_')) {
+            const parts = name.split('_'); // fin_cardFees_credit_base
+            const field = parts[1]; // cardFees
+            const sub = parts[2]; // credit
+            const key = parts[3]; // base
+
+            if (key) {
+                setUnitInfo(prev => ({
+                    ...prev,
+                    financialSettings: {
+                        ...prev.financialSettings,
+                        [field]: {
+                            ...prev.financialSettings[field],
+                            [sub]: {
+                                ...prev.financialSettings[field][sub],
+                                [key]: parseFloat(value) || 0
+                            }
+                        }
+                    }
+                }));
+            } else {
+                // Single field like advanceRate
+                setUnitInfo(prev => ({
+                    ...prev,
+                    financialSettings: {
+                        ...prev.financialSettings,
+                        [field]: parseFloat(value) || 0
+                    }
+                }));
+            }
+        } else {
+            setUnitInfo(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units/${user.unitId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(unitInfo)
+            });
+
+            if (res.ok) {
+                setToast({ message: 'Dados da unidade atualizados!', type: 'success' });
+                setIsEditing(false);
+            } else {
+                setToast({ message: 'Erro ao salvar.', type: 'error' });
+            }
+        } catch (error) {
+            setToast({ message: 'Erro de conexão.', type: 'error' });
+        } finally {
             setLoading(false);
-            alert('Informações da unidade salvas com sucesso!');
-        }, 1000);
-        // TODO: Implement actual save logic to backend (e.g., PUT /api/admin/unit-settings)
+        }
     };
 
     return (
-        <div className="animate-fade-in" style={{ paddingBottom: '2rem' }}>
-            <div className="manager-header" style={{ marginBottom: '20px' }}>
-                <div>
-                    <h3>Gestão da Unidade</h3>
-                    <p style={{ color: 'var(--text-muted)' }}>Configurações e dados cadastrais da escola</p>
+        <div className="unit-management page-fade-in" style={{ padding: '0 0 32px 0' }}>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: '20px', marginBottom: '32px' }}>
+                <div style={{ minWidth: 0 }}>
+                    <h2 className="page-title" style={{ whiteSpace: 'nowrap' }}>Minha Unidade</h2>
+                    <p className="page-subtitle" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Detalhes da franquia, localização e configurações operacionais.</p>
                 </div>
-                <button className="btn-primary" onClick={handleSave} disabled={loading}>
-                    <Save size={18} /> {loading ? 'Salvando...' : 'Salvar Alterações'}
-                </button>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}
+                    >
+                        <Edit2 size={18} /> Editar Dados
+                    </button>
+                </div>
+            </header>
+
+            {/* Read-Only Dashboard View */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+                {/* Visual Identity / Basic Info */}
+                <DataCard
+                    title="Identidade da Unidade"
+                    subtitle="CNPJ e Razão Social"
+                    status="Ativo"
+                    statusColor="border-indigo-500"
+                    onClick={() => setIsEditing(true)}
+                >
+                    <div style={{ paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#1C1C1E' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5856D6' }}>
+                                <Building size={20} />
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '14px', fontWeight: 'bold' }}>Nome Fantasia</h4>
+                                <span style={{ color: '#8E8E93' }}>{unitInfo.name || 'Não informado'}</span>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#1C1C1E' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5856D6' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 'bold' }}>CNPJ</span>
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '14px', fontWeight: 'bold' }}>CNPJ</h4>
+                                <span style={{ color: '#8E8E93' }}>{unitInfo.cnpj || 'Não cadastrado'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </DataCard>
+
+                {/* Contact & Address */}
+                <DataCard
+                    title="Localização e Contato"
+                    subtitle="Comercial e Suporte"
+                    statusColor="border-indigo-200"
+                >
+                    <div style={{ paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', color: '#1C1C1E' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34C759', flexShrink: 0 }}>
+                                <MapPin size={20} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ fontSize: '14px', fontWeight: 'bold' }}>Endereço</h4>
+                                <div style={{ fontSize: '14px', color: '#8E8E93', lineHeight: 1.5 }}>
+                                    {unitInfo.address || 'Endereço não informado'}<br />
+                                    {unitInfo.city && `${unitInfo.city} - ${unitInfo.state}`}
+                                    {unitInfo.zipCode && <div style={{ fontSize: '12px', color: '#C7C7CC', marginTop: '4px' }}>{unitInfo.zipCode}</div>}
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#1C1C1E' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#007AFF', flexShrink: 0 }}>
+                                <Phone size={20} />
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '14px', fontWeight: 'bold' }}>Contato Oficial</h4>
+                                <span style={{ color: '#8E8E93' }}>{unitInfo.phone || 'Sem telefone'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </DataCard>
+
+                {/* Financial Settings */}
+                <DataCard
+                    title="Configurações Financeiras"
+                    subtitle="Taxas e Antecipação"
+                    statusColor="border-emerald-200"
+                >
+                    <div style={{ paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', color: '#1C1C1E' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34C759', flexShrink: 0 }}>
+                                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>%</span>
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '14px', fontWeight: 'bold' }}>Taxas de Cartão</h4>
+                                <ul style={{ fontSize: '12px', color: '#8E8E93', marginTop: '4px', padding: 0, listStyle: 'none' }}>
+                                    <li style={{ marginBottom: '2px' }}><strong style={{ color: '#1C1C1E' }}>Crédito:</strong> {unitInfo.financialSettings?.cardFees?.credit?.base || '0'}% + {unitInfo.financialSettings?.cardFees?.credit?.perInstallment || '0'}%/parc.</li>
+                                    <li><strong style={{ color: '#1C1C1E' }}>Débito:</strong> {unitInfo.financialSettings?.cardFees?.debit?.base || '0'}%</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#1C1C1E' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#F5F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5856D6', flexShrink: 0 }}>
+                                <ArrowUpCircle size={18} />
+                            </div>
+                            <div>
+                                <h4 style={{ fontSize: '14px', fontWeight: 'bold' }}>Taxa Média de Antecipação</h4>
+                                <span style={{ color: '#8E8E93' }}>{unitInfo.financialSettings?.advanceRate || '0'}% ao mês</span>
+                            </div>
+                        </div>
+                    </div>
+                </DataCard>
             </div>
 
-            <div className="control-card" style={{ padding: '25px' }}>
-                <form className="user-form" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            {/* EDIT MODAL - POPUP INSTEAD OF BOTTOM FORM */}
+            <VoxModal
+                isOpen={isEditing}
+                onClose={() => setIsEditing(false)}
+                title="Editar Informações da Unidade"
+                theme="ios"
+                footer={
+                    <>
+                        <button onClick={() => setIsEditing(false)} className="btn-secondary">Cancelar</button>
+                        <button onClick={handleSave} className="btn-primary" disabled={loading}>
+                            {loading ? 'Salvando...' : 'Salvar Alterações'}
+                        </button>
+                    </>
+                }
+            >
+                <form id="unit-form" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--ios-indigo)', fontSize: '14px', margin: 0 }}>
+                                <Building size={16} /> Dados Empresariais
+                            </h4>
+                        </div>
 
-                    <div className="section-title" style={{ gridColumn: '1 / -1', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Building size={20} /> Dados da Empresa
-                    </div>
-
-                    <div className="form-group">
-                        <label>Nome da Unidade</label>
-                        <input type="text" name="unitName" value={unitInfo.unitName} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>CNPJ</label>
-                        <input type="text" name="cnpj" value={unitInfo.cnpj} onChange={handleChange} />
-                    </div>
-
-                    <div className="section-title" style={{ gridColumn: '1 / -1', margin: '20px 0 15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <MapPin size={20} /> Endereço
-                    </div>
-
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                        <label>Logradouro Completo</label>
-                        <input type="text" name="address" value={unitInfo.address} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Cidade</label>
-                        <input type="text" name="city" value={unitInfo.city} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Estado (UF)</label>
-                        <input type="text" name="state" value={unitInfo.state} onChange={handleChange} maxLength={2} />
-                    </div>
-                    <div className="form-group">
-                        <label>CEP</label>
-                        <input type="text" name="zipCode" value={unitInfo.zipCode} onChange={handleChange} />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                            <div>
+                                <label className="form-label">Nome Fantasia</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="name" value={unitInfo.name} onChange={handleChange} placeholder="Ex: Vox2You - Matriz" />
+                            </div>
+                            <div>
+                                <label className="form-label">CNPJ</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="cnpj" value={unitInfo.cnpj || ''} onChange={handleChange} placeholder="00.000.000/0000-00" />
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="section-title" style={{ gridColumn: '1 / -1', margin: '20px 0 15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Phone size={20} /> Contato
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--ios-green)', fontSize: '14px', margin: 0 }}>
+                                <MapPin size={16} /> Endereço Completo
+                            </h4>
+                        </div>
+                        <div>
+                            <label className="form-label">Logradouro</label>
+                            <input className="input-field" style={{ width: '100%' }} type="text" name="address" value={unitInfo.address || ''} onChange={handleChange} placeholder="Rua, Número, Bairro" />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px' }}>
+                            <div>
+                                <label className="form-label">Cidade</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="city" value={unitInfo.city || ''} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="form-label">Estado</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="state" value={unitInfo.state || ''} onChange={handleChange} maxLength={2} />
+                            </div>
+                            <div>
+                                <label className="form-label">CEP</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="zipCode" value={unitInfo.zipCode || ''} onChange={handleChange} />
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>Telefone Principal</label>
-                        <input type="text" name="phone" value={unitInfo.phone} onChange={handleChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Email Corporativo</label>
-                        <input type="email" name="email" value={unitInfo.email} onChange={handleChange} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--ios-orange)', fontSize: '14px', margin: 0 }}>
+                                <Clock size={16} /> Operação e Contato
+                            </h4>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div>
+                                <label className="form-label">Horário (Seg-Sex)</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="hours_weekdays" value={unitInfo.businessHours?.weekdays || ''} onChange={handleChange} placeholder="08:00 às 20:00" />
+                            </div>
+                            <div>
+                                <label className="form-label">Horário (Sábados)</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="hours_saturday" value={unitInfo.businessHours?.saturday || ''} onChange={handleChange} placeholder="08:00 às 13:00" />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                            <div>
+                                <label className="form-label">Telefone da Unidade</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="phone" value={unitInfo.phone || ''} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="form-label">Email Diretor</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="directorEmail" value={unitInfo.directorEmail || ''} onChange={handleChange} />
+                            </div>
+                            <div>
+                                <label className="form-label">Nome do Diretor</label>
+                                <input className="input-field" style={{ width: '100%' }} type="text" name="directorName" value={unitInfo.directorName || ''} onChange={handleChange} />
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="section-title" style={{ gridColumn: '1 / -1', margin: '20px 0 15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <User size={20} /> Responsável / Direção
-                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: 'var(--ios-indigo)', fontSize: '14px', margin: 0 }}>
+                                <span style={{ fontSize: '18px' }}>%</span> Taxas Financeiras
+                            </h4>
+                        </div>
 
-                    <div className="form-group">
-                        <label>Nome do Diretor(a)</label>
-                        <input type="text" name="directorName" value={unitInfo.directorName} onChange={handleChange} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ padding: '16px', background: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <h5 style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Cartão de Crédito</h5>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div>
+                                        <label className="form-label">Taxa Base (%)</label>
+                                        <input className="input-field" style={{ width: '100%' }} type="number" name="fin_cardFees_credit_base" value={unitInfo.financialSettings?.cardFees?.credit?.base || 0} onChange={handleChange} step="0.01" />
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Por Parcela (%)</label>
+                                        <input className="input-field" style={{ width: '100%' }} type="number" name="fin_cardFees_credit_perInstallment" value={unitInfo.financialSettings?.cardFees?.credit?.perInstallment || 0} onChange={handleChange} step="0.01" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div style={{ padding: '16px', background: 'var(--bg-app)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                <h5 style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Cartão de Débito</h5>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div>
+                                        <label className="form-label">Taxa Débito (%)</label>
+                                        <input className="input-field" style={{ width: '100%' }} type="number" name="fin_cardFees_debit_base" value={unitInfo.financialSettings?.cardFees?.debit?.base || 0} onChange={handleChange} step="0.01" />
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Taxa Antecipação Média (%)</label>
+                                        <input className="input-field" style={{ width: '100%' }} type="number" name="fin_advanceRate" value={unitInfo.financialSettings?.advanceRate || 0} onChange={handleChange} step="0.01" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="form-group">
-                        <label>Email do Responsável</label>
-                        <input type="email" name="directorEmail" value={unitInfo.directorEmail} onChange={handleChange} />
-                    </div>
-
                 </form>
-            </div>
-        </div>
+            </VoxModal>
+        </div >
     );
 };
 

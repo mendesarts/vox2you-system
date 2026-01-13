@@ -12,5 +12,6 @@ export default defineConfig({
                 assetFileNames: `assets/[name].[hash].[ext]`
             }
         }
-    }
+    },
+    // Force Restart Trigger 123
 })

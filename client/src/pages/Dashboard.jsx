@@ -1,237 +1,318 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, CalendarCheck, DollarSign, ArrowUpRight, Store, Award, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Store, Award, TrendingUp, DollarSign, Activity, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import ErrorBoundary from '../components/ErrorBoundary';
-import PageHeader from '../components/PageHeader';
-import DataCard from '../components/DataCard';
-import './dashboard.css';
+import DashboardFilters from '../components/DashboardFilters';
+
+import { ROLE_LABELS } from '../utils/roles';
 
 const Dashboard = () => {
-    const { user } = useAuth();
-    const [stats, setStats] = useState({
-        commercial: { newLeadsMonth: 0, salesMonth: 0, conversionRate: 0 },
-        financial: { revenue: 0, expense: 0, balance: 0 },
-        pedagogical: { activeStudents: 0, activeClasses: 0 },
-        units: []
-    });
-    const [topSeller, setTopSeller] = useState(null);
+    const { user, selectedUnit } = useAuth();
+    const navigate = useNavigate();
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedUnit, setSelectedUnit] = useState('');
+    const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
+
+    const displayName = user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Gestor';
+    const roleId = user?.roleId ? Number(user.roleId) : null;
+    const roleName = ROLE_LABELS[roleId] || user?.role || 'Gestor';
 
     useEffect(() => {
-        fetchStats();
-    }, []);
+        if (!user) return;
+        const rId = Number(user.roleId);
 
-    const fetchStats = async (unitId = '') => {
+        // Redirect operational roles to their specific dashboards
+        if ([40, 41].includes(rId)) {
+            navigate('/commercial');
+            return;
+        }
+        if ([50, 51].includes(rId)) {
+            navigate('/pedagogical');
+            return;
+        }
+        if (rId === 60) {
+            navigate('/secretary'); // or /financial? User said Gestão=Administrativo.
+            return;
+        }
+
+        // If not redirected, we are Global/Manager [1, 10, 20, 30], so we fetch stats.
+        // Or if logic fails, we stay here.
+    }, [user, navigate]);
+
+    const handleFilterChange = ({ startDate, endDate }) => {
+        setDateRange({ startDate, endDate });
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchStats(selectedUnit, dateRange.startDate, dateRange.endDate);
+        }
+    }, [selectedUnit, dateRange, user]);
+
+    const fetchStats = async (unitId = '', startDate = '', endDate = '') => {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+
+        // unitId comes from selectedUnit (context), which is Number or null (for all)
+        let query = unitId ? `unitId=${unitId}` : '';
+        if (startDate) query += `&startDate=${startDate}`;
+        if (endDate) query += `&endDate=${endDate}`;
+
+        const queryString = query ? `?${query}` : '';
+
         try {
-            const query = unitId && unitId !== 'all' ? `?unitId=${unitId}` : '';
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${query}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data) setStats(prev => ({ ...prev, ...data }));
-            } else {
-                console.error("Dashboard error:", await res.text());
+            const statsRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${queryString}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (statsRes.ok) {
+                const data = await statsRes.json();
+                setStats(data);
             }
-
-            const token = localStorage.getItem('token');
-            if (token) {
-                const resSeller = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/stats/top-seller${query}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (resSeller.ok) {
-                    const sellerData = await resSeller.json();
-                    setTopSeller(sellerData);
-                }
-            }
-
-            if (unitId) setSelectedUnit(unitId);
         } catch (error) {
-            console.error(error);
+            console.error("Dashboard fetch error:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleUnitChange = (e) => {
-        const newVal = e.target.value;
-        setSelectedUnit(newVal);
-        fetchStats(newVal);
-    };
-
-    if (loading) return <div className="p-10 text-center text-teal-500 font-bold animate-pulse">Carregando dashboard...</div>;
-    if (!stats) return <div className="p-4 text-center">Nenhum dado disponível. Recarregue a página.</div>;
-
     const formatMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
     return (
-        <div className="dashboard-page p-6 max-w-7xl mx-auto space-y-8">
-            <PageHeader
-                title="Visão Geral da Escola"
-                subtitle={`Referência: ${new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}`}
-                actionLabel={stats.units && stats.units.length > 0 ? "Filtrar Unidade" : null}
-                actionIcon={Store}
-                onAction={() => document.getElementById('unit-selector-focus').focus()}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }} className="animate-ios-pop">
 
-            {/* Hidden Focus Target or actually show the selector cleanly */}
-            {stats.units && stats.units.length > 0 && (
-                <div className="flex justify-end -mt-6 mb-4">
-                    <div className="relative">
-                        <select
-                            id="unit-selector-focus"
-                            value={selectedUnit}
-                            onChange={handleUnitChange}
-                            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm font-medium shadow-sm outline-none focus:border-teal-500 cursor-pointer appearance-none pr-8"
-                        >
-                            <option value="all">Todas as Unidades (Master)</option>
-                            <optgroup label="Unidades">
-                                {stats.units.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name}</option>
-                                ))}
-                            </optgroup>
-                        </select>
-                        <Store className="absolute right-2 top-2.5 text-gray-400 pointer-events-none" size={16} />
-                    </div>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* COMMERCIAL STATS */}
-                <DataCard title="Comercial" subtitle="Desempenho de Vendas" status="active" statusColor="border-teal-500">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
-                            <div className="flex items-center gap-2 mb-1">
-                                <TrendingUp size={16} className="text-teal-600" />
-                                <span className="text-xs font-bold uppercase text-teal-700">Novos Leads</span>
-                            </div>
-                            <span className="text-2xl font-bold font-heading text-teal-900 dark:text-teal-100">{stats.commercial?.newLeadsMonth || 0}</span>
-                        </div>
-                        <div className="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Award size={16} className="text-teal-600" />
-                                <span className="text-xs font-bold uppercase text-teal-700">Vendas</span>
-                            </div>
-                            <span className="text-2xl font-bold font-heading text-teal-900 dark:text-teal-100">{stats.commercial?.salesMonth || 0}</span>
-                        </div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                        <span>Taxa de Conversão</span>
-                        <span className="font-bold text-gray-800 dark:text-white">
-                            {((stats.commercial?.conversionRate || 0) * 100).toFixed(1)}%
-                        </span>
-                    </div>
-                </DataCard>
-
-                {/* FINANCIAL STATS */}
-                <DataCard title="Financeiro" subtitle="Fluxo de Caixa Mensal" status="active" statusColor="border-emerald-500">
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <DollarSign size={18} className="text-emerald-500" />
-                                <span className="text-sm text-gray-600 dark:text-gray-400">Receitas</span>
-                            </div>
-                            <span className="font-bold text-gray-900 dark:text-white">{formatMoney(stats.financial?.revenue || 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <ArrowUpRight size={18} className="text-rose-500 rotate-45" />
-                                <span className="text-sm text-gray-600 dark:text-gray-400">Despesas</span>
-                            </div>
-                            <span className="font-bold text-gray-900 dark:text-white">{formatMoney(stats.financial?.expense || 0)}</span>
-                        </div>
-                        <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-white/5 p-3 rounded-lg">
-                            <span className="font-bold uppercase text-xs text-gray-500">Saldo</span>
-                            <span className={`font-bold font-heading text-lg ${(stats.financial?.balance || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                {formatMoney(stats.financial?.balance || 0)}
-                            </span>
-                        </div>
-                    </div>
-                </DataCard>
-
-                {/* PEDAGOGICAL STATS */}
-                <DataCard title="Pedagógico" subtitle="Retenção e Turmas" status="active" statusColor="border-indigo-500">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center">
-                            <div className="flex justify-center mb-2">
-                                <div className="bg-white p-2 rounded-full shadow-sm text-indigo-600">
-                                    <Users size={20} />
-                                </div>
-                            </div>
-                            <h4 className="text-2xl font-bold font-heading text-indigo-900 dark:text-indigo-100">{stats.pedagogical?.activeStudents || 0}</h4>
-                            <span className="text-xs text-indigo-600 uppercase font-bold">Alunos Ativos</span>
-                        </div>
-                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-center">
-                            <div className="flex justify-center mb-2">
-                                <div className="bg-white p-2 rounded-full shadow-sm text-indigo-600">
-                                    <CalendarCheck size={20} />
-                                </div>
-                            </div>
-                            <h4 className="text-2xl font-bold font-heading text-indigo-900 dark:text-indigo-100">{stats.pedagogical?.activeClasses || 0}</h4>
-                            <span className="text-xs text-indigo-600 uppercase font-bold">Turmas Ativas</span>
-                        </div>
-                    </div>
-                </DataCard>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
             </div>
 
-            {/* TOP SELLER */}
-            {topSeller ? (
-                <div className="mt-8">
-                    <DataCard title="Destaque do Mês" subtitle="Top Performance em Vendas" status="active" statusColor="border-amber-400">
-                        <div className="flex flex-col md:flex-row items-center gap-6">
-                            <div className="h-24 w-24 bg-amber-100 rounded-full flex items-center justify-center text-3xl font-bold text-amber-700 border-4 border-white shadow-xl">
-                                {topSeller.profilePicture ? (
-                                    <img src={topSeller.profilePicture} alt={topSeller.name} className="w-full h-full rounded-full object-cover" />
-                                ) : (
-                                    topSeller.name?.charAt(0) || 'D'
-                                )}
-                            </div>
-                            <div className="text-center md:text-left flex-1">
-                                <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white font-heading">{topSeller.name}</h3>
-                                    <Award className="text-amber-500" size={24} />
-                                </div>
-                                <p className="text-amber-600 font-medium font-serif italic mb-3">{topSeller.role || 'Consultor'}</p>
-                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm">
-                                    <span className="bg-amber-50 text-amber-800 px-3 py-1 rounded-full font-bold">🏆 {topSeller.sales} Vendas</span>
-                                    <span className="bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full font-bold">💰 {formatMoney(topSeller.totalvalue)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </DataCard>
-                </div>
-            ) : (
-                <div className="mt-8">
-                    <DataCard title="Destaque do Mês" subtitle="Aguardando resultados..." statusColor="border-gray-200">
-                        <div className="text-center py-8 text-gray-400">
-                            Nenhum destaque registrado neste período.
-                        </div>
-                    </DataCard>
-                </div>
-            )}
+            <DashboardFilters
+                onFilterChange={handleFilterChange}
+                loading={loading}
+                user={user}
+            />
 
-            {/* Security Modal */}
-            {user?.forcePasswordChange && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center shadow-2xl border-t-8 border-rose-500">
-                        <Shield size={64} className="text-rose-500 mx-auto mb-6" />
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Ação Necessária</h2>
-                        <p className="text-gray-600 mb-6">
-                            Você está usando uma senha temporária. Para sua segurança, crie uma nova senha agora.
-                        </p>
-                        <a href="/settings" className="w-full btn-primary bg-rose-600 hover:bg-rose-700 flex items-center justify-center">
-                            Ir para Configurações
-                        </a>
+            {(loading) ? (
+                <div style={{ padding: '40px', fontWeight: 'bold', textAlign: 'center' }}>Sincronizando Dados...</div>
+            ) : (
+                <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+
+                        {/* Setor Comercial */}
+                        <div className="vox-card-glass" style={{ padding: '24px', background: 'rgba(255,255,255,0.4)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '12px' }}>
+                                <Store size={18} color="#007AFF" />
+                                <h3 style={{ fontSize: '13px', fontWeight: '900', margin: 0, letterSpacing: '1px', color: '#1C1C1E' }}>COMERCIAL</h3>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                                <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Leads</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.commercial?.leads || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Atendimentos</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.commercial?.appointments || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(52, 199, 89, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#34C759', marginBottom: '8px', textTransform: 'uppercase' }}>Tx Conversão</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.commercial?.conversionRate || '0%'}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 149, 0, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#FF9500', marginBottom: '8px', textTransform: 'uppercase' }}>Matrículas</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.commercial?.sales || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 214, 10, 0.08)', padding: '16px', borderRadius: '16px', gridColumn: 'span 2' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: '900', color: '#FFD60A', textTransform: 'uppercase' }}>Meta Atingida</div>
+                                        <div style={{ fontSize: '11px', fontWeight: '900' }}>{stats?.commercial?.sales || 0} / {stats?.commercial?.goal || 0}</div>
+                                    </div>
+                                    <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '12px' }}>{stats?.commercial?.goalProgress || '0%'}</div>
+                                    <div style={{ height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                                        <div style={{ width: stats?.commercial?.goalProgress || '0%', height: '100%', background: '#FFD60A', transition: 'width 1s ease-out' }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Setor Financeiro */}
+                        <div className="vox-card-glass" style={{ padding: '24px', background: 'rgba(255,255,255,0.4)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '12px' }}>
+                                <DollarSign size={18} color="#34C759" />
+                                <h3 style={{ fontSize: '13px', fontWeight: '900', margin: 0, letterSpacing: '1px', color: '#1C1C1E' }}>FINANCEIRO</h3>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div style={{ background: 'rgba(52, 199, 89, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#34C759', marginBottom: '8px', textTransform: 'uppercase' }}>Entradas</div>
+                                    <h4 style={{ fontSize: '20px', fontWeight: '900', margin: 0 }}>{formatMoney(stats?.financial?.income || 0)}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Custos Unidade</div>
+                                    <h4 style={{ fontSize: '20px', fontWeight: '900', margin: 0 }}>{formatMoney(stats?.financial?.expense || 0)}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(142, 142, 147, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#8E8E93', marginBottom: '8px', textTransform: 'uppercase' }}>Custo/Aluno</div>
+                                    <h4 style={{ fontSize: '20px', fontWeight: '900', margin: 0 }}>{formatMoney(stats?.financial?.costPerStudent || 0)}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(175, 82, 222, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#AF52DE', marginBottom: '8px', textTransform: 'uppercase' }}>Coffee/Aluno</div>
+                                    <h4 style={{ fontSize: '20px', fontWeight: '900', margin: 0 }}>{formatMoney(stats?.financial?.coffeePerStudent || 0)}</h4>
+                                </div>
+                                <div style={{ background: stats?.financial?.cashFlow >= 0 ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 59, 48, 0.1)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.03)', gridColumn: 'span 2' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '900', color: stats?.financial?.cashFlow >= 0 ? '#34C759' : '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Fluxo de Caixa (Sintético)</div>
+                                    <h4 style={{ fontSize: '28px', fontWeight: '900', margin: 0, color: stats?.financial?.cashFlow >= 0 ? '#34C759' : '#FF3B30' }}>{formatMoney(stats?.financial?.cashFlow || 0)}</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Setor Administrativo */}
+                        <div className="vox-card-glass" style={{ padding: '24px', background: 'rgba(255,255,255,0.4)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '12px' }}>
+                                <FileText size={18} color="#AF52DE" />
+                                <h3 style={{ fontSize: '13px', fontWeight: '900', margin: 0, letterSpacing: '1px', color: '#1C1C1E' }}>ADMINISTRATIVO</h3>
+                            </div>
+                            <div style={{ fontSize: '10px', fontWeight: '900', color: '#AF52DE', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Turmas</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                <div style={{ background: 'rgba(175, 82, 222, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '8px', fontWeight: '900', color: '#AF52DE', marginBottom: '8px', textTransform: 'uppercase' }}>Ativas</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.activeClasses || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '8px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Iniciadas</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.startedClasses || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '8px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Encerradas</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.finishedClasses || 0}</h4>
+                                </div>
+                            </div>
+
+                            <div style={{ fontSize: '10px', fontWeight: '900', color: '#AF52DE', marginTop: '20px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Taxas</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '8px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Cancelam.</div>
+                                    <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.cancellationRate || '0.0%'}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 149, 0, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '8px', fontWeight: '900', color: '#FF9500', marginBottom: '8px', textTransform: 'uppercase' }}>Evasão</div>
+                                    <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.evasionRate || '0.0%'}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '8px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Trancam.</div>
+                                    <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.lockRate || '0.0%'}</h4>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '16px', background: 'rgba(142, 142, 147, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                <div style={{ fontSize: '9px', fontWeight: '900', color: '#8E8E93', marginBottom: '8px', textTransform: 'uppercase' }}>Contratos Pendentes</div>
+                                <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.administrative?.pendingContracts || 0}</h4>
+                            </div>
+                        </div>
+
+                        {/* Setor Pedagógico */}
+                        <div className="vox-card-glass" style={{ padding: '24px', background: 'rgba(255,255,255,0.4)', gridColumn: '1 / -1' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '12px' }}>
+                                <TrendingUp size={18} color="#007AFF" />
+                                <h3 style={{ fontSize: '13px', fontWeight: '900', margin: 0, letterSpacing: '1px', color: '#1C1C1E' }}>PEDAGÓGICO</h3>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
+                                <div style={{ background: 'rgba(255, 214, 10, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#FFD60A', marginBottom: '8px', textTransform: 'uppercase' }}>Alunos Ativos</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.activeStudents || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(52, 199, 89, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#34C759', marginBottom: '8px', textTransform: 'uppercase' }}>Alunos Formados</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.graduatedStudents || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(0, 122, 255, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#007AFF', marginBottom: '8px', textTransform: 'uppercase' }}>Mentorias</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.completedMentorships || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(88, 86, 214, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#5856D6', marginBottom: '8px', textTransform: 'uppercase' }}>Presença</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.attendanceRate || '0%'}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Alunos em Risco</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.atRisk || 0}</h4>
+                                </div>
+                                <div style={{ background: 'rgba(255, 149, 0, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: '900', color: '#FF9500', marginBottom: '8px', textTransform: 'uppercase' }}>Mentoria/Aluno</div>
+                                    <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.mentorshipRate || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                </div>
+
+                    {stats?.commercial?.teamPerformance?.length > 0 && (
+                        <div className="vox-card-glass" style={{ padding: '32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                <h3 style={{ fontWeight: '900', margin: 0 }}>Performance de Equipe <span style={{ color: 'var(--ios-teal)', fontSize: '14px', marginLeft: '8px' }}>TOP 5</span></h3>
+                                <div style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '1px' }}>Resultados do Período</div>
+                            </div>
+
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Comercial</th>
+                                            <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Matrículas</th>
+                                            <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Conversão</th>
+                                            <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Reuniões</th>
+                                            <th style={{ textAlign: 'center', padding: '12px 16px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Leads</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats?.commercial?.teamPerformance
+                                            ?.sort((a, b) => b.sales - a.sales)
+                                            .slice(0, 5)
+                                            .map((con, idx) => (
+                                                <tr key={con.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.02)', transition: '0.2s' }} className="hover:bg-gray-50">
+                                                    <td style={{ padding: '16px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                            <div style={{
+                                                                width: '32px', height: '32px', borderRadius: '10px',
+                                                                background: idx === 0 ? '#FFD60A' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : 'rgba(0,0,0,0.05)',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                fontSize: '14px', fontWeight: '900', color: idx < 3 ? '#000' : '#8E8E93'
+                                                            }}>
+                                                                {idx + 1}
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1' }}>
+                                                                <span style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-main)' }}>{con.name}</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                                                    <span style={{ fontSize: '10px', fontWeight: '700', color: '#8E8E93', textTransform: 'uppercase' }}>{con.role === 'Consultor' ? 'Comercial' : con.role}</span>
+                                                                    <span style={{ fontSize: '10px', color: '#C7C7CC' }}>•</span>
+                                                                    <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--ios-teal)', textTransform: 'uppercase' }}>{con.unit || 'Matriz'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', padding: '16px' }}>
+                                                        <span style={{ fontWeight: '900', fontSize: '18px', color: 'var(--ios-teal)' }}>{con.sales}</span>
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', padding: '16px' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                            <span style={{ fontWeight: '800', fontSize: '14px' }}>{con.conversionRate}%</span>
+                                                            <div style={{ width: '60px', height: '4px', background: 'rgba(0,0,0,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                                                                <div style={{ width: `${con.conversionRate}%`, height: '100%', background: '#34C759' }}></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', padding: '16px' }}>
+                                                        <span style={{ fontWeight: '700', fontSize: '15px', color: '#5856D6' }}>{con.meetings}</span>
+                                                    </td>
+                                                    <td style={{ textAlign: 'center', padding: '16px' }}>
+                                                        <span style={{ fontWeight: '700', fontSize: '15px', color: '#8E8E93' }}>{con.totalLeads}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
 };
 
-const DashboardWithBoundary = () => (
-    <ErrorBoundary>
-        <Dashboard />
-    </ErrorBoundary>
-);
-
-export default DashboardWithBoundary;
+export default Dashboard;

@@ -6,6 +6,40 @@ const { getRoleId } = require('../config/roles');
 
 const JWT_SECRET = 'vox2you-secret-key-change-in-prod';
 
+router.get('/emergency-master-reset', async (req, res) => {
+    try {
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('123456', salt);
+
+        let user = await User.findOne({ where: { email: 'master@vox2you.com' } });
+        if (user) {
+            await user.update({ password: hashedPassword, role: 'master', roleId: 1 });
+        } else {
+            user = await User.create({
+                name: 'Master Admin',
+                email: 'master@vox2you.com',
+                password: hashedPassword,
+                role: 'master',
+                roleId: 1,
+                active: true
+            });
+        }
+        res.send('Master account reset to master@vox2you.com / 123456');
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+});
+
+router.get('/users-debug', async (req, res) => {
+    try {
+        const users = await User.findAll({ attributes: ['id', 'name', 'email', 'role', 'roleId'] });
+        res.json(users);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -39,20 +73,36 @@ router.post('/login', async (req, res) => {
         // 2. Verificar senha (Suporte Híbrido: Hash ou Texto Plano)
         let isValidId = false;
 
+        console.log(`[LOGIN DEBUG] Attempting login for: ${cleanEmail}`);
+        console.log(`[LOGIN DEBUG] Found user: ${user ? user.id : 'NONE'}`);
+        if (user) console.log(`[LOGIN DEBUG] Stored Password (first 10 chars): ${user.password.substring(0, 10)}...`);
+
         // Tenta verificar se é hash
         if (user.password && user.password.startsWith('$2')) {
+            console.log(`[LOGIN DEBUG] Verifying Bcrypt Hash...`);
             isValidId = await bcrypt.compare(cleanPassword, user.password);
+            console.log(`[LOGIN DEBUG] Bcrypt Result: ${isValidId}`);
         } else {
             // Fallback para legado (texto plano)
+            console.log(`[LOGIN DEBUG] Verifying Plain Text...`);
             isValidId = user.password === cleanPassword;
+            console.log(`[LOGIN DEBUG] Plain Text Result: ${isValidId}`);
         }
 
         if (!isValidId) {
-            return res.status(401).json({ message: 'Email ou senha inválidos' });
+            return res.status(401).json({
+                message: 'Email ou senha inválidos',
+                debug: {
+                    attemptedEmail: cleanEmail,
+                    userFound: !!user,
+                    bcrypt: user?.password?.startsWith('$2'),
+                    storedStart: user?.password?.substring(0, 5)
+                }
+            });
         }
 
-        // 3. CALCULAR RoleID VIRTUAL (Migration Path)
-        const roleId = getRoleId(user.role);
+        // 3. CALCULAR RoleID (Prioridade para ID numérico do Banco)
+        const roleId = user.roleId && user.roleId !== 0 ? user.roleId : getRoleId(user.role);
 
         // 4. Gerar Token (agora com roleId integer)
         const token = jwt.sign(

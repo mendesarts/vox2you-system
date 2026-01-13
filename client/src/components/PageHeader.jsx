@@ -4,11 +4,11 @@ const PageHeader = ({ title, subtitle, actionLabel, onAction, actionIcon: Icon }
     return (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 page-fade-in">
             <div>
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 font-heading">
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight" style={{ letterSpacing: '-0.03em' }}>
                     {title}
                 </h1>
                 {subtitle && (
-                    <p className="text-muted mt-1 font-serif text-sm italic">
+                    <p className="text-gray-500 mt-1.5 text-sm font-medium">
                         {subtitle}
                     </p>
                 )}

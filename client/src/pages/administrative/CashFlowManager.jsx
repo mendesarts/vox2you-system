@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const CashFlowManager = () => {
     const { user } = useAuth();
-    const [status, setStatus] = useState('loading'); // loading, open, closed
+    const [status, setCashStatus] = useState('loading'); // loading, open, closed
     const [registerData, setRegisterData] = useState(null);
     const [openingBalance, setOpeningBalance] = useState('');
     const [closingBalance, setClosingBalance] = useState('');
@@ -24,14 +24,19 @@ const CashFlowManager = () => {
 
     const fetchStatus = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/financial/cash-register/status');
-            if (!res.ok) throw new Error('Failed to fetch status');
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/cash-register/status`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                throw new Error('Failed to fetch status');
+            }
             const data = await res.json();
-            setStatus(data.status);
+            setCashStatus(data.status);
             setRegisterData(data.register);
         } catch (error) {
             console.error('Error fetching cash status:', error);
-            setStatus('error'); // Stop loading loop
+            setCashStatus('error'); // Stop loading loop
         }
     };
 
@@ -41,13 +46,19 @@ const CashFlowManager = () => {
             alert('Erro: Usuário não identificado. Tente fazer login novamente.');
             return;
         }
+        if (openingBalance === '' || openingBalance === undefined) return alert('Informe o saldo inicial');
+
         try {
-            const res = await fetch('http://localhost:3000/api/financial/cash-register/open', {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/cash-register/open`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     userId: user.id,
-                    openingBalance: Number(openingBalance),
+                    openingBalance: parseFloat(openingBalance),
                     notes
                 })
             });
@@ -67,12 +78,18 @@ const CashFlowManager = () => {
 
     const handleCloseRegister = async (e) => {
         e.preventDefault();
+        if (closingBalance === '' || closingBalance === undefined) return alert('Informe o saldo final');
+
         try {
-            const res = await fetch('http://localhost:3000/api/financial/cash-register/close', {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/cash-register/close`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
-                    closingBalance: Number(closingBalance),
+                    closingBalance: parseFloat(closingBalance),
                     notes
                 })
             });
@@ -93,16 +110,20 @@ const CashFlowManager = () => {
     const handleTransaction = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('http://localhost:3000/api/financial/transaction', {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/transaction`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     category: transCategory,
-                    type: 'outros',
+                    type: 'outros', // Fixed type per backend requirement? Or dynamic?
+                    direction: transType, // 'income' or 'expense'
                     description: transDesc,
-                    amount: Number(transAmount),
-                    direction: transType,
-                    paymentMethod: 'cash', // Default to cash for register ops? Or add selector
+                    amount: parseFloat(transAmount),
+                    paymentMethod: 'cash',
                     paymentDate: new Date()
                 })
             });
@@ -120,6 +141,25 @@ const CashFlowManager = () => {
         }
     };
 
+    const calculateDailyTotals = () => {
+        if (!registerData || !registerData.Transactions) return { in: 0, out: 0 };
+
+        // Sum transactions
+        // Assuming transactions have 'amount' and 'direction' ('income' or 'expense')
+        // Also could verify 'type' if needed.
+        const ins = registerData.Transactions
+            .filter(t => t.direction === 'income')
+            .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+
+        const outs = registerData.Transactions
+            .filter(t => t.direction === 'expense')
+            .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+
+        return { in: ins, out: outs };
+    };
+
+    const dailyTotals = calculateDailyTotals();
+
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
     };
@@ -135,24 +175,46 @@ const CashFlowManager = () => {
     return (
         <div className="cash-flow-manager animate-fade-in">
             {/* Header Status */}
-            <div className={`status - banner ${status} `}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div className={`icon - circle ${status} `}>
-                        {status === 'open' ? <Unlock size={24} /> : <Lock size={24} />}
+            {/* Header Status */}
+            <div
+                className={`status-banner ${status}`}
+                style={{
+                    background: status === 'open'
+                        ? 'linear-gradient(135deg, #34C759 0%, #30B0C7 100%)'
+                        : 'linear-gradient(135deg, #FF3B30 0%, #FF9500 100%)',
+                    borderRadius: '24px',
+                    padding: '32px',
+                    color: 'white',
+                    boxShadow: '0 10px 30px -10px rgba(0,0,0,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '32px'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    <div style={{
+                        background: 'rgba(255,255,255,0.2)',
+                        width: '64px', height: '64px',
+                        borderRadius: '20px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        {status === 'open' ? <Unlock size={32} /> : <Lock size={32} />}
                     </div>
                     <div>
-                        <h2 style={{ margin: 0 }}>{status === 'open' ? 'Caixa Aberto' : 'Caixa Fechado'}</h2>
-                        <p style={{ margin: 0, opacity: 0.8 }}>
+                        <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '800' }}>{status === 'open' ? 'Caixa Aberto' : 'Caixa Fechado'}</h2>
+                        <p style={{ margin: '4px 0 0 0', opacity: 0.9, fontSize: '14px', fontWeight: '500' }}>
                             {status === 'open'
-                                ? `Operador: ${registerData?.operator?.name || 'N/A'} • Aberto em: ${new Date(registerData?.openedAt).toLocaleString()} `
+                                ? `Operador: ${registerData?.operator?.name || 'N/A'} • Aberto em: ${new Date(registerData?.openedAt).toLocaleString()}`
                                 : 'Abra o caixa para iniciar as operações do dia.'}
                         </p>
                     </div>
                 </div>
                 {status === 'open' && (
-                    <div className="current-balance">
-                        <small>Saldo Atual em Caixa</small>
-                        <h1>{formatCurrency(registerData?.currentBalance)}</h1>
+                    <div style={{ textAlign: 'right' }}>
+                        <small style={{ display: 'block', fontSize: '13px', opacity: 0.8, fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Saldo Atual</small>
+                        <h1 style={{ margin: 0, fontSize: '42px', fontWeight: '900', letterSpacing: '-1px' }}>{formatCurrency(registerData?.currentBalance)}</h1>
                     </div>
                 )}
             </div>
@@ -161,65 +223,86 @@ const CashFlowManager = () => {
             <div className="actions-grid" style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
 
                 {/* Main Operations Area */}
-                <div className="control-card">
+                {/* Main Operations Area */}
+                <div className="vox-card" style={{ padding: '32px' }}>
                     {status === 'closed' ? (
-                        <div className="open-register-form" style={{ padding: '20px' }}>
-                            <h3><TrendingUp size={20} style={{ marginRight: '8px' }} /> Abertura de Caixa</h3>
-                            <form onSubmit={handleOpenRegister} style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div className="open-register-form">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                                <div style={{ background: 'rgba(52, 199, 89, 0.1)', padding: '10px', borderRadius: '12px', color: '#34C759' }}><TrendingUp size={24} /></div>
+                                <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>Abertura de Caixa</h3>
+                            </div>
+
+                            <form onSubmit={handleOpenRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                 <div className="form-group">
-                                    <label>Saldo Inicial (R$)</label>
+                                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#8E8E93', marginBottom: '8px', display: 'block' }}>Saldo Inicial (R$)</label>
                                     <CurrencyInput
                                         required
                                         value={openingBalance}
                                         onChange={setOpeningBalance}
+                                        allowNegative={true}
                                         placeholder="0,00"
+                                        className="vox-input"
+                                        style={{ fontSize: '18px', padding: '16px' }}
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Observações</label>
+                                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#8E8E93', marginBottom: '8px', display: 'block' }}>Observações</label>
                                     <textarea
                                         value={notes}
                                         onChange={e => setNotes(e.target.value)}
                                         placeholder="Notas sobre a abertura..."
+                                        style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E5EA', resize: 'vertical', minHeight: '100px', fontSize: '14px' }}
                                     />
                                 </div>
-                                <button type="submit" className="btn-primary btn-lg">Confirmar Abertura</button>
+                                <button type="submit" className="btn-primary" style={{ padding: '16px', fontSize: '16px', fontWeight: '700' }}>Confirmar Abertura</button>
                             </form>
                         </div>
                     ) : (
-                        <div className="close-register-form" style={{ padding: '20px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                                <h3>Movimentações do Dia</h3>
-                                <button className="btn-secondary" onClick={() => setShowTransModal(true)}>
-                                    <Plus size={16} /> Nova Movimentação
+                        <div className="close-register-form">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>Movimentações do Dia</h3>
+                                    <p style={{ fontSize: '14px', color: '#8E8E93', margin: '4px 0 0 0' }}>Gerencie sangrias e suprimentos</p>
+                                </div>
+                                <button className="btn-primary" onClick={() => setShowTransModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Plus size={18} /> Nova Movimentação
                                 </button>
                             </div>
 
-                            {/* Transaction List would go here - for now just summary */}
-                            <div className="transactions-list-placeholder">
-                                <p style={{ color: 'var(--text-muted)' }}>Use a movimentação para sangrias e suprimentos.</p>
+                            {/* Placeholder bonito */}
+                            <div style={{ padding: '40px', background: '#F2F2F7', borderRadius: '16px', textAlign: 'center', marginBottom: '40px' }}>
+                                <FileText size={48} color="#C7C7CC" style={{ marginBottom: '16px' }} />
+                                <h4 style={{ color: '#8E8E93', margin: 0 }}>Nenhuma movimentação extra hoje</h4>
                             </div>
 
-                            <div style={{ marginTop: '40px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                                <h3><TrendingDown size={20} style={{ marginRight: '8px', color: 'red' }} /> Fechamento de Caixa</h3>
-                                <form onSubmit={handleCloseRegister} style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                            <div style={{ borderTop: '1px solid #E5E5EA', paddingTop: '32px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                                    <div style={{ background: 'rgba(255, 59, 48, 0.1)', padding: '10px', borderRadius: '12px', color: '#FF3B30' }}><TrendingDown size={24} /></div>
+                                    <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#FF3B30' }}>Fechamento de Caixa</h3>
+                                </div>
+
+                                <form onSubmit={handleCloseRegister} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                     <div className="form-group">
-                                        <label>Saldo Final Real (Contagem)</label>
+                                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#8E8E93', marginBottom: '8px', display: 'block' }}>Saldo Final Real (Contagem)</label>
                                         <CurrencyInput
                                             required
                                             value={closingBalance}
                                             onChange={setClosingBalance}
+                                            allowNegative={true}
+                                            className="vox-input"
+                                            style={{ fontSize: '18px', padding: '16px' }}
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>Observações de Fechamento</label>
+                                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#8E8E93', marginBottom: '8px', display: 'block' }}>Observações</label>
                                         <input
                                             type="text"
                                             value={notes}
                                             onChange={e => setNotes(e.target.value)}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #E5E5EA', fontSize: '14px' }}
                                         />
                                     </div>
-                                    <button type="submit" className="btn-primary" style={{ gridColumn: '1 / -1', backgroundColor: '#dc2626' }}>
+                                    <button type="submit" className="btn-primary" style={{ gridColumn: '1 / -1', background: '#FF3B30', border: 'none', padding: '16px', fontSize: '16px', fontWeight: '700' }}>
                                         Confirmar Fechamento
                                     </button>
                                 </form>
@@ -230,13 +313,21 @@ const CashFlowManager = () => {
 
                 {/* Info / Quick Stats */}
                 <div className="info-column" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    <div className="control-card" style={{ padding: '20px' }}>
-                        <h4>Resumo do Dia</h4>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 0' }}>
-                            <span>Fundo Inicial:</span>
+                    <div className="vox-card" style={{ padding: '24px' }}>
+                        <h4 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '16px' }}>Resumo do Dia</h4>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '12px 0', fontSize: '14px' }}>
+                            <span style={{ color: '#8E8E93' }}>Fundo Inicial</span>
                             <strong>{formatCurrency(registerData?.openingBalance)}</strong>
                         </div>
-                        {/* More stats coming soon */}
+                        <div style={{ width: '100%', height: '1px', background: '#E5E5EA', margin: '16px 0' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '12px 0', fontSize: '14px' }}>
+                            <span style={{ color: '#34C759' }}>Entradas</span>
+                            <strong>{formatCurrency(dailyTotals.in)}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', margin: '12px 0', fontSize: '14px' }}>
+                            <span style={{ color: '#FF3B30' }}>Saídas</span>
+                            <strong>{formatCurrency(dailyTotals.out)}</strong>
+                        </div>
                     </div>
                 </div>
             </div>

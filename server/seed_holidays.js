@@ -5,7 +5,7 @@ const Holiday = require('./models/Holiday');
 // Lista Fixa de Feriados Nacionais 2024-2025
 const NATIONAL_HOLIDAYS = [
     // 2024
-    { date: '2024-01-01', name: 'Confraternização Universal', type: 'national' },
+    { date: '2024-01-01', name: 'Ano Novo', type: 'national' },
     { date: '2024-02-12', name: 'Carnaval', type: 'national' },
     { date: '2024-02-13', name: 'Carnaval', type: 'national' },
     { date: '2024-03-29', name: 'Sexta-feira Santa', type: 'national' },

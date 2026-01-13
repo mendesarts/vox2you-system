@@ -1,0 +1,1 @@
+SequelizeDatabaseError: foreign key constraint "FinancialRecords_cashRegisterId_fkey" cannot be implemented

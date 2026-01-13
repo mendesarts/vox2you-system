@@ -1,146 +1,330 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, User, MapPin, Briefcase, Shield, ChevronDown } from 'lucide-react';
+import { Save, User, MapPin, Briefcase, Shield, ChevronDown, Clock, Target, Users } from 'lucide-react';
+import { VoxModal } from './VoxUI';
+import ChangePasswordForm from './ChangePasswordForm';
 
 const RegisterUserPremium = ({ onClose, onSave, currentUser, userToEdit = null }) => {
-    const userRole = currentUser?.role?.toLowerCase() || '';
-    const isGlobalAdmin = ['master', 'admin', 'diretor', 'director', 'franqueadora'].includes(userRole);
+    const roleId = currentUser?.roleId || 0;
+    const isMaster = roleId === 1;
+    const isGlobalAdmin = [1, 10].includes(roleId);
 
-    // State
+    const canEditDetails = [1, 10, 20, 30].includes(Number(roleId));
+    const isEditingSelf = userToEdit?.id === currentUser?.id;
+    const isRestrictedView = !canEditDetails && userToEdit && !isEditingSelf;
+
+    const DEFAULT_WEEK = {
+        seg: { start: '09:00', end: '18:00', active: true },
+        ter: { start: '09:00', end: '18:00', active: true },
+        qua: { start: '09:00', end: '18:00', active: true },
+        qui: { start: '09:00', end: '18:00', active: true },
+        sex: { start: '09:00', end: '18:00', active: true },
+        sab: { start: '09:00', end: '14:00', active: true },
+        dom: { start: '', end: '', active: false }
+    };
+
     const [formData, setFormData] = useState({
-        name: '', email: '', role: 'consultor', unit: '', phone: ''
+        name: '', email: '', role: 41, unit: '', phone: '',
+        workingHours: DEFAULT_WEEK,
+        canMentorship: false,
+        goal: 10,
+        secondaryRoles: []
     });
 
     useEffect(() => {
         if (userToEdit) {
+            let wh = userToEdit.workingHours;
+            if (wh && wh.start && !wh.seg) {
+                wh = {
+                    seg: { ...wh, active: true }, ter: { ...wh, active: true }, qua: { ...wh, active: true },
+                    qui: { ...wh, active: true }, sex: { ...wh, active: true }, sab: { ...wh, active: true },
+                    dom: { start: '', end: '', active: false }
+                };
+            }
+            if (typeof wh === 'string') {
+                try { wh = JSON.parse(wh); } catch { wh = DEFAULT_WEEK; }
+            }
+
             setFormData({
                 name: userToEdit.name || '',
                 email: userToEdit.email || '',
-                role: userToEdit.role?.toLowerCase() || 'consultor',
+                role: userToEdit.roleId || 41,
                 unit: userToEdit.unit || '',
-                phone: userToEdit.phone || ''
+                phone: userToEdit.phone || userToEdit.whatsapp || '',
+                workingHours: wh || DEFAULT_WEEK,
+                canMentorship: userToEdit.canMentorship !== undefined ? userToEdit.canMentorship : false,
+                goal: userToEdit.goal || 10,
+                secondaryRoles: (() => {
+                    let roles = userToEdit.secondaryRoles;
+                    if (typeof roles === 'string') {
+                        try { roles = JSON.parse(roles); } catch (e) { roles = []; }
+                    }
+                    return Array.isArray(roles) ? roles.map(Number) : [];
+                })()
             });
         } else {
-            // CRIAÇÃO: Herança IMEDIATA da unidade
             if (!isGlobalAdmin && currentUser?.unit) {
-                setFormData(prev => ({ ...prev, unit: currentUser.unit }));
+                setFormData(prev => ({ ...prev, unit: currentUser.unit || '' }));
             }
         }
     }, [userToEdit, isGlobalAdmin, currentUser]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Validação extra
-        if (!formData.unit) {
-            // Tenta recuperar do usuário logado se o campo estiver vazio
-            if (currentUser?.unit && !isGlobalAdmin) {
-                onSave({ ...formData, unit: currentUser.unit, id: userToEdit?.id });
-                onClose();
-                return;
-            }
-            return alert('ERRO: A Unidade não foi definida.');
+        if (isRestrictedView) return;
+
+        let finalUnit = formData.unit;
+        if (!finalUnit) {
+            if (currentUser?.unit && !isGlobalAdmin) finalUnit = currentUser.unit;
+            else return alert('ERRO: A Unidade não foi definida.');
         }
 
-        onSave({ ...formData, id: userToEdit?.id });
-        onClose();
+        try {
+            const payload = {
+                ...formData,
+                unit: finalUnit,
+                unitName: finalUnit,
+                id: userToEdit?.id
+            };
+            if (!userToEdit) payload.password = 'Vox2You@2025';
+
+            await onSave(payload);
+        } catch (error) {
+            alert("Erro ao salvar: " + error.message);
+        }
     };
 
+    const inputGroupStyle = { display: 'flex', flexDirection: 'column', gap: '8px' };
+    const labelStyle = { fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.05em' };
+
     return (
-        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
-                    <h2 className="text-xl font-bold text-gray-800">
-                        {userToEdit ? 'Editar Usuário' : 'Novo Membro da Equipe'}
-                    </h2>
-                    <button onClick={onClose}><X size={20} className="text-gray-400 hover:text-gray-600" /></button>
+        <VoxModal
+            isOpen={true}
+            onClose={onClose}
+            title={userToEdit ? (isRestrictedView ? 'Meu Perfil' : 'Editar Usuário') : 'Novo Membro da Equipe'}
+            width="900px"
+            footer={
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button type="button" onClick={onClose} style={{ background: '#F2F2F7', border: 'none', padding: '12px 24px', borderRadius: '99px', fontWeight: '700', cursor: 'pointer' }}>
+                        {isRestrictedView ? 'Fechar' : 'Cancelar'}
+                    </button>
+                    {(!isRestrictedView || isEditingSelf) && (
+                        <button form="user-form" type="submit" className="btn-primary">
+                            <Save size={18} /> {userToEdit ? 'Salvar Alterações' : 'Criar Usuário'}
+                        </button>
+                    )}
+                </div>
+            }
+        >
+            <form id="user-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                {/* Nome Completo */}
+                <div style={inputGroupStyle}>
+                    <label style={labelStyle}>Nome Completo</label>
+                    <input
+                        required
+                        disabled={isRestrictedView}
+                        value={formData.name}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Ex: João Silva"
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-5 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <label className="text-sm font-bold text-gray-700 block mb-1">Nome Completo</label>
-                            <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 outline-none" placeholder="Ex: João Silva" />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="text-sm font-bold text-gray-700 block mb-1">Email Corporativo</label>
-                            <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 outline-none" placeholder="joao@vox2you.com" />
-                        </div>
-
-                        {/* SENHA PADRÃO VISÍVEL (Apenas Criação) */}
-                        {!userToEdit && (
-                            <div className="md:col-span-2 bg-amber-50 rounded-xl p-4 border border-amber-100 mt-2">
-                                <label className="text-xs font-bold text-amber-800 uppercase block mb-1">Senha Inicial (Padrão)</label>
-                                <div className="relative">
-                                    <input
-                                        readOnly
-                                        value="Vox2You@2025"
-                                        type="text"
-                                        className="w-full px-4 py-2 rounded-lg bg-white border border-amber-200 text-gray-800 font-mono text-sm focus:outline-none cursor-text select-all"
-                                    />
-                                </div>
-                                <p className="text-[10px] text-amber-700 mt-2 font-medium">
-                                    ⚠️ Esta é a senha padrão. O usuário deve alterá-la no primeiro acesso.
-                                </p>
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">Cargo</label>
-                            <div className="relative">
-                                <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none appearance-none cursor-pointer">
-                                    {isGlobalAdmin && (
-                                        <optgroup label="Global">
-                                            <option value="franqueado">Franqueado</option>
-                                            <option value="diretor">Diretor</option>
-                                        </optgroup>
-                                    )}
-                                    <optgroup label="Unidade">
-                                        <option value="manager">Gestor</option>
-                                        <option value="lider_comercial">Líder Comercial</option>
-                                        <option value="consultor">Consultor</option>
-                                        <option value="pedagogico">Pedagógico</option>
-                                        <option value="admin_financeiro">Financeiro</option>
-                                    </optgroup>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-3.5 text-gray-400 pointer-events-none" size={18} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-bold text-gray-700 block mb-1">Unidade</label>
-                            <div className="relative">
-                                <MapPin className="absolute left-4 top-3.5 text-gray-400" size={18} />
-                                <input
-                                    required
-                                    readOnly={!isGlobalAdmin}
-                                    value={formData.unit}
-                                    onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                                    className={`w-full pl-11 pr-4 py-3 rounded-xl border outline-none font-medium ${!isGlobalAdmin
-                                        ? 'bg-gray-100 text-gray-600 border-gray-200'
-                                        : 'bg-white border-gray-200 focus:border-indigo-500'
-                                        }`}
-                                    placeholder="Unidade..."
-                                />
-                            </div>
-                            {!isGlobalAdmin && (
-                                <p className="text-xs text-gray-500 mt-1 ml-1">
-                                    🔒 Vinculada: <strong>{currentUser?.unit || '...'}</strong>
-                                </p>
+                {/* Email e Cargo */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <div style={inputGroupStyle}>
+                        <label style={labelStyle}>Email Corporativo</label>
+                        <input
+                            required
+                            type="email"
+                            disabled={isRestrictedView}
+                            value={formData.email}
+                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="joao@vox2you.com"
+                        />
+                    </div>
+                    <div style={inputGroupStyle}>
+                        <label style={labelStyle}>Cargo Principal</label>
+                        <select
+                            value={formData.role}
+                            disabled={isRestrictedView || (userToEdit?.id === currentUser?.id)}
+                            onChange={e => {
+                                const newRole = parseInt(e.target.value);
+                                setFormData(prev => ({
+                                    ...prev,
+                                    role: newRole,
+                                    unit: newRole === 10 ? 'Matriz' : prev.unit
+                                }));
+                            }}
+                        >
+                            {isMaster && (
+                                <optgroup label="Global">
+                                    <option value={1}>Master</option>
+                                    <option value={10}>Diretor</option>
+                                </optgroup>
                             )}
+                            {(isGlobalAdmin || isRestrictedView || roleId === 20) && (
+                                <optgroup label="Gestão da Franquia">
+                                    <option value={20}>Franqueado</option>
+                                </optgroup>
+                            )}
+                            <optgroup label="Unidade">
+                                <option value={30}>Gestor</option>
+                                <option value={40}>Líder Comercial</option>
+                                <option value={50}>Líder Pedagógico</option>
+                                <option value={41}>Consultor Comercial</option>
+                                <option value={51}>Pedagógico</option>
+                                <option value={61}>Administrativo</option>
+                                <option value={60}>Financeiro</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Unidade e Meta */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <div style={inputGroupStyle}>
+                        <label style={labelStyle}>Unidade</label>
+                        <input
+                            readOnly={!isGlobalAdmin}
+                            disabled={isRestrictedView}
+                            value={formData.unit}
+                            onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                            style={{ background: !isGlobalAdmin ? '#F2F2F7' : '' }}
+                            placeholder="Unidade..."
+                        />
+                    </div>
+                    <div style={inputGroupStyle}>
+                        <label style={labelStyle}>Meta Mensal (Vendas)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            disabled={isRestrictedView}
+                            value={formData.goal}
+                            onChange={e => setFormData({ ...formData, goal: e.target.value })}
+                            placeholder="Ex: 10"
+                        />
+                    </div>
+                </div>
+
+                {/* Horários e Funções Secundárias */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px', paddingTop: '24px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+
+                    {/* Horários */}
+                    <div>
+                        <label style={{ ...labelStyle, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Clock size={14} /> Horário Semanal
+                        </label>
+                        <div style={{ background: '#F2F2F7', padding: '16px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {[
+                                { key: 'seg', label: 'Segunda' }, { key: 'ter', label: 'Terça' }, { key: 'qua', label: 'Quarta' },
+                                { key: 'qui', label: 'Quinta' }, { key: 'sex', label: 'Sexta' }, { key: 'sab', label: 'Sábado' },
+                                { key: 'dom', label: 'Domingo' }
+                            ].map((day) => {
+                                const dayConfig = formData.workingHours?.[day.key] || { start: '', end: '', active: false };
+                                return (
+                                    <div key={day.key} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '100px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={dayConfig.active}
+                                                disabled={isRestrictedView}
+                                                onChange={(e) => {
+                                                    const newWh = { ...formData.workingHours };
+                                                    if (!newWh[day.key]) newWh[day.key] = {};
+                                                    newWh[day.key] = { ...newWh[day.key], active: e.target.checked };
+                                                    setFormData({ ...formData, workingHours: newWh });
+                                                }}
+                                                style={{ width: '16px', height: '16px', margin: 0 }}
+                                            />
+                                            <span style={{ fontSize: '13px', fontWeight: '700', color: dayConfig.active ? '#1C1C1E' : '#8E8E93' }}>{day.label}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: dayConfig.active ? 1 : 0.3 }}>
+                                            <input
+                                                type="time"
+                                                value={dayConfig.start || ''}
+                                                disabled={!dayConfig.active || isRestrictedView}
+                                                onChange={(e) => {
+                                                    const newWh = { ...formData.workingHours };
+                                                    newWh[day.key] = { ...newWh[day.key], start: e.target.value };
+                                                    setFormData({ ...formData, workingHours: newWh });
+                                                }}
+                                                style={{ padding: '6px', width: '90px', margin: 0 }}
+                                            />
+                                            <span style={{ fontSize: '11px', color: '#8E8E93' }}>às</span>
+                                            <input
+                                                type="time"
+                                                value={dayConfig.end || ''}
+                                                disabled={!dayConfig.active || isRestrictedView}
+                                                onChange={(e) => {
+                                                    const newWh = { ...formData.workingHours };
+                                                    newWh[day.key] = { ...newWh[day.key], end: e.target.value };
+                                                    setFormData({ ...formData, workingHours: newWh });
+                                                }}
+                                                style={{ padding: '6px', width: '90px', margin: 0 }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                        <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50">Cancelar</button>
-                        <button type="submit" className="px-8 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg">
-                            Salvar
-                        </button>
+                    {/* Funções Secundárias */}
+                    <div>
+                        <label style={{ ...labelStyle, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Shield size={14} /> Acumular Funções
+                        </label>
+                        <div style={{ background: '#F2F2F7', padding: '16px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {[
+                                { id: 40, label: 'Líder Comercial' },
+                                { id: 50, label: 'Líder Pedagógico' },
+                                { id: 41, label: 'Consultor' },
+                                { id: 51, label: 'Pedagógico' },
+                                { id: 61, label: 'Administrativo' },
+                                { id: 60, label: 'Financeiro' }
+                            ].map((role) => (
+                                <label key={role.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.secondaryRoles?.includes(role.id)}
+                                        disabled={isRestrictedView}
+                                        onChange={() => {
+                                            if (isRestrictedView) return;
+                                            const current = formData.secondaryRoles || [];
+                                            if (current.includes(role.id)) {
+                                                setFormData({ ...formData, secondaryRoles: current.filter(id => id !== role.id) });
+                                            } else {
+                                                setFormData({ ...formData, secondaryRoles: [...current, role.id] });
+                                            }
+                                        }}
+                                        style={{ width: '18px', height: '18px', margin: 0 }}
+                                    />
+                                    {role.label}
+                                </label>
+                            ))}
+                            <div style={{ margin: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.05)' }} />
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: '900', color: 'var(--ios-teal)' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={!!formData.canMentorship}
+                                    disabled={isRestrictedView && !isMaster}
+                                    onChange={e => setFormData({ ...formData, canMentorship: e.target.checked })}
+                                    style={{ width: '18px', height: '18px', margin: 0 }}
+                                />
+                                Aplica Mentoria
+                            </label>
+                        </div>
                     </div>
-                </form>
-            </div>
-        </div>
+                </div>
+
+                {isRestrictedView && (
+                    <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
+                        <ChangePasswordForm />
+                    </div>
+                )}
+            </form>
+        </VoxModal>
     );
 };
+
 export default RegisterUserPremium;

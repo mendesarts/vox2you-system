@@ -1,0 +1,15 @@
+{
+  "name": "vox2you-system",
+  "version": "1.0.0",
+  "scripts": {
+    "db:deploy": "npx prisma migrate deploy",
+    "db:push": "npx prisma db push",
+    "build": "npx prisma generate && npm run build --prefix client"
+  },
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7",
+    "xlsx": "^0.18.5"
+  }
+}

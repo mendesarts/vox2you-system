@@ -1,0 +1,62 @@
+
+
+🚀🚀🚀 VX-SYSTEM STARTING ON PORT 3000 🚀🚀🚀
+
+
+Database Storage Path: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/voxflow.sqlite
+✅ Rota carregada: /api/tasks
+✅ Rota carregada: /api/auth
+✅ Rota carregada: /api/users
+✅ Rota carregada: /api/students
+✅ Rota carregada: /api/courses
+✅ Rota carregada: /api/classes
+✅ Rota carregada: /api/financial
+✅ Rota carregada: /api/dashboard
+✅ Rota carregada: /api/ai-config
+✅ Rota carregada: /api/crm
+✅ Rota carregada: /api/leads
+✅ Rota carregada: /api/pedagogical
+✅ Rota carregada: /api/calendar
+✅ Rota carregada: /api/health
+✅ Rota carregada: /api/units
+✅ Rota carregada: /api/enrollments
+✅ Rota carregada: /api
+✅ Rota carregada: /api/migration
+Connecting to DB...
+🚀 Server UP on 3000 (Optimistic Start)
+DB Connected.
+🛠️ INICIANDO CORREÇÃO DO BANCO (Dialect: sqlite)...
+💾 Ambiente SQLite detectado. Pulando ajustes de ENUM/Type do Postgres.
+✅ Tabela 'StudentLogs' verificada.
+Executando Sync (Safe Mode)...
+⚠️ Aviso: Erro no sync (Auto-Healing), mas tentando continuar: Validation error
+DB & Sync Complete.
+--- Iniciando WhatsApp ---
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
+GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
+GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
+Found 558 holidays
+🔍 Checking Duplicates for Unit: 2 | Phones: 0
+🔌 IMPORT DEBUG: Received Leads Count: 41
+Conexao fechada. Reconectar? true
+--- Iniciando WhatsApp ---
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
+GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
+GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
+Found 558 holidays
+Conexao fechada. Reconectar? true
+--- Iniciando WhatsApp ---
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
+🔍 Checking Duplicates for Unit: 2 | Phones: 0
+🔌 IMPORT DEBUG: Received Leads Count: 41
+GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
+GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
+Found 558 holidays
+Conexao fechada. Reconectar? true
+--- Iniciando WhatsApp ---
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
+🔍 Checking Duplicates for Unit: 2 | Phones: 0
+🔌 IMPORT DEBUG: Received Leads Count: 41
+GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
+GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
+Found 558 holidays

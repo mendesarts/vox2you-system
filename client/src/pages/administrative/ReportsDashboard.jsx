@@ -24,9 +24,12 @@ const ReportsDashboard = () => {
 
     const fetchCourses = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/courses');
-            const json = await res.json();
-            setCourses(json || []);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setCourses(data || []);
         } catch (error) {
             console.error(error);
         }
@@ -34,9 +37,12 @@ const ReportsDashboard = () => {
 
     const fetchClasses = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/classes');
-            const json = await res.json();
-            setClassesList(json || []);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setClassesList(data || []);
         } catch (error) {
             console.error(error);
         }
@@ -46,11 +52,14 @@ const ReportsDashboard = () => {
         setLoading(true);
         try {
             let endpoint = '';
-            if (activeReport === 'classes') endpoint = 'http://localhost:3000/api/classes';
-            if (activeReport === 'students') endpoint = 'http://localhost:3000/api/students';
+            if (activeReport === 'classes') endpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`;
+            if (activeReport === 'students') endpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students`;
 
             if (endpoint) {
-                const res = await fetch(endpoint);
+                const token = localStorage.getItem('token');
+                const res = await fetch(endpoint, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const jsonData = await res.json();
                 setData(jsonData);
             } else {

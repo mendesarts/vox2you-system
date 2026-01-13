@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Lock, ArrowRight } from 'lucide-react';
-import '../index.css';
-
-import logo from '../assets/logo-full-white.png';
+import { Lock, ArrowRight, Mail, ShieldAlert } from 'lucide-react';
+import logo from '../assets/voxflow-full-logo.png';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -24,18 +22,11 @@ const Login = () => {
         setLoading(true);
 
         if (forceChangeMode) {
-            // Change Password Flow
             if (newPassword !== confirmPassword) {
                 setError('As senhas não coincidem.');
                 setLoading(false);
                 return;
             }
-            if (newPassword.length < 6) {
-                setError('A senha deve ter pelo menos 6 caracteres.');
-                setLoading(false);
-                return;
-            }
-
             try {
                 const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/change-password`, {
                     method: 'POST',
@@ -44,229 +35,103 @@ const Login = () => {
                 });
 
                 if (res.ok) {
-                    alert('Senha alterada com sucesso! Faça login novamente.');
+                    alert('Senha definida com sucesso!');
                     setForceChangeMode(false);
-                    setPassword('');
-                    setNewPassword('');
-                    setConfirmPassword('');
                 } else {
                     const data = await res.json();
-                    setError(data.error || 'Erro ao alterar senha.');
+                    setError(data.error || 'Erro ao redefinir.');
                 }
-            } catch (err) {
-                setError('Erro de conexão.');
-            } finally {
-                setLoading(false);
-            }
-
+            } catch (err) { setError('Erro de comunicação.'); } finally { setLoading(false); }
         } else {
-            // Login Flow
             try {
                 const userData = await login(email, password);
-
                 if (userData?.user?.forcePasswordChange) {
                     setForceChangeMode(true);
                     setTempUserId(userData?.user?.id);
-                    // Clear auth from context/storage because we want them to re-login or at least not be fully "in" yet?
-                    // Actually login() sets the token. We can keep it or revoke it.
-                    // For security, strict implementations might require a temp token.
-                    // Here we will just intercept the navigation.
                     return;
                 }
-
                 navigate('/dashboard');
-            } catch (err) {
-                console.error(err);
-                setError(err.message || 'Email ou senha incorretos.');
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { setError('Email ou senha inválidos.'); } finally { setLoading(false); }
         }
     };
 
     return (
-        <div style={{
-            height: '100vh',
-            width: '100vw',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--bg-app)',
-            padding: '20px'
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '400px',
-                background: 'var(--bg-surface)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--border)',
-                boxShadow: 'var(--shadow-lg)',
-                overflow: 'hidden'
-            }}>
-                {/* Logo Header Bar */}
-                <div style={{
-                    background: 'var(--primary)',
-                    padding: '30px 20px',
-                    textAlign: 'center',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                }}>
-                    <img src={logo} alt="Vox2you" style={{ height: '50px', width: 'auto' }} />
+        <div style={{ minHeight: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+
+            <div className="vox-card-glass animate-ios-pop" style={{ padding: '48px', width: '100%', maxWidth: '420px', textAlign: 'center' }}>
+
+                {/* Logo & Intro */}
+                <div style={{ marginBottom: '40px' }}>
+                    <img src={logo} alt="VoxFlow" style={{ width: '200px', height: 'auto', marginBottom: '24px' }} />
+                    <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#000', letterSpacing: '-1px', margin: 0 }}>
+                        {forceChangeMode ? 'Privacidade' : 'Acesso Hub'}
+                    </h2>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#8E8E93', marginTop: '6px' }}>
+                        {forceChangeMode ? 'Defina sua nova senha mestra' : 'Cockpit Corporativo Vox2You'}
+                    </p>
                 </div>
 
-                {/* Content Section */}
-                <div style={{ padding: '40px' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                        <h2 style={{ color: 'var(--text-main)', marginBottom: '10px', fontSize: '1.5rem' }}>
-                            {forceChangeMode ? 'Criar Nova Senha' : 'Bem-vindo ao Vox2you'}
-                        </h2>
-                        <p style={{ color: 'var(--text-muted)' }}>
-                            {forceChangeMode
-                                ? 'Por segurança, você deve alterar sua senha no primeiro acesso.'
-                                : 'Faça login para acessar o sistema.'
-                            }
-                        </p>
+                {error && (
+                    <div style={{ background: 'rgba(255,59,48,0.1)', border: '1px solid rgba(255,59,48,0.2)', color: '#FF3B30', padding: '12px', borderRadius: '14px', fontSize: '13px', fontWeight: '800', marginBottom: '24px' }}>
+                        {error}
                     </div>
+                )}
 
-                    {error && (
-                        <div style={{
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            color: '#ef4444',
-                            padding: '10px',
-                            borderRadius: 'var(--radius-md)',
-                            marginBottom: '20px',
-                            fontSize: '0.875rem',
-                            textAlign: 'center'
-                        }}>
-                            {error}
-                        </div>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {!forceChangeMode ? (
+                        <>
+                            <div style={{ position: 'relative' }}>
+                                <Mail style={{ position: 'absolute', left: '16px', top: '16px', color: '#8E8E93' }} size={20} />
+                                <input
+                                    type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                                    placeholder="Endereço de e-mail"
+                                    className="input-field"
+                                    style={{ paddingLeft: '48px', width: '100%', background: 'rgba(255,255,255,0.5)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}
+                                />
+                            </div>
+                            <div style={{ position: 'relative' }}>
+                                <Lock style={{ position: 'absolute', left: '16px', top: '16px', color: '#8E8E93' }} size={20} />
+                                <input
+                                    type="password" required value={password} onChange={e => setPassword(e.target.value)}
+                                    placeholder="Senha de acesso"
+                                    className="input-field"
+                                    style={{ paddingLeft: '48px', width: '100%', background: 'rgba(255,255,255,0.5)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <input
+                                type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                                placeholder="Nova Senha"
+                                className="input-field"
+                                style={{ width: '100%', background: 'rgba(255,255,255,0.5)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}
+                            />
+                            <input
+                                type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                                placeholder="Confirmar Senha"
+                                className="input-field"
+                                style={{ width: '100%', background: 'rgba(255,255,255,0.5)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}
+                            />
+                        </>
                     )}
 
-                    <form onSubmit={handleSubmit}>
-                        {!forceChangeMode ? (
+                    <button
+                        type="submit" disabled={loading}
+                        className="btn-primary"
+                        style={{ height: '56px', borderRadius: '18px', fontSize: '16px', fontWeight: '900', gap: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}
+                    >
+                        {loading ? 'Validando...' : (
                             <>
-                                <div className="form-group" style={{ marginBottom: '20px' }}>
-                                    <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '8px', fontSize: '0.875rem' }}>Email</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <User size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                                        <input
-                                            type="email"
-                                            required
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 10px 10px 40px',
-                                                background: 'var(--bg-app)',
-                                                border: '1px solid var(--border)',
-                                                borderRadius: 'var(--radius-md)',
-                                                color: 'var(--text-main)',
-                                                fontSize: '1rem'
-                                            }}
-                                            placeholder="seu@email.com"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-group" style={{ marginBottom: '30px' }}>
-                                    <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '8px', fontSize: '0.875rem' }}>Senha</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <Lock size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                                        <input
-                                            type="password"
-                                            required
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 10px 10px 40px',
-                                                background: 'var(--bg-app)',
-                                                border: '1px solid var(--border)',
-                                                borderRadius: 'var(--radius-md)',
-                                                color: 'var(--text-main)',
-                                                fontSize: '1rem'
-                                            }}
-                                            placeholder="••••••••"
-                                        />
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="form-group" style={{ marginBottom: '20px' }}>
-                                    <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '8px', fontSize: '0.875rem' }}>Nova Senha</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <Lock size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                                        <input
-                                            type="password"
-                                            required
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 10px 10px 40px',
-                                                background: 'var(--bg-app)',
-                                                border: '1px solid var(--border)',
-                                                borderRadius: 'var(--radius-md)',
-                                                color: 'var(--text-main)',
-                                                fontSize: '1rem'
-                                            }}
-                                            placeholder="Nova senha segura"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-group" style={{ marginBottom: '30px' }}>
-                                    <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '8px', fontSize: '0.875rem' }}>Confirmar Nova Senha</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <Lock size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                                        <input
-                                            type="password"
-                                            required
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 10px 10px 40px',
-                                                background: 'var(--bg-app)',
-                                                border: '1px solid var(--border)',
-                                                borderRadius: 'var(--radius-md)',
-                                                color: 'var(--text-main)',
-                                                fontSize: '1rem'
-                                            }}
-                                            placeholder="Repita a senha"
-                                        />
-                                    </div>
-                                </div>
+                                <span>{forceChangeMode ? 'Atualizar Senha' : 'Entrar no Sistema'}</span>
+                                <ArrowRight size={20} />
                             </>
                         )}
+                    </button>
+                </form>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary"
-                            style={{
-                                width: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '10px',
-                                padding: '12px',
-                                fontSize: '1rem',
-                                background: 'var(--primary)',
-                                color: '#fff',
-                                borderRadius: 'var(--radius-md)',
-                                opacity: loading ? 0.7 : 1
-                            }}
-                        >
-                            {loading ? 'Processando...' : (
-                                <>
-                                    {forceChangeMode ? 'Alterar Senha' : 'Entrar'} <ArrowRight size={18} />
-                                </>
-                            )}
-                        </button>
-                    </form>
+                <div style={{ marginTop: '48px', opacity: 0.3, fontSize: '10px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                    VoxFlow Executive OS • Cloud Secure
                 </div>
             </div>
         </div>

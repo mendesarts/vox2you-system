@@ -8,22 +8,24 @@ const { Op } = require('sequelize');
 
 // Buscar todos os usuários (com filtros de segurança)
 // Buscar todos os usuários (com filtros de segurança)
-const { ROLE_IDS, getRoleId } = require('../config/roles');
+const { ROLE_IDS, getRoleId, ROLES_MAP } = require('../config/roles');
 
 router.get('/', auth, async (req, res) => {
     try {
         const { roleId, unitId, id } = req.user;
+        const currentRoleId = Number(roleId);
+        const currentUnitId = unitId ? Number(unitId) : null;
         let where = {};
 
         // PERMISSÕES POR ID (Strict)
         // 1 & 10 (Master/Director) -> View All
-        if (roleId === ROLE_IDS.MASTER || roleId === ROLE_IDS.DIRECTOR) {
+        if (currentRoleId === ROLE_IDS.MASTER || currentRoleId === ROLE_IDS.DIRECTOR) {
             // Global Access
         }
         // 20, 30, 40, 50, 60 -> Unit Isolation
-        else if ([ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER, ROLE_IDS.LEADER_SALES, ROLE_IDS.LEADER_PEDAGOGICAL, ROLE_IDS.ADMIN_FINANCIAL].includes(roleId)) {
-            if (!unitId) return res.json([]);
-            where.unitId = unitId;
+        else if ([ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER, ROLE_IDS.LEADER_SALES, ROLE_IDS.LEADER_PEDAGOGICAL, ROLE_IDS.ADMIN_FINANCIAL].includes(currentRoleId)) {
+            if (!currentUnitId) return res.json([]);
+            where.unitId = currentUnitId;
         } else {
             // Operacional: Vê apenas o próprio perfil
             where.id = id;
@@ -44,7 +46,7 @@ router.get('/', auth, async (req, res) => {
 // Criar novo usuário (com validações de segurança)
 router.post('/', auth, async (req, res) => {
     try {
-        const { name, email, password, role, unit, unitId, whatsapp, position, profilePicture } = req.body;
+        const { name, email, password, role, unit, unitId, whatsapp, position, profilePicture, secondaryRoles, workingHours } = req.body;
         const requester = req.user;
 
         // 0. Determinar ID do Cargo solicitado
@@ -107,18 +109,30 @@ router.post('/', auth, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 5. Salvar Usuário
+        // 5. Determinar Próximo ID Numérico (Force Numeric ID)
+        // Isso garante que novos usuários tenham IDs numéricos, mesmo que o DB esteja gerando UUIDs por padrão
+        const allUsers = await User.findAll({ attributes: ['id'] });
+        const maxId = allUsers.reduce((max, u) => {
+            const idNum = Number(u.id);
+            return !isNaN(idNum) && idNum > max ? idNum : max;
+        }, 0);
+        const nextId = maxId + 1;
+
+        // 6. Salvar Usuário
         const user = await User.create({
+            id: nextId, // Forçando ID numérico
             name,
             email,
             password: hashedPassword,
-            role,
+            role: ROLES_MAP[targetRoleId] || role,
+            roleId: targetRoleId,
             unitId: targetUnitId,
             unit: unit || "Sem Unidade", // Persistência Explícita (String)
             whatsapp,
-            whatsapp,
             position,
             profilePicture, // Base64 string from frontend
+            secondaryRoles: secondaryRoles || [],
+            workingHours, // JSON Schedule
             forcePasswordChange: true // Garantir que novos usuários mudem a senha
         });
 
@@ -165,13 +179,29 @@ router.put('/:id', auth, async (req, res) => {
 
         // Verificação de Permissão para Editar
         let canEdit = false;
-        if (requester.role === 'master' || requester.role === 'director') canEdit = true;
-        else if (requester.unitId === userToUpdate.unitId && ['franchisee', 'manager'].includes(requester.role)) canEdit = true;
-        else if (requester.id === userToUpdate.id) canEdit = true; // Próprio usuário
+        const { roleId, unitId } = requester;
+        const targetRoleId = userToUpdate.roleId || getRoleId(userToUpdate.role); // Ensure we have ID
 
-        // Director cannot edit Master
-        if (requester.role === 'director' && userToUpdate.role === 'master') canEdit = false;
-        else if (requester.id === userToUpdate.id) canEdit = true; // Próprio usuário
+        // 1. Próprio Usuário
+        if (requester.id === userToUpdate.id) canEdit = true;
+
+        // 2. Global (Master/Director)
+        else if ([ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(roleId)) canEdit = true;
+
+        // 3. Admin da Unidade (Franqueado/Gestor) - Edita qualquer um da unidade (exceto Globais)
+        else if (unitId === userToUpdate.unitId && [ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER].includes(roleId)) {
+            canEdit = true;
+        }
+
+        // 4. Líder Comercial (40) -> Edita Consultor (41)
+        else if (unitId === userToUpdate.unitId && roleId === ROLE_IDS.LEADER_SALES && targetRoleId === ROLE_IDS.CONSULTANT) {
+            canEdit = true;
+        }
+
+        // 5. Líder Pedagógico (50) -> Edita Instrutor (51)
+        else if (unitId === userToUpdate.unitId && roleId === ROLE_IDS.LEADER_PEDAGOGICAL && targetRoleId === ROLE_IDS.INSTRUCTOR) {
+            canEdit = true;
+        }
 
         if (!canEdit) return res.status(403).json({ error: 'Sem permissão para editar este usuário.' });
 
@@ -184,14 +214,30 @@ router.put('/:id', auth, async (req, res) => {
         }
 
         // Proteção: Não deixar mudar unitId ou role se não for Master/Director
-        if (!['master', 'director'].includes(requester.role)) {
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(requester.roleId));
+        if (!isGlobal) {
             delete updates.unitId;
             delete updates.role; // Evitar escalação de privilégio
+            delete updates.roleId;
+
+            // Sanitize secondaryRoles (Only allow Operational roles)
+            if (updates.secondaryRoles && Array.isArray(updates.secondaryRoles)) {
+                const allowedSecondary = [40, 41, 50, 51, 60, 61]; // Sales, Ped, Admin
+                updates.secondaryRoles = updates.secondaryRoles.filter(r => allowedSecondary.includes(Number(r)));
+            }
+
+            // Prevent self-update of Goal by non-managers (optional but safe)
+            // If editing self and not Global/Manager, delete goal? s
+            // Logic: canEdit=true for self.
+            if (requester.id === userToUpdate.id && ![ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR, ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER].includes(Number(requester.roleId))) {
+                delete updates.goal;
+            }
         }
 
         // Director cannot promote to Master
-        if (requester.role === 'director' && updates.role === 'master') {
+        if (Number(requester.roleId) === ROLE_IDS.DIRECTOR && (updates.role === 'master' || Number(updates.roleId) === ROLE_IDS.MASTER)) {
             delete updates.role;
+            delete updates.roleId;
         }
 
         await userToUpdate.update(updates);
@@ -212,8 +258,10 @@ router.delete('/:id', auth, async (req, res) => {
         if (!userToDelete) return res.status(404).json({ error: 'Usuário não encontrado' });
 
         // Apenas Master ou Franqueado/Gestor da MESMA unidade podem deletar
-        if (requester.role !== 'master') {
-            if (userToDelete.unitId !== requester.unitId || !['franchisee', 'manager'].includes(requester.role)) {
+        const isMaster = Number(requester.roleId) === ROLE_IDS.MASTER;
+        if (!isMaster) {
+            const isAuthorizedManager = [ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER].includes(Number(requester.roleId));
+            if (userToDelete.unitId !== requester.unitId || !isAuthorizedManager) {
                 return res.status(403).json({ error: 'Sem permissão para deletar este usuário.' });
             }
         }

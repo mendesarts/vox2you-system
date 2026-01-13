@@ -3,9 +3,17 @@ const sequelize = require('../config/database');
 
 const ClassSession = sequelize.define('ClassSession', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
+    },
+    classId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    moduleId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     },
     date: {
         type: DataTypes.DATEONLY,

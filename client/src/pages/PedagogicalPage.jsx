@@ -1,13 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    BookOpen,
-    Users,
-    CheckCircle,
-    AlertCircle,
-    ArrowUpRight,
-    FileSpreadsheet,
-    Upload
+    BookOpen, Users, CheckCircle, AlertCircle, FileSpreadsheet, Upload, Filter, ChevronLeft, Calendar, Activity, ClipboardList, PieChart as PieIcon, BarChart2, TrendingUp, GraduationCap
 } from 'lucide-react';
+import DataCard from '../components/DataCard';
 import { useAuth } from '../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import AttendanceManager from './pedagogical/AttendanceManager';
@@ -15,29 +10,38 @@ import MentorshipsManager from './pedagogical/MentorshipsManager';
 import StudentsManager from './pedagogical/StudentsManager';
 import ClassesManager from './pedagogical/ClassesManager';
 import HelpButton from '../components/HelpButton';
-import './secretary.css';
-import './dashboard.css'; // Import dashboard styles
 import { useLocation } from 'react-router-dom';
 
-const StatCard = ({ title, value, icon: Icon, color, desc, onClick }) => (
-    <div className="stat-card" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-        <div className="stat-header">
-            <div className="stat-icon" style={{ backgroundColor: `${color}20`, color: color }}>
-                <Icon size={24} />
-            </div>
-        </div>
-        <div className="stat-content">
-            <h3 className="stat-value">{value}</h3>
-            <p className="stat-title">{title}</p>
-            {desc && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{desc}</p>}
-        </div>
-    </div>
-);
+import DashboardFilters from '../components/DashboardFilters';
 
 const PedagogicalPage = () => {
-    const { user } = useAuth();
+    const { user, selectedUnit } = useAuth();
     const location = useLocation();
+
+    // Helper: Format Days (e.g. ["Qui"] -> "Quinta")
+    const formatDays = (days) => {
+        if (!days) return '';
+        let d = days;
+        if (typeof days === 'string') {
+            try { d = JSON.parse(days); } catch (e) { d = [days]; }
+        }
+        if (!Array.isArray(d)) return days;
+
+        const map = {
+            'Dom': 'Domingo', 'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta',
+            'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'
+        };
+        return d.map(day => map[day] || day).join(', ');
+    };
+
+    // Helper: Format Time (e.g. "19:00:00" -> "19h")
+    const formatTime = (t) => {
+        if (!t) return '';
+        return t.split(':')[0] + 'h';
+    };
     const [subTab, setSubTab] = useState('dashboard');
+    const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
+    const [loading, setLoading] = useState(false);
     const [statsData, setStatsData] = useState({
         activeStudents: 0,
         activeClasses: 0,
@@ -46,229 +50,294 @@ const PedagogicalPage = () => {
         scheduledMentorships: 0,
         completedMentorships: 0
     });
-    const fileInputRef = useRef(null);
+    const [chartsData, setChartsData] = useState({
+        genderData: [],
+        ageData: [],
+        cityData: [],
+        neighborhoodData: [],
+        frequencyData: []
+    });
+
+    const displayName = user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Educador';
+
+    const fetchStats = async (unitId = '', startDate = '', endDate = '') => {
+        try {
+            const token = localStorage.getItem('token');
+            const targetUnit = unitId || (unitId === 0 ? 0 : 'all');
+            let query = `?unitId=${targetUnit}`;
+            if (startDate) query += `&startDate=${startDate}`;
+            if (endDate) query += `&endDate=${endDate}`;
+
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/main-stats${query}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.pedagogical) setStatsData(data.pedagogical);
+            }
+        } catch (error) { console.error(error); }
+    };
+
+    const fetchChartsData = async (unitId = '', startDate = '', endDate = '') => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const targetUnit = unitId || (unitId === 0 ? 0 : 'all');
+            let query = `?unitId=${targetUnit}`;
+            if (startDate) query += `&startDate=${startDate}`;
+            if (endDate) query += `&endDate=${endDate}`;
+
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/dashboard/admin-charts${query}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setChartsData(await res.json());
+        } catch (error) { console.error(error); } finally { setLoading(false); }
+    };
+
+    const handleFilterChange = ({ startDate, endDate }) => {
+        setDateRange({ startDate, endDate });
+    };
+
+    const [classes, setClasses] = useState([]);
 
     useEffect(() => {
-        if (location.state?.subTab) {
-            setSubTab(location.state.subTab);
-        }
+        if (location.state?.subTab) setSubTab(location.state.subTab);
+        fetchClasses();
     }, [location]);
 
     useEffect(() => {
-        fetchStats();
-    }, []);
-
-    const fetchStats = async () => {
-        try {
-            const res = await fetch('http://localhost:3000/api/pedagogical/stats');
-            if (res.ok) {
-                const data = await res.json();
-                setStatsData(data);
-            }
-        } catch (error) {
-            console.error('Error fetching pedagogical stats:', error);
+        if (subTab === 'dashboard') {
+            fetchStats(selectedUnit, dateRange.startDate, dateRange.endDate);
+            fetchChartsData(selectedUnit, dateRange.startDate, dateRange.endDate);
         }
-    };
+    }, [selectedUnit, dateRange, subTab]);
 
-    // Data Tools
-    const handleExport = async () => {
+    const fetchClasses = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/export/csv`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error('Erro ao exportar');
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao exportar dados.');
-        }
-    };
-
-    const handleImportClick = () => {
-        if (fileInputRef.current) fileInputRef.current.click();
-    };
-
-    const handleFileChange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            const csvContent = evt.target.result;
-            try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/import/csv`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ csvContent })
-                });
+            if (res.ok) {
                 const data = await res.json();
-                if (res.ok) {
-                    alert(`Importação concluída!\nSucesso: ${data.success}\nFalhas: ${data.failed}`);
-                    fetchStats();
-                } else {
-                    alert('Erro na importação: ' + data.error);
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Erro ao enviar arquivo.');
+                // Sort by start date (ascending)
+                const sorted = data.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                setClasses(sorted);
             }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
+        } catch (error) { console.error(error); }
     };
 
-    const canManageData = ['master', 'franchisee', 'manager', 'admin', 'pedagogical_leader'].includes(user?.role);
+    const renderDashboard = () => (
+        <div className="animate-ios-pop" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <DashboardFilters
+                onFilterChange={handleFilterChange}
+                loading={loading}
+                user={user}
+            />
 
-    const stats = [
-        { title: 'Meus Alunos', value: statsData.activeStudents, icon: Users, color: '#3b82f6', desc: 'Matrículas vigentes', onClick: () => setSubTab('students') },
-        { title: 'Minhas Turmas', value: statsData.activeClasses, icon: BookOpen, color: '#8b5cf6', desc: 'Classes em andamento', onClick: () => setSubTab('classes') },
-        { title: 'Frequência Média', value: statsData.attendanceRate, icon: CheckCircle, color: '#10b981', desc: 'Últimos 30 dias', onClick: () => setSubTab('attendance') },
-        { title: 'Alunos em Risco', value: statsData.atRisk, icon: AlertCircle, color: '#ef4444', desc: 'Baixa frequência', onClick: () => setSubTab('students') },
-    ];
+            {/* Quick Actions Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                <button onClick={() => setSubTab('students')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(52, 199, 89, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(52, 199, 89, 0.1)', color: '#34C759', borderRadius: '12px' }}><Users size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Gerenciar Alunos</span></div>
+                </button>
+                <button onClick={() => setSubTab('classes')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(175, 82, 222, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(175, 82, 222, 0.1)', color: '#AF52DE', borderRadius: '12px' }}><BookOpen size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Gerenciar Turmas</span></div>
+                </button>
+                <button onClick={() => setSubTab('attendance')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0, 122, 255, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF', borderRadius: '12px' }}><CheckCircle size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Lançar Chamada</span></div>
+                </button>
+                <button onClick={() => setSubTab('mentorships')} className="vox-card" style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255, 149, 0, 0.05)', cursor: 'pointer', transition: '0.2s' }}>
+                    <div style={{ padding: '10px', background: 'rgba(255, 149, 0, 0.1)', color: '#FF9500', borderRadius: '12px' }}><TrendingUp size={20} /></div>
+                    <div style={{ textAlign: 'left' }}><span style={{ fontWeight: '900', fontSize: '15px' }}>Mentorias</span></div>
+                </button>
+            </div>
 
-    const mentorshipStats = [
-        { title: 'Mentorias Agendadas', value: statsData.scheduledMentorships, icon: CheckCircle, color: '#f59e0b', desc: 'Próximas sessões', onClick: () => setSubTab('mentorships') },
-        { title: 'Mentorias Realizadas', value: statsData.completedMentorships, icon: Users, color: '#ec4899', desc: 'Total realizado', onClick: () => setSubTab('mentorships') }
-    ];
-
-    const renderContent = () => {
-        if (subTab === 'mentorships') return <MentorshipsManager />;
-        if (subTab === 'attendance') return <AttendanceManager />;
-        if (subTab === 'students') return <StudentsManager />;
-        if (subTab === 'classes') return <ClassesManager />;
-
-        return (
-            <div className="dashboard-content animate-fade-in" style={{ padding: 0 }}>
-                {/* Actions Header - Compact Horizontal */}
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', width: '100%' }}>
-                    <button className="nav-card-btn theme-teal" onClick={() => setSubTab('students')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><Users size={20} /></div>
-                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Meus Alunos</span>
-                    </button>
-                    <button className="nav-card-btn theme-purple" onClick={() => setSubTab('classes')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><BookOpen size={20} /></div>
-                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Minhas Turmas</span>
-                    </button>
-                    <button className="nav-card-btn theme-green" onClick={() => setSubTab('attendance')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><CheckCircle size={20} /></div>
-                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Frequência</span>
-                    </button>
-                    <button className="nav-card-btn theme-orange" onClick={() => setSubTab('mentorships')} style={{ flex: 1, flexDirection: 'row', padding: '16px', height: 'auto', justifyContent: 'center', minWidth: 0 }}>
-                        <div className="icon-box" style={{ width: 40, height: 40, fontSize: '0.9rem' }}><Users size={20} /></div>
-                        <span style={{ fontSize: '1rem', whiteSpace: 'nowrap' }}>Mentorias</span>
-                    </button>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="stats-grid">
-                    {stats.map((stat, index) => (
-                        <StatCard key={index} {...stat} />
-                    ))}
-                    {mentorshipStats.map((stat, index) => (
-                        <StatCard key={`m-${index}`} {...stat} />
-                    ))}
-                </div>
-
-                {/* Pedagogical Charts Section */}
-                <h3 style={{ marginBottom: '24px', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)' }}>Desempenho Pedagógico</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
-
-                    {/* Attendance Chart */}
-                    <div className="chart-card" style={{ height: '400px' }}>
-                        <h3 className="card-title">Frequência (Últimos 6 Meses)</h3>
-                        <ResponsiveContainer width="100%" height="90%">
-                            <BarChart data={[
-                                { name: 'Jul', value: 85 }, { name: 'Ago', value: 88 },
-                                { name: 'Set', value: 82 }, { name: 'Out', value: 90 },
-                                { name: 'Nov', value: 87 }, { name: 'Dez', value: 92 }
-                            ]}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                                <XAxis dataKey="name" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
-                                <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
-                                <Tooltip cursor={{ fill: 'var(--hover)' }} contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }} />
-                                <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+            {/* Main Stats Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                <DataCard title="Alunos Ativos" variant="teal">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '32px', fontWeight: '900' }}>{statsData.activeStudents || 0}</div>
+                        <Activity size={24} opacity={0.3} />
                     </div>
+                </DataCard>
+                <DataCard title="Alunos Formados" variant="gold">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '32px', fontWeight: '900' }}>{statsData.graduatedStudents || 0}</div>
+                        <GraduationCap size={24} opacity={0.3} />
+                    </div>
+                </DataCard>
+                <DataCard title="Mentorias" variant="white">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '32px', fontWeight: '900', color: '#AF52DE' }}>{statsData.completedMentorships || 0}</div>
+                        <TrendingUp size={24} color="#AF52DE" opacity={0.3} />
+                    </div>
+                </DataCard>
+                <DataCard title="Presença" variant="white">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '32px', fontWeight: '900', color: '#34C759' }}>{statsData.attendanceRate || '0%'}</div>
+                        <CheckCircle size={24} color="#34C759" opacity={0.3} />
+                    </div>
+                </DataCard>
+                <DataCard title="Alunos em Risco" variant="white">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '32px', fontWeight: '900', color: '#FF3B30' }}>{statsData.atRisk || 0}</div>
+                        <AlertCircle size={24} color="#FF3B30" opacity={0.3} />
+                    </div>
+                    <div style={{ fontSize: '9px', fontWeight: '800', opacity: 0.5, marginTop: '4px' }}>FREQUÊNCIA -75%</div>
+                </DataCard>
+                <DataCard title="Mentoria/Aluno" variant="black">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '32px', fontWeight: '900', color: '#fff' }}>{statsData.mentorshipRate || '0.0'}</div>
+                        <TrendingUp size={24} color="#fff" opacity={0.3} />
+                    </div>
+                </DataCard>
+            </div>
 
-                    {/* Mentorship Status */}
-                    <div className="chart-card" style={{ height: '400px' }}>
-                        <h3 className="card-title">Status das Mentorias</h3>
-                        <ResponsiveContainer width="100%" height="90%">
+            {/* Active Classes Row */}
+            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#1C1C1E', margin: 0 }}>
+                        Minhas Turmas <span style={{ color: '#8E8E93', fontSize: '14px', fontWeight: '600' }}>({classes.length})</span>
+                    </h3>
+                </div>
+
+                {classes.length === 0 ? (
+                    <div style={{ padding: '32px', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '16px', border: '1px dashed rgba(0,0,0,0.1)' }}>
+                        <p style={{ color: '#8E8E93', fontWeight: 'bold' }}>Nenhuma turma encontrada</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '8px' }}>
+                        {classes.map(cls => (
+                            <div key={cls.id} className="vox-card" style={{ minWidth: '260px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', borderLeft: '4px solid var(--ios-teal)' }}>
+                                <div>
+                                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#1C1C1E' }}>
+                                        {cls.classNumber ? `Turma ${cls.classNumber} - ` : ''}{cls.name}
+                                    </h4>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase' }}>{cls.module || cls.Course?.name || 'Módulo Geral'}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#48484a', background: 'rgba(0,0,0,0.03)', padding: '8px', borderRadius: '8px' }}>
+                                    <Calendar size={14} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        <span style={{ fontWeight: '600' }}>
+                                            {formatDays(cls.days)} • {formatTime(cls.startTime)} às {formatTime(cls.endTime)}
+                                        </span>
+                                        {cls.startDate && (
+                                            <span style={{ fontSize: '10px', color: '#8E8E93' }}>
+                                                Início: {cls.startDate.split('-').reverse().slice(0, 2).join('/')} • Fim: {cls.endDate ? cls.endDate.split('-').reverse().slice(0, 2).join('/') : '?'}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: cls.status === 'active' ? '#34C759' : '#FF3B30', textTransform: 'uppercase', padding: '4px 8px', borderRadius: '4px', background: cls.status === 'active' ? 'rgba(52, 199, 89, 0.1)' : 'rgba(255, 59, 48, 0.1)' }}>
+                                        {cls.status === 'active' ? 'Em Andamento' : 'Encerrada'}
+                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#8E8E93' }}>{cls.Students?.length || 0}/{cls.capacity || 20} vagas</span>
+                                        <Users size={14} color="#8E8E93" />
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#8E8E93', fontWeight: '600', marginTop: '-8px' }}>
+                                    Prof. {cls.professorName || user?.name?.split(' ')[0] || 'Designado'}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Charts Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                <div className="vox-card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                        <PieIcon size={18} color="var(--ios-teal)" />
+                        <h3 style={{ fontWeight: '900', margin: 0 }}>Gênero & Perfil</h3>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={[
-                                        { name: 'Realizadas', value: statsData.completedMentorships || 10 },
-                                        { name: 'Agendadas', value: statsData.scheduledMentorships || 5 },
-                                        { name: 'Pendentes', value: (statsData.activeStudents || 20) - (statsData.completedMentorships || 10) }
-                                    ]}
-                                    cx="50%" cy="50%"
+                                    data={chartsData.genderData || []}
+                                    cx="50%"
+                                    cy="50%"
                                     innerRadius={60}
-                                    outerRadius={100}
+                                    outerRadius={80}
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    <Cell fill="#10b981" /> {/* Realizadas */}
-                                    <Cell fill="#f59e0b" /> {/* Agendadas */}
-                                    <Cell fill="#ef4444" /> {/* Pendentes */}
+                                    {(chartsData.genderData || []).map((e, i) => <Cell key={i} fill={['#007AFF', '#FF2D55', '#8E8E93'][i % 3]} />)}
                                 </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }} />
-                                <Legend verticalAlign="bottom" height={36} />
+                                <Tooltip />
+                                <Legend />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
+
+                <div className="vox-card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                        <BarChart2 size={18} color="var(--ios-teal)" />
+                        <h3 style={{ fontWeight: '900', margin: 0 }}>Faixa Etária</h3>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartsData.ageData || []}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                                <XAxis dataKey="name" style={{ fontSize: '11px', fontWeight: '800' }} />
+                                <YAxis style={{ fontSize: '11px', fontWeight: '800' }} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="var(--ios-teal)" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
-        );
-    };
+        </div>
+    );
 
     return (
-        <div className="secretary-page page-fade-in">
-            <header className="page-header">
-                <div>
-                    <h2 className="page-title">Pedagógico</h2>
-                    <p className="page-subtitle">Gestão de Alunos, Turmas e Frequência.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+            {/* Unified Page Header */}
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    {subTab !== 'dashboard' && (
+                        <button
+                            onClick={() => setSubTab('dashboard')}
+                            style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: '#fff',
+                                border: '1px solid #e5e5ea',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                    )}
                 </div>
-                {canManageData && (
-                    <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', marginRight: '16px' }}>
-                        <button className="btn-secondary" onClick={handleExport} title="Exportar Alunos">
-                            <FileSpreadsheet size={18} />
-                        </button>
-                        <button className="btn-secondary" onClick={handleImportClick} title="Importar Alunos">
-                            <Upload size={18} />
-                        </button>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            style={{ display: 'none' }}
-                            accept=".csv"
-                            onChange={handleFileChange}
-                        />
+            </header >
+
+            <div style={{ flex: 1 }}>
+                {subTab === 'dashboard' ? renderDashboard() : (
+                    <div className="animate-ios-pop">
+                        {subTab === 'mentorships' && <MentorshipsManager />}
+                        {subTab === 'attendance' && <AttendanceManager />}
+                        {subTab === 'students' && <StudentsManager />}
+                        {subTab === 'classes' && <ClassesManager />}
                     </div>
                 )}
-                {subTab !== 'dashboard' && (
-                    <button onClick={() => setSubTab('dashboard')} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <span>←</span> Voltar ao Painel
-                    </button>
-                )}
-            </header>
-
-            <div className="secretary-content">
-                {renderContent()}
             </div>
 
             <HelpButton context="pedagogical" />
-        </div>
+        </div >
     );
 };
 

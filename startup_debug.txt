@@ -1,0 +1,4 @@
+Starting Start Script...
+Backend Started in screen
+Frontend Started in screen
+Done

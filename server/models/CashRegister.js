@@ -3,14 +3,17 @@ const sequelize = require('../config/database');
 
 const CashRegister = sequelize.define('CashRegister', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     userId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: false
-        // Association defined in associations.js
+    },
+    unitId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     },
     openingBalance: {
         type: DataTypes.DECIMAL(10, 2),

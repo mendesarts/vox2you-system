@@ -1,181 +1,308 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, MessageSquare, Settings, LogOut, Briefcase, BookOpen, CheckSquare, Menu, X, Bot } from 'lucide-react';
-import './sidebar.css';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo-full-white.png';
-import { ROLE_GROUPS } from '../config/roles';
+import {
+    LayoutDashboard, PieChart, Target, GraduationCap, Briefcase, Calendar, CheckSquare, DollarSign, Settings, LogOut, Wallet, Activity
+} from 'lucide-react';
+import logoFinal from '../assets/voxflow-logo-final.png';
 
 const SidebarSlim = () => {
-    const { user, logout } = useAuth();
-    const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+    const { logout, user } = useAuth();
+    const [taskCount, setTaskCount] = useState(0);
 
-    const closeMobile = () => setIsMobileOpen(false);
+    useEffect(() => {
+        const fetchTasksCount = async () => {
+            if (!user) return;
+            try {
+                // Wide range to catch overdue and upcoming
+                const start = new Date();
+                start.setDate(start.getDate() - 60);
+                const end = new Date();
+                end.setDate(end.getDate() + 30);
 
-    const getFilteredNavItems = () => {
-        if (!user) return [];
-        const roleId = user.roleId || 0;
+                const s = start.toISOString().split('T')[0];
+                const e = end.toISOString().split('T')[0];
 
-        // Common items for everyone
-        const commonItems = [
-            { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-            { icon: Calendar, label: 'Calendário', path: '/calendar' },
-            { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
-            { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' }
-        ];
+                const token = localStorage.getItem('token');
+                if (!token) return;
 
-        // ID-Based Logic
-        if (ROLE_GROUPS.ADMIN.includes(roleId)) {
-            return [
-                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-                { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
-                { icon: Briefcase, label: 'Administrativo', path: '/administrative' },
-                { icon: Users, label: 'Comercial', path: '/crm' },
-                { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
-                { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
-                { icon: Calendar, label: 'Calendário', path: '/calendar' },
-            ];
-        }
-
-        if (ROLE_GROUPS.COMMERCIAL.includes(roleId)) {
-            return [
-                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-                { icon: Users, label: 'Comercial', path: '/crm' },
-                { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
-                { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
-                { icon: Calendar, label: 'Calendário', path: '/calendar' },
-            ];
-        }
-
-        if (ROLE_GROUPS.PEDAGOGICAL.includes(roleId)) {
-            return [
-                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-                { icon: BookOpen, label: 'Pedagógico', path: '/pedagogical' },
-                { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
-                { icon: MessageSquare, label: 'Mkt. WhatsApp', path: '/commercial/whatsapp-marketing' },
-                { icon: Calendar, label: 'Calendário', path: '/calendar' },
-            ];
-        }
-
-        return commonItems;
-    };
-
-    const navItems = getFilteredNavItems();
-
-    const getRoleLabel = (role) => {
-        const map = {
-            'master': 'Master',
-            'director': 'Diretor',
-            'franchisee': 'Franqueado',
-            'manager': 'Gerente Geral',
-            'admin_financial_manager': 'Gerente Financeiro',
-            'pedagogical_leader': 'Coord. Pedagógico',
-            'sales_leader': 'Líder Comercial',
-            'consultant': 'Consultor',
-            'instructor': 'Instrutor',
-            'secretary': 'Secretaria'
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+                const res = await fetch(`${API_URL}/tasks?summary=true&start=${s}&end=${e}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    // data.count is pending tasks
+                    setTaskCount(data.count || 0);
+                }
+            } catch (error) {
+                console.error("Error fetching task count:", error);
+            }
         };
-        return map[role] || 'Colaborador';
+
+        fetchTasksCount();
+        const interval = setInterval(fetchTasksCount, 60000); // Poll every minute
+        return () => clearInterval(interval);
+    }, [user]);
+
+    // Map roles for display
+    const ROLES_MAP = {
+        1: 'Master',
+        10: 'Diretor',
+        20: 'Franqueado',
+        30: 'Gestor',
+        40: 'Líder Comercial',
+        41: 'Consultor',
+        50: 'Líder Pedagógico',
+        51: 'Pedagógico',
+        60: 'Administrativo'
     };
+
+    const displayRole = ROLES_MAP[Number(user?.roleId)] || user?.role || 'Acesso';
+    const displayUnit = user?.unit || 'Matriz';
+    const userName = user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Usuário';
+
+    // Estilo do Link
+    const linkBase = {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '86px',
+        height: '56px',
+        borderRadius: '14px',
+        marginBottom: '8px',
+        color: 'rgba(255, 255, 255, 0.7)',
+        transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+        textDecoration: 'none',
+        gap: '2px',
+        border: 'none',
+        background: 'transparent'
+    };
+
+    const activeStyle = {
+        ...linkBase,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        color: '#FFFFFF',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(8px)',
+        transform: 'scale(1.05)',
+        paddingTop: '2px',
+        paddingBottom: '2px'
+    };
+
+    const labelStyle = {
+        fontSize: '8px',
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        textAlign: 'center',
+        width: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        letterSpacing: '0.3px'
+    };
+
+    const roleId = Number(user?.roleId);
+
+    // Visibility Logic
+    const hasPanel = [1, 10, 20, 30].includes(roleId);
+    const hasCommercial = [1, 10, 20, 30, 40, 41].includes(roleId);
+    const hasPedagogical = [1, 10, 20, 30, 50, 51].includes(roleId);
+    const hasAdmin = [1, 10, 20, 30, 60].includes(roleId);
+    const hasCRM = [1, 10, 20, 30, 40, 41].includes(roleId);
 
     return (
-        <>
-            {/* Mobile Toggle Button */}
-            <button
-                className="mobile-menu-btn"
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                aria-label="Toggle Menu"
-            >
-                {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+        <div className="sidebar-slim">
 
-            {/* Overlay for mobile */}
-            {isMobileOpen && (
-                <div className="sidebar-overlay" onClick={closeMobile} />
-            )}
+            {/* Logo */}
+            <div style={{ padding: '0 0 16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{
+                    width: '80px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <img src={logoFinal} alt="VoxFlow" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                </div>
+            </div>
 
-            <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
-                {/* Mobile Close Button */}
-                {isMobileOpen && (
-                    <button className="mobile-close-btn" onClick={closeMobile} style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', color: 'var(--text-muted)' }}>
-                        <X size={24} />
-                    </button>
+            {/* Navegação */}
+            <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', overflowY: 'auto', padding: '0 2px', scrollbarWidth: 'none' }}>
+
+                {hasPanel && (
+                    <NavLink to="/dashboard" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Gestão Global">
+                        <LayoutDashboard size={20} strokeWidth={2.5} />
+                        <span style={labelStyle}>Gestão</span>
+                    </NavLink>
                 )}
 
-                <div className="sidebar-header">
-                    <div className="logo">
-                        <NavLink to="/dashboard" onClick={closeMobile} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <img src={logo} alt="Vox2you" style={{ height: '32px', width: 'auto' }} />
-                            <span>Vox2You</span>
-                        </NavLink>
-                    </div>
-                </div>
-
-                <nav className="sidebar-nav">
-                    {navItems.map((item) => (
-                        <NavLink
-                            key={item.path}
-                            to={item.path}
-                            onClick={closeMobile}
-                            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                        >
-                            <item.icon size={24} />
-                            <span>{item.label}</span>
-                        </NavLink>
-                    ))}
-                </nav>
-
-                <div className="sidebar-footer">
-                    <NavLink
-                        to="/settings"
-                        onClick={closeMobile}
-                        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                        style={{ marginBottom: '10px' }}
-                    >
-                        <Settings size={24} />
-                        <span>Controles</span>
+                {hasCommercial && (
+                    <NavLink to="/commercial" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Comercial">
+                        <Target size={20} strokeWidth={2.5} />
+                        <span style={labelStyle}>Comercial</span>
                     </NavLink>
+                )}
 
-                    <div className="user-profile" title={`${user?.name || 'Usuário'} (${getRoleLabel(user?.role)})`}>
-                        <div className="avatar-lg" style={{
-                            background: user?.color || '#10b981',
-                            color: '#fff',
-                            width: '40px',
-                            height: '40px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '50%',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            border: '2px solid rgba(255,255,255,0.2)',
-                            cursor: 'help'
-                        }}>
-                            {user?.profilePicture ? (
-                                <img src={user.profilePicture} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                            ) : (
-                                <span>{user?.name?.charAt(0) || <Users size={20} />}</span>
-                            )}
-                        </div>
+                {hasPedagogical && (
+                    <NavLink to="/pedagogical" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Pedagógico">
+                        <GraduationCap size={20} strokeWidth={2.5} />
+                        <span style={labelStyle}>Pedagógico</span>
+                    </NavLink>
+                )}
 
-                        {/* Hidden on desktop, shown on mobile */}
-                        <div className="user-info">
-                            <span className="user-name">{user?.name}</span>
-                            <span className="user-role">{getRoleLabel(user?.role)}</span>
-                        </div>
+                {hasAdmin && (
+                    <NavLink to="/secretary" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Administrativo">
+                        <Briefcase size={20} strokeWidth={2.5} />
+                        <span style={{ ...labelStyle, letterSpacing: '-0.3px' }}>Administrativo</span>
+                    </NavLink>
+                )}
 
-                        {/* LogOut is now better placed or integrated differently, lets keep it beside avatar on mobile or similar, 
-                           but for slim sidebar, we might need a separate logout button if space permits.
-                           However, requested design is compact. Let's keep logout button but ensure it fits.
-                        */}
-                        <button className="logout-btn" onClick={logout} title="Sair do Sistema" style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }}>
-                            <LogOut size={20} />
-                            <span className="mobile-only" style={{ marginLeft: '8px', display: 'none' }}>Sair</span>
-                        </button>
+                {hasAdmin && (
+                    <NavLink to="/financial" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Financeiro">
+                        <DollarSign size={20} strokeWidth={2.5} />
+                        <span style={labelStyle}>Financeiro</span>
+                    </NavLink>
+                )}
+
+
+                {hasCRM && (
+                    <NavLink to="/crm" style={({ isActive }) => isActive ? activeStyle : linkBase} title="CRM">
+                        <PieChart size={20} strokeWidth={2.5} />
+                        <span style={labelStyle}>CRM</span>
+                    </NavLink>
+                )}
+
+                <NavLink to="/calendar" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Agenda">
+                    <Calendar size={20} strokeWidth={2.5} />
+                    <span style={labelStyle}>Agenda</span>
+                </NavLink>
+
+                <NavLink to="/tasks" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Tarefas">
+                    <div style={{ position: 'relative' }}>
+                        <CheckSquare size={20} strokeWidth={2.5} />
+                        {taskCount > 0 && (
+                            <span style={{
+                                position: 'absolute',
+                                top: '-6px',
+                                right: '-8px',
+                                backgroundColor: '#FF3B30',
+                                color: 'white',
+                                fontSize: '9px',
+                                fontWeight: 'bold',
+                                height: '14px',
+                                minWidth: '14px',
+                                borderRadius: '7px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '0 3px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }}>
+                                {taskCount > 99 ? '99+' : taskCount}
+                            </span>
+                        )}
                     </div>
+                    <span style={labelStyle}>Tarefas</span>
+                </NavLink>
+
+            </nav>
+
+            {/* Footer */}
+            <div style={{
+                marginTop: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '100%',
+                paddingBottom: '24px'
+            }}>
+                <NavLink to="/settings" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Configurações">
+                    <Settings size={20} strokeWidth={2.5} />
+                    <span style={{ ...labelStyle, letterSpacing: '-0.3px' }}>Configurações</span>
+                </NavLink>
+
+                {/* Logout Button - Moved up to group with Settings */}
+                <button
+                    onClick={logout}
+                    title="Sair"
+                    style={{
+                        ...linkBase,
+                        background: 'rgba(255, 59, 48, 0.15)',
+                        border: '1px solid rgba(255, 59, 48, 0.3)',
+                        cursor: 'pointer',
+                        marginBottom: '16px',
+                        height: '48px' // Slightly slimmer for group look
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 59, 48, 0.3)';
+                        e.currentTarget.style.borderColor = '#FF3B30';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 59, 48, 0.15)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 59, 48, 0.3)';
+                    }}
+                >
+                    <LogOut size={18} color="#FF3B30" strokeWidth={3} />
+                    <span style={{ ...labelStyle, color: '#FF3B30', fontSize: '7px' }}>SAIR</span>
+                </button>
+
+                {/* Bloco de Informações do Desenvolvedor/Usuário - 3 Linhas */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '0 6px',
+                    textAlign: 'center',
+                    width: '100%',
+                    gap: '1px'
+                }}>
+                    {/* Linha 1: Nome (Fonte Dinâmica via clamp) */}
+                    <span style={{
+                        fontSize: 'clamp(7px, 1.2vw, 9px)',
+                        fontWeight: '900',
+                        color: '#FFFFFF',
+                        width: '100%',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.2px'
+                    }}>
+                        {userName}
+                    </span>
+
+                    {/* Linha 2: Cargo (Corrigido para Nome do Cargo) */}
+                    <span style={{
+                        fontSize: 'clamp(6px, 1vw, 8px)',
+                        fontWeight: '700',
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        width: '100%',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.3px'
+                    }}>
+                        {displayRole}
+                    </span>
+
+                    {/* Linha 3: Unidade (Destaque em Teal) */}
+                    <span style={{
+                        fontSize: 'clamp(6px, 0.9vw, 7px)',
+                        fontWeight: '800',
+                        color: '#30B0C7',
+                        width: '100%',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1px'
+                    }}>
+                        {displayUnit}
+                    </span>
                 </div>
-            </aside>
-        </>
+            </div>
+
+        </div>
     );
 };
 

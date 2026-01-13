@@ -1,0 +1,2140 @@
+```javascript
+// ⚠️ ATTENTION: Read ARCHITECTURE_GUIDELINES.md in the root directory before modifying logic related to roles, units, or permissions. Always use numeric roleId [1, 10, etc.] and unitId.
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import Papa from 'papaparse';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical, X, Check, MapPin, FileText, Upload, Download, Mail, Building, Tag, Trash2, User, MessageSquare, ChevronLeft, Thermometer, Brain, ArrowRight, PhoneOff } from 'lucide-react';
+import KanbanCard from '../components/KanbanCard';
+import LeadDetailsModal from './components/LeadDetailsModal';
+import ImportLeadsModal from './components/ImportLeadsModal';
+import { useAuth } from '../context/AuthContext';
+import { VoxModal } from '../components/VoxUI';
+import * as XLSX from 'xlsx';
+import WhatsAppMarketing from './commercial/WhatsAppMarketing';
+import api from '../services/api';
+
+const GLOBAL_VIEW_ROLES = [1, 10]; // Master and Director IDs
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Helper para CSV Import (Case Insensitive + Normalização)
+const normalizeKey = (row, keys) => {
+    const rowKeys = Object.keys(row).map(k => k.toLowerCase().trim());
+    const foundKey = keys.find(k => rowKeys.includes(k.toLowerCase()));
+    const originalKey = Object.keys(row).find(k => k.toLowerCase().trim() === foundKey);
+    return originalKey ? row[originalKey] : null;
+};
+
+const CRMBoard = () => {
+    const { user } = useAuth();
+    const location = useLocation();
+    const [leads, setLeads] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [formStep, setFormStep] = useState(1); // 1 = Dados, 2 = Histórico
+    const [selectedLead, setSelectedLead] = useState(null);
+    const [unitFilter, setUnitFilter] = useState('all'); // Master Filter
+    const [allLeads, setAllLeads] = useState([]);
+    const [consultants, setConsultants] = useState([]);
+    const fileInputRef = useRef(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('crm');
+    const [isSaving, setIsSaving] = useState(false);
+    const [holidays, setHolidays] = useState([]);
+    const [units, setUnits] = useState([]);
+    const [courses, setCourses] = useState([]);
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [activeFilters, setActiveFilters] = useState({
+        unitId: 'all',
+        responsibleId: 'all',
+        source: 'all',
+        temperature: 'all',
+        startDate: '',
+        endDate: ''
+    });
+
+    // New Lead Form State
+    const [newLead, setNewLead] = useState({
+        title: '',
+        value: '',
+        name: '',
+        phone: '',
+        email: '',
+        company: '',
+        city: '',
+        neighborhood: '',
+        address: '', // New
+        cpf: '', // New
+        rg: '', // New
+        birthDate: '', // New
+        profession: '', // New
+        courseInterest: '', // New
+        lossReason: '', // New
+        source: 'Instagram',
+        campaign: '',
+        tags: '',
+        unit: '',
+        responsible: '',
+        responsibleId: '',
+        status: 'new',
+        attempts: new Array(5).fill({ date: '', result: '' }),
+        nextTaskDate: '',
+        nextTaskType: 'Nova Tentativa',
+
+        observation: '',
+        contactSummary: '',
+        temperature: 'cold'
+    });
+
+        const formatPhone = (value) => {
+        if (!value) return '';
+        const v = value.replace(/\D/g, '');
+        // Support Country Code (e.g. 55 + 11 digits = 13)
+        if (v.length > 13) {
+            return '+' + v.slice(0, 2) + ' (' + v.slice(2, 4) + ') ' + v.slice(4, 9) + '-' + v.slice(9, 13);
+        }
+        if (v.length === 13) {
+            return '+' + v.slice(0, 2) + ' (' + v.slice(2, 4) + ') ' + v.slice(4, 9) + '-' + v.slice(9);
+        }
+        if (v.length === 12) {
+            return '+' + v.slice(0, 2) + ' (' + v.slice(2, 4) + ') ' + v.slice(4, 8) + '-' + v.slice(8);
+        }
+        if (v.length > 11) return v;
+        if (v.length === 11) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+        }
+        if (v.length === 10) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+        }
+        if (v.length > 9) return v;
+        if (v.length > 6) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+        }
+        if (v.length > 2) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2);
+        }
+        return v;
+    };
+
+    const formatCurrency = (value) => {
+        if (!value) return '';
+        const v = value.toString().replace(/\D/g, '');
+        const numberValue = parseFloat(v) / 100;
+        return isNaN(numberValue) ? '' : numberValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
+    // Kanban Columns Configuration
+    const columns = {
+        'new': { id: 'new', title: 'Novo Lead', color: '#3b82f6', icon: Plus },
+        'connecting': { id: 'connecting', title: 'Conectando', color: '#8b5cf6', icon: Phone },
+        'connected': { id: 'connected', title: 'Conexão', color: '#6366f1', icon: Check },
+        'scheduled': { id: 'scheduled', title: 'Agendamento', color: '#f59e0b', icon: Calendar },
+        'no_show': { id: 'no_show', title: 'No-Show (IA Resgate)', color: '#ef4444', icon: Clock },
+        'negotiation': { id: 'negotiation', title: 'Negociação', color: '#10b981', icon: DollarSign },
+        'won': { id: 'won', title: 'Matriculados', color: '#059669', icon: Check },
+        'closed': { id: 'closed', title: 'Atendimento Encerrado', color: '#6b7280', icon: X },
+        // Social Media Funnel
+        'social_comment': { id: 'social_comment', title: 'Novo Comentário', color: '#E1306C', icon: MessageSquare },
+        'social_direct': { id: 'social_direct', title: 'Novo Direct', color: '#833AB4', icon: Mail },
+        'social_prospect': { id: 'social_prospect', title: 'Prospects em Qualificação', color: '#F77737', icon: User },
+        // Internal Funnel
+        'internal_other': { id: 'internal_other', title: 'Outros não Leads', color: '#64748b', icon: User },
+        'internal_team': { id: 'internal_team', title: 'Time Interno', color: '#0f172a', icon: Building }
+    };
+
+    const crmOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
+    const socialOrder = ['social_comment', 'social_direct', 'social_prospect'];
+    const internalOrder = ['internal_other', 'internal_team'];
+
+    const getColumnOrder = () => {
+        if (activeTab === 'social') return socialOrder;
+        if (activeTab === 'internal') return internalOrder;
+        return crmOrder;
+    };
+
+    // Fallback for logic that uses 'columnOrder' variable directly if any
+    const columnOrder = getColumnOrder();
+
+    const getLeadsByStatus = (status) => {
+        let list = [...leads];
+
+        // Multi-Filter Logic
+        if (activeFilters.unitId !== 'all') {
+            list = list.filter(l => Number(l.unitId) === Number(activeFilters.unitId));
+        }
+        if (activeFilters.responsibleId !== 'all') {
+            list = list.filter(l => Number(l.responsibleId) === Number(activeFilters.responsibleId));
+        }
+        if (activeFilters.source !== 'all') {
+            list = list.filter(l => l.source === activeFilters.source);
+        }
+        if (activeFilters.temperature !== 'all') {
+            list = list.filter(l => l.temperature === activeFilters.temperature);
+        }
+        if (activeFilters.startDate) {
+            const start = new Date(activeFilters.startDate).getTime();
+            list = list.filter(l => new Date(l.createdAt).getTime() >= start);
+        }
+        if (activeFilters.endDate) {
+            const end = new Date(activeFilters.endDate).getTime();
+            list = list.filter(l => new Date(l.createdAt).getTime() <= end);
+        }
+
+        return list
+            .filter(lead => lead.status === status)
+            .sort((a, b) => {
+                // Sort by nextTaskDate if available
+                const dateA = a.nextTaskDate ? new Date(a.nextTaskDate) : null;
+                const dateB = b.nextTaskDate ? new Date(b.nextTaskDate) : null;
+
+                if (dateA && dateB) return dateA - dateB;
+                if (dateA) return -1;
+                if (dateB) return 1;
+
+                // Fallback to createdAt (newest first)
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+    };
+
+    useEffect(() => {
+        fetchLeads();
+        fetchConsultants();
+        fetchLeads();
+        fetchConsultants();
+        fetchUnits();
+        fetchCourses();
+    }, []);
+
+    useEffect(() => {
+        if (location.state?.openLeadId && leads.length > 0) {
+            console.log('Auto-opening lead:', location.state.openLeadId);
+            const lead = leads.find(l => Number(l.id) === Number(location.state.openLeadId));
+            if (lead) {
+                handleOpenEditLead(lead); // Use the official open function
+                // View Code First
+                // Clear the state so it doesn't reopen on next render/update
+                window.history.replaceState({ ...location.state, openLeadId: null }, document.title);
+
+                if (location.state.mode === 'enrollment') {
+                    setFormStep(2); // Jump to Financials/Enrollment Step
+                } else if (location.state.section === 'agenda') {
+                    setFormStep(3); // Jump to Scheduling/Next Task Step
+                }
+            }
+        }
+    }, [location.state, leads]);
+
+    const fetchUnits = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(API_URL + '/units', {
+headers: { 'Authorization': 'Bearer ' + token }
+            });
+const data = await res.json();
+if (Array.isArray(data)) {
+    setUnits(data);
+}
+        } catch (error) {
+    console.error('Error fetching units:', error);
+}
+    };
+
+const fetchConsultants = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(API_URL + '/users', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+            const isGlobalRequester = [1, 10].includes(Number(user.roleId));
+
+            const unitUsers = data.filter(u => {
+                // Filter by Unit: Only show users of the same unit, or all if requester is Master/Director
+                const sameUnit = Number(u.unitId) === Number(user.unitId);
+                if (!isGlobalRequester && !sameUnit) return false;
+
+                // Filter by Role: Commercial (40, 41) or has it in secondaryRoles
+                const primaryRole = Number(u.roleId);
+                const secondary = Array.isArray(u.secondaryRoles) ? u.secondaryRoles.map(Number) : [];
+                const isCommercial = [40, 41].includes(primaryRole) || secondary.some(r => [40, 41].includes(r));
+
+                // Always allow the current user to be their own responsible
+                // Also usually allow Franchisees (20) and Managers (30) as they manage the sales process
+                const isLeadership = [20, 30].includes(primaryRole);
+
+                return isCommercial || isLeadership || u.id === user.id;
+            });
+
+            const ROLE_PRIORITY = {
+                1: 1, 10: 1, // Master/Director
+                20: 3, // Franqueado
+                30: 4, // Gerente Geral
+                40: 5, // Lider Comercial
+                41: 6, // Consultor
+                50: 7  // Lider Pedagogico
+            };
+
+            const sorted = unitUsers.sort((a, b) => {
+                if (a.id === user.id) return -1;
+                if (b.id === user.id) return 1;
+                const pA = ROLE_PRIORITY[Number(a.roleId)] || 99;
+                const pB = ROLE_PRIORITY[Number(b.roleId)] || 99;
+                return pA - pB;
+            });
+            setConsultants(sorted);
+        }
+    } catch (error) {
+        console.error('Error fetching consultants:', error);
+    }
+};
+
+const fetchCourses = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(API_URL + '/courses', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) setCourses(data);
+    } catch (error) {
+        console.error('Error fetching courses:', error);
+    }
+};
+
+const fetchLeads = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        // Fixed URL spacing
+        const res = await fetch(API_URL + '/crm/leads', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        let fetchedLeads = Array.isArray(data) ? data : [];
+
+        // Fetch Holidays for Smart Flow
+        try {
+            const hRes = await fetch(API_URL + '/calendar/holidays', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const hData = await hRes.json();
+            setHolidays(Array.isArray(hData) ? hData : []);
+        } catch (e) {
+            console.error('Error fetching holidays', e);
+        }
+
+        if (user && !GLOBAL_VIEW_ROLES.includes(Number(user.roleId))) {
+            fetchedLeads = fetchedLeads.filter(l =>
+                l.unitId === user.unitId
+            );
+        }
+        setLeads(fetchedLeads);
+        setAllLeads(fetchedLeads);
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setLoading(false);
+    }
+};
+
+const [moveModal, setMoveModal] = useState({ isOpen: false, leadId: null, destinationId: null, sourceId: null, data: {} });
+const [moveData, setMoveData] = useState({
+    notes: '',
+    proposedValue: '',
+    appointmentDate: '',
+    outcome: 'success',
+    scheduledMeeting: 'no'
+});
+
+// Helper: Business Hours (9h - 19h, Weekdays) + Holidays
+const calculateNextAttempt = (baseDate) => {
+    let target = new Date(baseDate);
+    target.setMinutes(target.getMinutes() + 240); // +4 hours
+
+    const isHoliday = (date) => {
+        return holidays.some(h => {
+            const start = new Date(h.startDate);
+            const end = new Date(h.endDate || h.startDate);
+            // Set times to 0 for date-only comparison
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+            return d >= start && d <= end;
+        });
+    };
+
+    // Get limits from user profile or default
+    let startHour = 9;
+    let endHour = 19;
+
+    if (user && user.workingHours) {
+        try {
+            // Assuming workingHours could be string "09:00" or obj
+            // If User model has JSON, it might count as obj
+            const wh = user.workingHours;
+            // If simplistic "start" and "end" keys exist
+            if (wh.start) startHour = parseInt(wh.start.toString().split(':')[0]);
+            if (wh.end) endHour = parseInt(wh.end.toString().split(':')[0]);
+        } catch (e) { console.log('Error parsing workingHours', e); }
+    }
+
+    const adjustToBusinessHours = (d) => {
+        let changed = false;
+
+        // 1. Weekend or Holiday -> Next day StartHour
+        if (d.getDay() === 0 || d.getDay() === 6 || isHoliday(d)) {
+            d.setDate(d.getDate() + 1);
+            d.setHours(startHour, 0, 0, 0);
+            changed = true;
+        }
+
+        // 2. Late hours -> Next day StartHour
+        if (d.getHours() >= endHour) {
+            d.setDate(d.getDate() + 1);
+            d.setHours(startHour, 0, 0, 0);
+            changed = true;
+        }
+        // 3. Early hours -> Today StartHour
+        else if (d.getHours() < startHour) {
+            d.setHours(startHour, 0, 0, 0);
+            changed = true;
+        }
+
+        return changed ? adjustToBusinessHours(d) : d;
+    };
+
+    const finalDate = adjustToBusinessHours(target);
+
+    // Format Human Readable String
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const options = { hour: '2-digit', minute: '2-digit' };
+    const timeStr = finalDate.toLocaleTimeString('pt-BR', options);
+
+    let relativeDay = '';
+    if (finalDate.toDateString() === now.toDateString()) {
+        relativeDay = 'Hoje';
+    } else if (finalDate.toDateString() === tomorrow.toDateString()) {
+        relativeDay = 'Amanhã';
+    } else {
+        const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        relativeDay = days[finalDate.getDay()];
+    }
+
+    return {
+        date: finalDate,
+        formatted: `${relativeDay} às ${timeStr}`
+    };
+};
+
+const handleDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const destId = destination.droppableId;
+    const sourceId = source.droppableId;
+
+    // Custom Logic: Confirm Re-opening
+    if ((sourceId === 'won' || sourceId === 'closed') && destId !== sourceId) {
+        const confirmReopen = window.confirm("Você está movendo um lead finalizado. Deseja reabrir este lead?");
+        if (!confirmReopen) return;
+    }
+
+    // Trigger modal for stages that require data or smart flow
+    if (['connecting', 'connected', 'scheduled', 'negotiation', 'closed'].includes(destId)) {
+        setMoveModal({
+            isOpen: true,
+            leadId: draggableId,
+            destinationId: destId,
+            sourceId: source.droppableId,
+            data: {}
+        });
+        setMoveData({
+            notes: '',
+            proposedValue: '',
+            appointmentDate: '',
+            outcome: 'success', // 'success' or 'failure'
+            scheduledMeeting: 'no', // 'yes' or 'no'
+            nextTaskDate: calculateNextAttempt(new Date()).date.toISOString().slice(0, 16)
+        });
+        return;
+    }
+    executeMove(draggableId, destination.droppableId);
+};
+
+const handleQuickAction = (lead, outcome = 'success') => {
+    setMoveModal({
+        isOpen: true,
+        leadId: lead.id,
+        destinationId: 'connecting', // Force 'connecting' flow for phone attempts
+        sourceId: lead.status,
+        data: lead // Pass full lead data for logic checks
+    });
+    setMoveData({
+        notes: '',
+        proposedValue: '',
+        appointmentDate: '',
+        outcome: outcome,
+        scheduledMeeting: 'no',
+        nextTaskDate: calculateNextAttempt(new Date()).date.toISOString().slice(0, 16)
+    });
+};
+
+const executeMove = async (leadId, status, extraData = {}) => {
+    // Optimistic UI update
+    const updatedLeads = leads.map(lead => {
+        if (lead.id.toString() === leadId.toString()) {
+            return { ...lead, status, ...extraData };
+        }
+        return lead;
+    });
+    setLeads(updatedLeads);
+
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(API_URL + '/crm/leads/' + leadId + '/move', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ status, ...extraData })
+        });
+
+        if (res.ok) {
+            const updatedLeadPayload = await res.json();
+            setLeads(prevLeads => prevLeads.map(l =>
+                l.id.toString() === leadId.toString() ? updatedLeadPayload : l
+            ));
+        } else {
+            fetchLeads();
+        }
+    } catch (error) {
+        console.error('Error moving lead', error);
+        fetchLeads();
+    }
+};
+
+const confirmMove = () => {
+    const { destinationId, leadId } = moveModal;
+    let finalStatus = destinationId;
+    let finalData = { ...moveData };
+
+    // SMART FLOW LOGIC
+    if (destinationId === 'connecting') {
+        if (moveData.outcome === 'failure') {
+            // Return to 'new' stage or keep in 'connecting'? 
+            // Context asks for a task for 4h later. 
+            // We'll keep it in 'connecting' with the task.
+            finalStatus = 'connecting';
+
+            // User must provide date
+            if (!moveData.nextTaskDate) {
+                alert('Por favor, defina a data e horário da próxima tarefa/tentativa.');
+                return;
+            }
+            const nextTaskDateToUse = new Date(moveData.nextTaskDate);
+
+            // Check for max attempts (5)
+            const leadsList = leads || []; // Safety check
+            const leadRef = leadsList.find(l => l.id.toString() === leadId.toString());
+
+            // Calculate based on attempts array length for accuracy
+            let currentAttemptsList = [];
+            if (leadRef && leadRef.attempts) {
+                try {
+                    currentAttemptsList = typeof leadRef.attempts === 'string' ? JSON.parse(leadRef.attempts) : leadRef.attempts;
+                } catch (e) {
+                    currentAttemptsList = [];
+                }
+            }
+
+            // Filter out placeholder/empty attempts created by legacy bugs
+            const validAttempts = Array.isArray(currentAttemptsList) ? currentAttemptsList.filter(a => a.date && a.date !== '') : [];
+            const failCount = validAttempts.length + 1; // +1 for this failure
+
+            if (failCount >= 5) {
+                finalStatus = 'closed';
+                finalData.notes = `Encerrado automaticamente após 5 tentativas sem sucesso. Última: ${moveData.notes || 'Sem observação'}`;
+                finalData.archived = true;
+                // Clear next task
+                finalData.nextTaskDate = null;
+                finalData.nextTaskType = null;
+            } else {
+                finalData.nextTaskDate = nextTaskDateToUse.toISOString();
+                finalData.nextTaskType = 'Nova Tentativa';
+                const formattedDate = nextTaskDateToUse.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                finalData.notes = `Falha no contato (${failCount}/5). Próxima tentativa agendada para ${formattedDate}. ${moveData.notes}`;
+                // Send increment instruction to backend
+                finalData.incrementAttempts = true;
+            }
+        } else {
+            // Success path
+            if (moveData.scheduledMeeting === 'yes') {
+                if (!moveData.appointmentDate) return alert('Selecione a data/hora do agendamento.');
+                finalStatus = 'scheduled';
+            } else {
+                finalStatus = 'connected';
+                // If user set a next task date manually (optional)
+                if (moveData.nextTaskDate) {
+                    finalData.nextTaskDate = new Date(moveData.nextTaskDate).toISOString();
+                    finalData.nextTaskType = 'Retorno Agendado (Conexão)';
+                }
+            }
+        }
+    }
+
+    if (finalStatus === 'negotiation' && !moveData.proposedValue) {
+        alert('Por favor, informe o Valor Proposto.');
+        return;
+    }
+    if (finalStatus === 'scheduled' && !moveData.appointmentDate) {
+        alert('Por favor, selecione a Data e Hora do Agendamento.');
+        return;
+    }
+
+    if (finalStatus === 'no_show' && !moveData.nextTaskDate) {
+        alert('Por favor, selecione a Data para a Nova Tentativa (No-Show).');
+        return;
+    }
+
+    executeMove(leadId, finalStatus, finalData);
+    setMoveModal({ ...moveModal, isOpen: false });
+};
+
+const handleOpenNewLead = () => {
+    const currentUnitName = user.unit?.name || user.unitName || user.unit || 'Minha Unidade';
+
+    setNewLead({
+        title: '',
+        value: '',
+        name: '',
+        phone: '',
+        email: '',
+        company: '',
+        city: '',
+        neighborhood: '',
+        source: 'Instagram',
+        campaign: '',
+        tags: '',
+        unitId: user.unitId,
+        unit: typeof currentUnitName === 'string' ? currentUnitName : 'Minha Unidade',
+        responsible: user.name || user.email || 'Eu',
+        responsibleId: user.id,
+        status: 'new',
+        attempts: [],
+        nextTaskDate: '',
+        nextTaskType: 'Primeiro Contato',
+        observation: '',
+        contactSummary: ''
+    });
+    setFormStep(1);
+    setSelectedLead(null);
+    setShowNewLeadModal(true);
+};
+
+const handleOpenEditLead = (lead) => {
+    setSelectedLead(lead);
+    setNewLead({
+        title: lead.title || '',
+        value: lead.value ? lead.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+        name: lead.contact?.name || lead.name || '',
+        phone: formatPhone(lead.contact?.phone || lead.phone || ''),
+        email: lead.contact?.email || lead.email || '',
+        company: lead.company || '',
+        city: lead.city || '',
+        neighborhood: lead.neighborhood || '',
+        source: lead.source || 'Instagram',
+        campaign: lead.campaign || '',
+        tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : (lead.tags || ''),
+        unitId: lead.unitId || user.unitId,
+        unit: lead.unit || lead.Unit?.name || user.unit?.name || user.unit || 'Unidade Atual',
+        responsible: lead.responsible || lead.responsibleId || user.name,
+        responsibleId: lead.consultant_id || lead.responsibleId || user.id,
+        status: lead.status || 'new',
+        attempts: lead.attempts ? (typeof lead.attempts === 'string' ? JSON.parse(lead.attempts) : lead.attempts) : [],
+        nextTaskDate: lead.nextTaskDate ? new Date(new Date(lead.nextTaskDate).getTime() - (new Date(lead.nextTaskDate).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '',
+        nextTaskType: lead.nextTaskType || 'Nova Tentativa',
+        observation: lead.observation || lead.notes || '',
+        contactSummary: lead.contactSummary || ''
+    });
+    setFormStep(1);
+    setShowNewLeadModal(true);
+};
+
+const handleDeleteLead = async () => {
+    setIsDeleteModalOpen(true);
+};
+
+
+
+const confirmDelete = async () => {
+    if (!selectedLead) return;
+    setIsSaving(true);
+    try {
+        await api.delete(`/crm/leads/${selectedLead.id}`);
+        alert('Lead excluído com sucesso!');
+        setIsDeleteModalOpen(false);
+        setShowNewLeadModal(false);
+        fetchLeads(); // Refresh list from server
+    } catch (error) {
+        console.error('Erro ao excluir lead:', error);
+        alert('Erro ao excluir lead. Tente novamente.');
+    } finally {
+        setIsSaving(false);
+    }
+};
+
+const [lastImportId, setLastImportId] = useState(null);
+
+const handleUndoImport = async (confirmed) => {
+    if (!confirmed) {
+        setLastImportId(null);
+        return;
+    }
+
+    if (!lastImportId) return;
+    // const confirmUndo = window.confirm('Tem certeza que deseja desfazer a última importação? Isso excluirá todos os leads criados.');
+    // if (!confirmUndo) return;
+
+    setIsSaving(true);
+    try {
+        await api.delete(`/crm/leads/import/${lastImportId}`);
+        alert('Importação desfeita com sucesso!');
+        setLastImportId(null);
+        fetchLeads();
+    } catch (error) {
+        console.error('Erro ao desfazer importação:', error);
+        alert('Erro ao desfazer. ' + (error.response?.data?.error || error.message));
+    } finally {
+        setIsSaving(false);
+    }
+};
+
+const handleImportLeads = async (newLeads, duplicateAction, unitId) => {
+    if (!newLeads || newLeads.length === 0) return;
+
+    setIsSaving(true);
+    try {
+        const importId = `imp_${Date.now()}`;
+        const BATCH_SIZE = 100; // Can be larger for bulk endpoint
+
+        // To prevent massive payloads, we might still batch if needed, but 'bulk' endpoint expects one call per transaction usually.
+        // If list is huge (1000+), splitting transactions might be safer but 'Undo' becomes harder (multiple Import IDs).
+        // For now, let's assume reasonable size (up to 500) and send at once.
+
+        const payload = {
+            leads: newLeads.map(l => {
+                // Strip temp ID
+                const { id, ...rest } = l;
+                return rest;
+            }),
+            duplicateAction, // 'overwrite' | 'ignore'
+            unitId,
+            importId
+        };
+
+        const response = await api.post('/crm/leads/import/bulk', payload);
+
+        if (response && response.importId) {
+            setLastImportId(response.importId);
+        }
+
+        // Show Success + Undo Option
+        // Since we use standard alert, we can't show a button easily inside it.
+        // We'll set state to show a "Undo UI" or just alert.
+        // Requirement says "create a function to undo".
+
+        alert(`Processo finalizado!\nCriados: ${response.created || 0}\nAtualizados: ${response.updated || 0}\nIgnorados: ${response.ignored || 0}`);
+
+        fetchLeads(); // Refresh board
+    } catch (error) {
+        console.error('Erro na importação:', error);
+        alert('Ocorreu um erro durante a importação: ' + (error.response?.data?.error || error.message));
+    } finally {
+        setIsSaving(false);
+    }
+};
+
+const handleCreateLead = async () => {
+    if (isSaving) return;
+    // Step 1 Check
+    if (!newLead.name || !newLead.phone || !newLead.source) {
+        alert('Por favor, preencha os campos obrigatórios: Nome, WhatsApp e Fonte.');
+        return;
+    }
+
+    const cleanPhone = newLead.phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+        alert('Por favor, informe um WhatsApp válido com DDD.');
+        return;
+    }
+
+    // Enrollment Check (if status is 'won')
+    if (newLead.status === 'won') {
+        const missing = [];
+        if (!newLead.email) missing.push('Email');
+        if (!newLead.value || parseFloat(newLead.value) <= 0) missing.push('Valor da Matrícula');
+        if (!newLead.city) missing.push('Cidade');
+        if (!newLead.neighborhood) missing.push('Bairro');
+        if (!newLead.responsibleId) missing.push('Responsável');
+
+        if (missing.length > 0) {
+            alert(`Para realizar a matrícula, os seguintes campos são obrigatórios: ${missing.join(', ')}`);
+            setFormStep(1); // Go back to check
+            return;
+        }
+    }
+
+    if (!newLead.responsibleId) {
+        alert('Por favor, selecione um Responsável.');
+        return;
+    }
+
+    let leadTitle = newLead.title;
+    if (!leadTitle.trim()) {
+        leadTitle = `Negócio - ${newLead.name}`;
+    }
+
+    const leadPayload = {
+        ...newLead,
+        unitId: Number(newLead.unitId || user.unitId),
+        value: typeof newLead.value === 'string' ? parseFloat(newLead.value.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) : newLead.value,
+        title: leadTitle,
+        tags: typeof newLead.tags === 'string' ? newLead.tags.split(',').map(t => t.trim()).filter(t => t) : newLead.tags,
+        responsibleId: Number(newLead.responsibleId || user.id),
+    };
+
+    // Auto-schedule task for Immediate Attention if new lead
+    if (!selectedLead && !leadPayload.nextTaskDate) {
+        leadPayload.nextTaskDate = new Date();
+        if (!leadPayload.nextTaskType) leadPayload.nextTaskType = 'Primeiro Contato';
+    }
+
+    setIsSaving(true);
+    try {
+        const token = localStorage.getItem('token');
+        const url = selectedLead
+            ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${selectedLead.id}`
+            : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`;
+        const method = selectedLead ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(leadPayload)
+        });
+
+        if (!res.ok) throw new Error('Falha ao salvar lead');
+        const savedData = await res.json();
+
+        // Re-map fields for immediate UI update if backend returned raw objects or missing names
+        const savedLead = {
+            ...savedData,
+            unit: savedData.unit || newLead.unit,
+            responsible: savedData.responsible || newLead.responsible
+        };
+
+        if (selectedLead) {
+            setLeads(prev => prev.map(l => String(l.id) === String(selectedLead.id) ? savedLead : l));
+        } else {
+            setLeads(prev => [savedLead, ...prev]);
+        }
+        setShowNewLeadModal(false);
+        // Reset form if success
+        setSelectedLead(null); // Clear selection to prevent reopen
+        if (!selectedLead) setNewLead(getInitialLeadState());
+    } catch (error) {
+        console.error(error);
+        alert('Erro ao salvar lead.');
+    } finally {
+        setIsSaving(false);
+    }
+};
+
+const downloadTemplate = () => {
+    const headers = ["Nome", "Telefone", "Email", "Titulo", "Valor", "Empresa", "Cidade", "Bairro", "Origem", "Tags", "Unidade", "Responsavel", "Observacoes"];
+    const row = {
+        "Nome": "João Silva",
+        "Telefone": "5511999999999",
+        "Email": "joao@email.com",
+        "Titulo": "Negociacao João",
+        "Valor": 1500.00,
+        "Empresa": "Empresa X",
+        "Cidade": "São Paulo",
+        "Bairro": "Centro",
+        "Origem": "Instagram",
+        "Tags": "Importado, Verão",
+        "Unidade": "Matriz",
+        "Responsavel": "Nome do Consultor",
+        "Observacoes": "Cliente interessado em curso"
+    };
+
+    const ws = XLSX.utils.json_to_sheet([row], { header: headers });
+
+    // Adjust Column Widths
+    const wscols = headers.map(() => ({ wch: 20 }));
+    ws['!cols'] = wscols;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Modelo Leads");
+    XLSX.writeFile(wb, "modelo_leads_completo.xlsx");
+};
+
+return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', height: '100%', overflow: 'hidden' }}>
+
+        {/* Header Actions iOS Style */}
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                    <h1 style={{ fontSize: '32px', fontWeight: '900', letterSpacing: '-1px', margin: 0 }}>
+                        CRM 360°
+                    </h1>
+                    <p style={{ opacity: 0.5 }}>Gestão completa de leads e funis</p>
+                </div>
+
+                {/* Tab Navigation */}
+                <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px', width: 'fit-content' }}>
+                    <button
+                        onClick={() => setActiveTab('crm')}
+                        style={{
+                            padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                            background: activeTab === 'crm' ? '#fff' : 'transparent',
+                            color: activeTab === 'crm' ? '#000' : '#666',
+                            boxShadow: activeTab === 'crm' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Comercial
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('social')}
+                        style={{
+                            padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                            background: activeTab === 'social' ? '#fff' : 'transparent',
+                            color: activeTab === 'social' ? '#E1306C' : '#666',
+                            boxShadow: activeTab === 'social' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Redes Sociais
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('internal')}
+                        style={{
+                            padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                            background: activeTab === 'internal' ? '#fff' : 'transparent',
+                            color: activeTab === 'internal' ? '#0f172a' : '#666',
+                            boxShadow: activeTab === 'internal' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Interno
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('whatsapp')}
+                        style={{
+                            padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                            background: activeTab === 'whatsapp' ? '#fff' : 'transparent',
+                            color: activeTab === 'whatsapp' ? '#25D366' : '#666',
+                            boxShadow: activeTab === 'whatsapp' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Marketing
+                    </button>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {['crm', 'social', 'internal'].includes(activeTab) && (
+                    <>
+                        <button
+                            onClick={() => setShowFilterModal(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '0 24px',
+                                height: '46px',
+                                borderRadius: '99px',
+                                background: 'rgba(0,0,0,0.05)',
+                                marginRight: '8px',
+                                boxSizing: 'border-box',
+                                border: 'none',
+                                fontWeight: '900',
+                                fontSize: '14px',
+                                color: '#1C1C1E',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <Filter size={18} color="#1C1C1E" />
+                            Filtrar
+                            {Object.values(activeFilters).filter(v => v !== 'all' && v !== '').length > 0 && (
+                                <span style={{ background: 'var(--ios-teal)', color: 'white', fontSize: '10px', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {Object.values(activeFilters).filter(v => v !== 'all' && v !== '').length}
+                                </span>
+                            )}
+                        </button>
+                        <button onClick={handleOpenNewLead} className="btn-primary">
+                            <Plus size={18} /> Novo Lead
+                        </button>
+                    </>
+                )}
+                <button
+                    onClick={() => setActiveTab(activeTab === 'crm' ? 'whatsapp' : 'crm')}
+                    style={{
+                        padding: '12px 24px', borderRadius: '99px', border: 'none',
+                        background: 'rgba(0,0,0,0.05)', fontWeight: '800', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '8px'
+                    }}
+                >
+                    {activeTab === 'crm' ? <MessageSquare size={18} /> : <User size={18} />}
+                    {activeTab === 'crm' ? 'Marketing' : 'Pipeline'}
+                </button>
+                {activeTab === 'crm' && (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {lastImportId && (
+                            <div className="animate-in slide-in-from-right duration-300" style={{
+                                background: '#F59E0B',
+                                color: 'white',
+                                padding: '4px 12px',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                marginRight: '8px'
+                            }}>
+                                <span>Desfazer última importação?</span>
+                                <button
+                                    onClick={() => handleUndoImport(true)}
+                                    style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800' }}>
+                                    Sim
+                                </button>
+                                <button
+                                    onClick={() => handleUndoImport(false)}
+                                    style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '2px 8px', borderRadius: '4px', cursor: 'pointer' }}>
+                                    Não
+                                </button>
+                            </div>
+                        )}
+
+                        <button onClick={downloadTemplate} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#8E8E93' }} title="Modelo Excel">
+                            <Download size={20} />
+                        </button>
+                        <button onClick={() => setShowImportModal(true)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#8E8E93' }} title="Importar">
+                            <Upload size={20} />
+                        </button>
+                    </div>
+                )}
+            </div>
+        </header>
+
+
+
+        {/* CRM Content */}
+        {
+            activeTab === 'crm' && (
+                <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                        <div style={{
+                            display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '16px',
+                            flex: 1, paddingRight: '20px'
+                        }}>
+                            {columnOrder.map(colId => {
+                                const column = columns[colId];
+                                const colLeads = getLeadsByStatus(colId);
+
+                                return (
+                                    <div key={colId} style={{
+                                        minWidth: '310px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: 'calc(100vh - 240px)',
+                                        maxHeight: '100%',
+                                        background: `${column.color}05`, // Very light tint
+                                        borderRadius: '24px',
+                                        border: `1px solid ${column.color}20`,
+                                        transition: 'all 0.3s ease',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                                    }}>
+                                        {/* Header with Solid Background */}
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                            padding: '14px 16px',
+                                            flexShrink: 0,
+                                            background: column.color,
+                                            color: 'white',
+                                            boxShadow: `0 4px 12px ${column.color}30`
+                                        }}>
+                                            <div style={{
+                                                background: 'white',
+                                                padding: '6px',
+                                                borderRadius: '10px',
+                                                color: column.color,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}>
+                                                {column.icon ? <column.icon size={16} /> : <div style={{ width: 16, height: 16 }} />}
+                                            </div>
+                                            <span style={{ fontWeight: '900', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                                                {column.title}
+                                            </span>
+                                            <span style={{
+                                                marginLeft: 'auto',
+                                                background: 'rgba(255,255,255,0.2)',
+                                                color: 'white',
+                                                padding: '2px 10px',
+                                                borderRadius: '12px',
+                                                fontSize: '11px',
+                                                fontWeight: '900',
+                                                backdropFilter: 'blur(4px)'
+                                            }}>
+                                                {colLeads.length}
+                                            </span>
+                                        </div>
+
+                                        <Droppable droppableId={colId}>
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    {...provided.droppableProps}
+                                                    ref={provided.innerRef}
+                                                    className="custom-scrollbar"
+                                                    style={{
+                                                        flex: 1,
+                                                        overflowY: 'auto',
+                                                        padding: '16px 10px',
+                                                        background: snapshot.isDraggingOver ? `${column.color}10` : 'transparent',
+                                                        transition: '0.2s',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: '8px'
+                                                    }}
+                                                >
+                                                    {colLeads.map((lead, index) => (
+                                                        <KanbanCard
+                                                            key={lead.id}
+                                                            lead={lead}
+                                                            index={index}
+                                                            statusColor={column.color}
+                                                            onClick={() => handleOpenEditLead(lead)}
+                                                            onQuickAction={handleQuickAction}
+                                                        />
+                                                    ))}
+                                                    {provided.placeholder}
+                                                </div>
+                                            )}
+                                        </Droppable>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </DragDropContext>
+                </div>
+            )
+        }
+
+        {/* Move Stage Modal iOS Style */}
+        {
+            moveModal.isOpen && (
+                <VoxModal
+                    isOpen={true}
+                    onClose={() => setMoveModal({ ...moveModal, isOpen: false })}
+                    title={`Mover para ${columns[moveModal.destinationId]?.title}`}
+                    width="450px"
+                    footer={
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setMoveModal({ ...moveModal, isOpen: false })} style={{ background: '#F2F2F7', border: 'none', padding: '12px 24px', borderRadius: '99px', fontWeight: '700', cursor: 'pointer' }}>
+                                Cancelar
+                            </button>
+                            <button onClick={confirmMove} className="btn-primary">
+                                Confirmar Mudança
+                            </button>
+                        </div>
+                    }
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <p style={{ opacity: 0.6, fontSize: '14px', lineHeight: '1.5' }}>
+                            {moveModal.destinationId === 'connecting' ? 'Como foi a tentativa de contato? O sistema irá agendar a próxima tarefa automaticamente.' :
+                                'Atualize as informações do lead para prosseguir com a mudança de estágio no funil.'}
+                        </p>
+
+                        {moveModal.destinationId === 'connecting' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Resultado</label>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            onClick={() => setMoveData(prev => ({ ...prev, outcome: 'success' }))}
+                                            style={{
+                                                flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid',
+                                                borderColor: moveData.outcome === 'success' ? 'var(--ios-teal)' : 'rgba(0,0,0,0.1)',
+                                                background: moveData.outcome === 'success' ? 'rgba(48, 176, 199, 0.1)' : '#fff',
+                                                color: moveData.outcome === 'success' ? 'var(--ios-teal)' : '#000',
+                                                fontWeight: 'bold', cursor: 'pointer', transition: '0.2s'
+                                            }}
+                                        >
+                                            Sucesso
+                                        </button>
+                                        <button
+                                            onClick={() => setMoveData(prev => ({ ...prev, outcome: 'failure' }))}
+                                            style={{
+                                                flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid',
+                                                borderColor: moveData.outcome === 'failure' ? '#FF3B30' : 'rgba(0,0,0,0.1)',
+                                                background: moveData.outcome === 'failure' ? 'rgba(255, 59, 48, 0.1)' : '#fff',
+                                                color: moveData.outcome === 'failure' ? '#FF3B30' : '#000',
+                                                fontWeight: 'bold', cursor: 'pointer', transition: '0.2s'
+                                            }}
+                                        >
+                                            Insucesso
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {moveData.outcome === 'success' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={moveData.scheduledMeeting === 'yes'}
+                                                onChange={e => setMoveData(prev => ({ ...prev, scheduledMeeting: e.target.checked ? 'yes' : 'no' }))}
+                                            />
+                                            Houve agendamento de reunião?
+                                        </label>
+                                        {moveData.scheduledMeeting === 'yes' && (
+                                            <input
+                                                type="datetime-local"
+                                                value={moveData.appointmentDate}
+                                                onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                                {moveData.outcome === 'failure' && (
+                                    <div style={{ background: '#FFFBEB', padding: '12px', borderRadius: '12px', border: '1px solid #FEF3C7', fontSize: '12px', color: '#92400E' }}>
+                                        <div style={{ marginBottom: '8px' }}>
+                                            <strong>Retentativa Automática</strong> (Padrão: +4h ou dia útil 09:00)
+                                        </div>
+                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Data e Hora da Próxima Tarefa</label>
+                                        <input
+                                            type="datetime-local"
+                                            className="input-field"
+                                            value={moveData.nextTaskDate}
+                                            onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })}
+                                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                                        />
+                                    </div>
+                                )}
+
+                                {moveData.outcome === 'success' && moveData.scheduledMeeting === 'no' && (
+                                    <div style={{ marginTop: '12px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Próximo Passo / Tarefa (Opcional)</label>
+                                        <input
+                                            type="datetime-local"
+                                            className="input-field"
+                                            value={moveData.nextTaskDate || ''}
+                                            onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })}
+                                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                                        />
+                                        <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Defina uma data se quiser criar uma tarefa de acompanhamento.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {(moveModal.destinationId === 'negotiation' || moveModal.destinationId === 'scheduled' || moveModal.destinationId === 'closed' || moveModal.destinationId === 'no_show') && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {moveModal.destinationId === 'negotiation' && (
+                                    <div>
+                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Valor Proposto</label>
+                                        <input
+                                            type="text"
+                                            value={moveData.proposedValue}
+                                            onChange={e => setMoveData({ ...moveData, proposedValue: formatCurrency(e.target.value) })}
+                                            placeholder="R$ 0,00"
+                                            className="input-field"
+                                        />
+                                    </div>
+                                )}
+                                {moveModal.destinationId === 'negotiation' && (
+                                    <div>
+                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Próximo Contato</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={moveData.nextTaskDate || ''}
+                                            onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })}
+                                            className="input-field"
+                                        />
+                                    </div>
+                                )}
+                                {moveModal.destinationId === 'scheduled' && (
+                                    <div>
+                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Data/Hora</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={moveData.appointmentDate}
+                                            onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+                                {moveModal.destinationId === 'no_show' && (
+                                    <div>
+                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Nova Data para Retentativa</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={moveData.nextTaskDate}
+                                            onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })}
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Observações</label>
+                                    <textarea
+                                        value={moveData.notes}
+                                        onChange={e => setMoveData({ ...moveData, notes: e.target.value })}
+                                        placeholder="Descreva o que aconteceu..."
+                                        style={{ height: '80px' }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </VoxModal>
+            )
+        }
+
+        {/* Modal de Filtros Avançados */}
+        {showFilterModal && (
+            <VoxModal
+                isOpen={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                title="Filtrar Leads"
+                width="450px"
+                footer={
+                    <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                        <button
+                            onClick={() => {
+                                setActiveFilters({
+                                    unitId: 'all',
+                                    responsibleId: 'all',
+                                    source: 'all',
+                                    temperature: 'all',
+                                    startDate: '',
+                                    endDate: ''
+                                });
+                            }}
+                            style={{ flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid #e5e5ea', background: '#fff', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                            Limpar Todos
+                        </button>
+                        <button
+                            onClick={() => setShowFilterModal(false)}
+                            className="btn-primary"
+                            style={{ flex: 1 }}
+                        >
+                            Aplicar Filtros
+                        </button>
+                    </div>
+                }
+            >
+                <div className="space-y-4" style={{ padding: '8px 0' }}>
+                    {/* Unidade (Apenas para Global) */}
+                    {GLOBAL_VIEW_ROLES.includes(Number(user?.roleId)) && (
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}><MapPin size={14} /> Unidade</label>
+                            <select
+                                className="input-field"
+                                value={activeFilters.unitId}
+                                onChange={e => setActiveFilters({ ...activeFilters, unitId: e.target.value })}
+                            >
+                                <option value="all">Todas as Unidades</option>
+                                {units.map(unit => (
+                                    <option key={unit.id} value={unit.id}>{unit.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Responsável */}
+                    <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}><User size={14} /> Responsável</label>
+                        <select
+                            className="input-field"
+                            value={activeFilters.responsibleId}
+                            onChange={e => setActiveFilters({ ...activeFilters, responsibleId: e.target.value })}
+                        >
+                            <option value="all">Qualquer Responsável</option>
+                            {consultants
+                                .filter(c => activeFilters.unitId === 'all' || Number(c.unitId) === Number(activeFilters.unitId))
+                                .map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                        </select>
+                    </div>
+
+                    {/* Fonte */}
+                    <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}><Search size={14} /> Fonte Comercial</label>
+                        <select
+                            className="input-field"
+                            value={activeFilters.source}
+                            onChange={e => setActiveFilters({ ...activeFilters, source: e.target.value })}
+                        >
+                            <option value="all">Todas as Fontes</option>
+                            <option>Orgânico</option>
+                            <option>Instagram</option>
+                            <option>Google Ads</option>
+                            <option>Facebook</option>
+                            <option>Indicação</option>
+                            <option>Fachada</option>
+                            <option>Evento</option>
+                        </select>
+                    </div>
+
+                    {/* Temperatura */}
+                    <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}><Thermometer size={14} /> Temperatura</label>
+                        <select
+                            className="input-field"
+                            value={activeFilters.temperature}
+                            onChange={e => setActiveFilters({ ...activeFilters, temperature: e.target.value })}
+                        >
+                            <option value="all">Qualquer Temperatura</option>
+                            <option value="hot">Quente 🔥</option>
+                            <option value="warm">Morno ☕</option>
+                            <option value="cold">Frio ❄️</option>
+                        </select>
+                    </div>
+
+                    {/* Data Range */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}><Calendar size={14} /> De:</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={activeFilters.startDate}
+                                onChange={e => setActiveFilters({ ...activeFilters, startDate: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}><Calendar size={14} /> Até:</label>
+                            <input
+                                type="date"
+                                className="input-field"
+                                value={activeFilters.endDate}
+                                onChange={e => setActiveFilters({ ...activeFilters, endDate: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </VoxModal>
+        )}
+
+        {/* New Lead Modal */}
+        {/* Import Leads Modal */}
+        <ImportLeadsModal
+            isOpen={showImportModal}
+            onClose={() => setShowImportModal(false)}
+            onImport={handleImportLeads}
+            consultants={consultants}
+            user={user}
+            units={units}
+        />
+
+
+
+        {
+            showNewLeadModal && (
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)', zIndex: 9999 }}>
+                    <div className="modal-content" style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', padding: '0', border: 'none', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                        <div className="modal-header" style={{ position: 'relative', background: 'linear-gradient(to right, #4f46e5, #8b5cf6)', padding: '24px 24px 32px', color: 'white' }}>
+                            <div style={{ paddingRight: '48px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <h3 style={{ color: 'white', margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>{selectedLead ? 'Editar Lead' : 'Novo Lead'}</h3>
+                                    {newLead.aiStatus === 'rescue' && (
+                                        <span style={{ background: '#fef2f2', color: '#ef4444', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', border: '1px solid #fee2e2' }}>
+                                            <Brain size={12} /> IA: RESGATE
+                                        </span>
+                                    )}
+                                    {/* Status Buttons */}
+                                    {/* Status Buttons */}
+                                    <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                                        <button
+                                            onClick={() => {
+                                                const now = new Date();
+                                                const timeStr = now.toLocaleDateString('pt-BR') + ' ' + String(now.getHours()).padStart(2, '0') + 'h' + String(now.getMinutes()).padStart(2, '0');
+
+                                                const hist = JSON.parse(newLead.history || '[]');
+                                                hist.push({
+                                                    date: now.toISOString(),
+                                                    actor: 'HUMAN',
+                                                    action: 'call_success',
+                                                    content: `${timeStr} - Ligação atendida`
+                                                });
+
+                                                const updates = {
+                                                    history: JSON.stringify(hist),
+                                                    nextTaskType: 'Reunião Agendada'
+                                                };
+
+                                                if (newLead.status === 'new') {
+                                                    updates.status = 'connecting';
+                                                }
+
+                                                setNewLead(prev => ({ ...prev, ...updates }));
+                                                setFormStep(3);
+                                            }}
+                                            className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md transition-all hover:scale-105 active:scale-95"
+                                            style={{ width: '32px', height: '32px', border: '2px solid rgba(255,255,255,0.2)' }}
+                                            title="Ligação Atendida"
+                                        >
+                                            <Phone size={14} fill="currentColor" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const now = new Date();
+                                                const timeStr = now.toLocaleDateString('pt-BR') + ' ' + String(now.getHours()).padStart(2, '0') + 'h' + String(now.getMinutes()).padStart(2, '0');
+
+                                                const currentAttempts = (newLead.attempts || 0) + 1;
+                                                const hist = JSON.parse(newLead.history || '[]');
+
+                                                // Defatult Logic
+                                                let updates = {
+                                                    attempts: currentAttempts,
+                                                    status: newLead.status // default keep status
+                                                };
+
+                                                if (currentAttempts >= 5) {
+                                                    // DISCARD LEAD
+                                                    hist.push({
+                                                        date: now.toISOString(),
+                                                        actor: 'HUMAN',
+                                                        action: 'archive',
+                                                        content: `${timeStr} - Ligação não atendida. 5ª tentativa sem sucesso. Lead DESCARTADO (Encerrado).`
+                                                    });
+                                                    updates.status = 'closed';
+                                                    updates.history = JSON.stringify(hist);
+                                                    updates.nextTaskDate = null; // No next task
+                                                    updates.nextTaskType = 'Sem Próxima Tarefa';
+                                                } else {
+                                                    // SCHEDULE NEXT ATTEMPT
+                                                    hist.push({
+                                                        date: now.toISOString(),
+                                                        actor: 'HUMAN',
+                                                        action: 'call_fail',
+                                                        content: `${timeStr} - Ligação não atendida (${currentAttempts}ª tentativa)`
+                                                    });
+
+                                                    const nextDate = calculateNextAttempt(now);
+                                                    const tzOffset = nextDate.getTimezoneOffset() * 60000;
+                                                    const localISOTime = (new Date(nextDate - tzOffset)).toISOString().slice(0, 16);
+
+                                                    updates.history = JSON.stringify(hist);
+                                                    updates.nextTaskDate = localISOTime;
+                                                    updates.nextTaskType = 'Nova Tentativa';
+
+                                                    if (newLead.status === 'new') {
+                                                        updates.status = 'connecting';
+                                                    }
+                                                }
+
+                                                setNewLead(prev => ({ ...prev, ...updates }));
+                                                setFormStep(3); // Jump to History/Task to review
+                                            }}
+                                            className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-all hover:scale-105 active:scale-95"
+                                            style={{ width: '32px', height: '32px', border: '2px solid rgba(255,255,255,0.2)' }}
+                                            title={`Não Atendeu (${(newLead.attempts || 0) + 1}ª tentativa)`}
+                                        >
+                                            <PhoneOff size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <p style={{ color: 'rgba(255,255,255,0.9)', margin: '4px 0 0', fontSize: '0.875rem' }}>{selectedLead ? 'Atualize as informações do lead.' : 'Adicione um potencial cliente ao CRM.'}</p>
+                            </div>
+
+                            {/* Botão Fechar - Canto Superior Direito */}
+                            <button
+                                onClick={() => setShowNewLeadModal(false)}
+                                style={{
+                                    position: 'absolute',
+                                    top: '16px',
+                                    right: '16px',
+                                    color: 'white',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '50%',
+                                    padding: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'background 0.2s'
+                                }}
+                                className="hover:bg-white/20"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            {/* Botões Nova Tentativa - Canto Inferior Direito BUTTONS */}
+                            {selectedLead && ['connecting', 'connected', 'scheduled', 'negotiation', 'no_show'].includes(selectedLead.status) && (
+                                <div style={{ position: 'absolute', bottom: '-28px', right: '24px', zIndex: 20, display: 'flex', gap: '16px' }}>
+                                    {/* FAILURE BUTTON */}
+                                    <button
+                                        onClick={() => {
+                                            setShowNewLeadModal(false);
+                                            handleQuickAction(selectedLead, 'failure');
+                                        }}
+                                        style={{
+                                            width: '56px',
+                                            height: '56px',
+                                            borderRadius: '50%',
+                                            background: '#ef4444', // Red 500
+                                            color: 'white',
+                                            border: '4px solid white',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            boxShadow: '0 8px 20px rgba(239, 68, 68, 0.4)',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s'
+                                        }}
+                                        className="hover:scale-105 active:scale-95"
+                                        title="Insucesso"
+                                    >
+                                        <Phone size={24} fill="currentColor" style={{ transform: 'rotate(135deg)' }} />
+                                    </button>
+
+                                    {/* SUCCESS BUTTON */}
+                                    <button
+                                        onClick={() => {
+                                            setShowNewLeadModal(false);
+                                            handleQuickAction(selectedLead, 'success');
+                                        }}
+                                        style={{
+                                            width: '56px',
+                                            height: '56px',
+                                            borderRadius: '50%',
+                                            background: '#22c55e', // Green 500
+                                            color: 'white',
+                                            border: '4px solid white',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            boxShadow: '0 8px 20px rgba(22, 163, 74, 0.4)',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s'
+                                        }}
+                                        className="hover:scale-105 active:scale-95"
+                                        title="Sucesso"
+                                    >
+                                        <Phone size={24} fill="currentColor" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ padding: '24px' }}>
+                            {/* PROGRESS BAR */}
+                            <div style={{ display: 'flex', gap: '4px', marginBottom: '24px' }}>
+                                {[1, 2, 3, 4, 5].map(s => (
+                                    <div key={s} style={{ flex: 1, h: '4px', height: '4px', borderRadius: '2px', background: formStep >= s ? 'var(--primary)' : '#e2e8f0', transition: 'all 0.3s' }}></div>
+                                ))}
+                            </div>
+
+                            {/* TAB NAVIGATION */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '4px',
+                                background: '#f1f5f9',
+                                padding: '4px',
+                                borderRadius: '12px',
+                                marginBottom: '24px',
+                                position: 'sticky',
+                                top: '0',
+                                zIndex: 10
+                            }}>
+                                {[
+                                    { id: 1, label: 'Geral', icon: User },
+                                    { id: 2, label: 'Qualificação', icon: DollarSign },
+                                    { id: 3, label: 'Pessoal', icon: MapPin },
+                                    { id: 4, label: 'IA', icon: Brain },
+                                    { id: 5, label: 'Histórico', icon: Clock }
+                                ].map(tab => {
+                                    const Icon = tab.icon;
+                                    const isActive = formStep === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            type="button"
+                                            onClick={() => setFormStep(tab.id)}
+                                            style={{
+                                                flex: 1,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                padding: '8px 4px',
+                                                borderRadius: '8px',
+                                                border: 'none',
+                                                background: isActive ? 'white' : 'transparent',
+                                                color: isActive ? '#4f46e5' : '#64748b',
+                                                boxShadow: isActive ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <Icon size={18} />
+                                            <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase' }}>{tab.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* TAB 1: IDENTIFICAÇÃO */}
+                            {formStep === 1 && (
+                                <div className="animate-fade-in space-y-4">
+                                    <div className="form-group" style={{
+                                        background: newLead.aiStatus === 'rescue' ? '#eff6ff' : 'transparent',
+                                        padding: newLead.aiStatus === 'rescue' ? '12px' : '0',
+                                        borderRadius: '12px',
+                                        border: newLead.aiStatus === 'rescue' ? '1px dashed #3b82f6' : 'none'
+                                    }}>
+                                        {newLead.aiStatus === 'rescue' && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: '#1d4ed8' }}>
+                                                <Brain size={16} />
+                                                <span style={{ fontSize: '11px', fontWeight: '900' }}>IA MONITORANDO EM MODO RESGATE</span>
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}><User size={16} /> Nome do Lead <span className="text-red-500">*</span></label>
+                                                <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '2px', borderRadius: '8px' }}>
+                                                    {[
+                                                        { id: 'hot', label: 'Quente', color: '#ef4444' },
+                                                        { id: 'warm', label: 'Morno', color: '#f59e0b' },
+                                                        { id: 'cold', label: 'Frio', color: '#0ea5e9' }
+                                                    ].map(temp => {
+                                                        const isActive = newLead.temperature === temp.id;
+                                                        return (
+                                                            <div
+                                                                key={temp.id}
+                                                                onClick={() => setNewLead({ ...newLead, temperature: temp.id })}
+                                                                style={{
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    padding: '4px 10px',
+                                                                    borderRadius: '6px',
+                                                                    transition: 'all 0.2s',
+                                                                    background: isActive ? 'white' : 'transparent',
+                                                                    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                                                    border: isActive ? '1px solid #e2e8f0' : '1px solid transparent'
+                                                                }}
+                                                            >
+                                                                <Thermometer
+                                                                    size={12}
+                                                                    color={temp.color}
+                                                                    strokeWidth={3}
+                                                                />
+                                                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: isActive ? '#1e293b' : '#64748b', textTransform: 'uppercase' }}>
+                                                                    {temp.label}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                            <input className="input-field" placeholder="Nome Completo" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Phone size={16} /> Contato <span className="text-red-500">*</span></label>
+                                            <input className="input-field" placeholder="(00) 00000-0000" value={newLead.phone} onChange={e => setNewLead({ ...newLead, phone: formatPhone(e.target.value) })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Mail size={16} /> Email {newLead.status === 'won' && <span className="text-red-500">*</span>}</label>
+                                            <input className="input-field" type="email" placeholder="email@exemplo.com" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Search size={16} /> Fonte Comercial <span className="text-red-500">*</span></label>
+                                            <select className="input-field" value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })}>
+                                                <option>Orgânico</option>
+                                                <option>Instagram</option>
+                                                <option>Google Ads</option>
+                                                <option>Facebook</option>
+                                                <option>Indicação</option>
+                                                <option>Fachada</option>
+                                                <option>Evento</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Tag size={16} /> Campanha</label>
+                                            <input className="input-field" placeholder="Ex: Black Friday" value={newLead.campaign} onChange={e => setNewLead({ ...newLead, campaign: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><User size={16} /> Responsável <span className="text-red-500">*</span></label>
+                                            <select
+                                                className="input-field"
+                                                value={newLead.responsibleId || user.id}
+                                                onChange={e => {
+                                                    const selectedId = e.target.value;
+                                                    const selectedUser = consultants.find(c => String(c.id) === String(selectedId));
+                                                    setNewLead({
+                                                        ...newLead,
+                                                        responsibleId: selectedId,
+                                                        responsible: selectedUser ? selectedUser.name : ''
+                                                    });
+                                                }}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {consultants.map(consultant => (
+                                                    <option key={consultant.id} value={consultant.id}>
+                                                        {consultant.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={16} /> Unidade</label>
+                                            <input className="input-field" value={newLead.unit || ''} disabled style={{ background: '#f8fafc', borderStyle: 'solid', borderColor: '#e2e8f0' }} />
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                            )}
+
+                            {/* TAB 2: QUALIFICAÇÃO & PROPOSTA */}
+                            {formStep === 2 && (
+                                <div className="animate-fade-in space-y-4">
+
+                                    <div className="form-group">
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Tag size={16} /> Tags Internas</label>
+                                        <input className="input-field" placeholder="Ex: Urgente, Verão..." value={newLead.tags} onChange={e => setNewLead({ ...newLead, tags: e.target.value })} />
+                                    </div>
+
+                                    <div style={{ marginTop: '16px', padding: '16px', background: '#f0fdfa', borderRadius: '16px', border: '1px solid #ccfbf1' }}>
+                                        <h4 style={{ fontSize: '13px', fontWeight: '900', color: '#0f766e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><Brain size={16} /> Qualificação SPIN</h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <textarea style={{ fontSize: '12px', minHeight: '60px' }} className="input-field" placeholder="Situação..." value={newLead.spinData?.situation || ''} onChange={e => setNewLead({ ...newLead, spinData: { ...newLead.spinData, situation: e.target.value } })} />
+                                            <textarea style={{ fontSize: '12px', minHeight: '60px' }} className="input-field" placeholder="Dor (Pain)..." value={newLead.spinData?.pain || ''} onChange={e => setNewLead({ ...newLead, spinData: { ...newLead.spinData, pain: e.target.value } })} />
+                                            <textarea style={{ fontSize: '12px', minHeight: '60px' }} className="input-field" placeholder="Implicação..." value={newLead.spinData?.implication || ''} onChange={e => setNewLead({ ...newLead, spinData: { ...newLead.spinData, implication: e.target.value } })} />
+                                            <textarea style={{ fontSize: '12px', minHeight: '60px' }} className="input-field" placeholder="Necessidade..." value={newLead.spinData?.need || ''} onChange={e => setNewLead({ ...newLead, spinData: { ...newLead.spinData, need: e.target.value } })} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginTop: '16px', padding: '16px', background: '#ecfdf5', borderRadius: '16px', border: '1px solid #d1fae5' }}>
+                                        <h4 style={{ fontSize: '13px', fontWeight: '900', color: '#065f46', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><DollarSign size={16} /> Proposta Comercial</h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                            <select className="input-field" style={{ fontSize: '12px' }} value={newLead.courseInterest || ''} onChange={e => setNewLead({ ...newLead, courseInterest: e.target.value })}>
+                                                <option value="">Selecione o Curso...</option>
+                                                {courses.map(course => (
+                                                    <option key={course.id} value={course.name}>{course.name}</option>
+                                                ))}
+                                            </select>
+                                            <input className="input-field" style={{ fontSize: '12px' }} placeholder="Valor da Proposta" value={newLead.proposalValue || ''} onChange={e => setNewLead({ ...newLead, proposalValue: formatCurrency(e.target.value) })} />
+                                        </div>
+                                        <textarea style={{ fontSize: '12px', minHeight: '60px' }} className="input-field" placeholder="Condições de Pagamento..." value={newLead.paymentConditions || ''} onChange={e => setNewLead({ ...newLead, paymentConditions: e.target.value })} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 3: DADOS PESSOAIS & ENDEREÇO */}
+                            {formStep === 3 && (
+                                <div className="animate-fade-in space-y-4">
+                                    <div className="form-group">
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Building size={16} /> Empresa</label>
+                                        <input className="input-field" placeholder="Nome da Empresa" value={newLead.company} onChange={e => setNewLead({ ...newLead, company: e.target.value })} />
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><User size={16} /> Profissão</label>
+                                            <input className="input-field" placeholder="Ex: Advogado" value={newLead.profession} onChange={e => setNewLead({ ...newLead, profession: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Calendar size={16} /> Data de Nascimento</label>
+                                            <input className="input-field" type="date" value={newLead.birthDate} onChange={e => setNewLead({ ...newLead, birthDate: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Building size={16} /> CPF</label>
+                                            <input className="input-field" placeholder="000.000.000-00" value={newLead.cpf} onChange={e => setNewLead({ ...newLead, cpf: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Building size={16} /> RG</label>
+                                            <input className="input-field" placeholder="0.000.000" value={newLead.rg} onChange={e => setNewLead({ ...newLead, rg: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={16} /> Endereço Completo</label>
+                                        <input className="input-field" placeholder="Rua, Número, Compl" value={newLead.address} onChange={e => setNewLead({ ...newLead, address: e.target.value })} />
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={16} /> Bairro {newLead.status === 'won' && <span className="text-red-500">*</span>}</label>
+                                            <input className="input-field" placeholder="Ex: Centro" value={newLead.neighborhood} onChange={e => setNewLead({ ...newLead, neighborhood: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={16} /> Cidade</label>
+                                            <input className="input-field" placeholder="Ex: São Paulo" value={newLead.city} onChange={e => setNewLead({ ...newLead, city: e.target.value })} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 4: INTELIGÊNCIA ARTIFICIAL (IA) */}
+                            {formStep === 4 && (
+                                <div className="animate-fade-in space-y-6">
+                                    <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', borderRadius: '20px', padding: '24px', color: 'white', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 10px 25px -5px rgba(79, 70, 229, 0.4)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '14px' }}>
+                                                <Brain size={28} />
+                                            </div>
+                                            <div>
+                                                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>Vox IA: Inteligência de Vendas</h3>
+                                                <p style={{ margin: 0, fontSize: '12px', opacity: 0.9 }}>Monitoramento e Recuperação de Leads em tempo real.</p>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <div style={{ background: 'rgba(255,255,255,0.1)', padding: '16px', borderRadius: '16px', backdropFilter: 'blur(5px)' }}>
+                                                <span style={{ fontSize: '10px', fontWeight: '800', opacity: 0.8, textTransform: 'uppercase' }}>Status da IA</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: newLead.aiStatus === 'rescue' ? '#ef4444' : '#22c55e', animation: 'pulse 2s infinite' }}></div>
+                                                    <span style={{ fontSize: '14px', fontWeight: '900' }}>
+                                                        {newLead.aiStatus === 'rescue' ? 'MODO RESGATE ATIVO' : 'MANTENDO CADÊNCIA'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.1)', padding: '16px', borderRadius: '16px', backdropFilter: 'blur(5px)' }}>
+                                                <span style={{ fontSize: '10px', fontWeight: '800', opacity: 0.8, textTransform: 'uppercase' }}>Vulnerabilidade</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                                    <span style={{ fontSize: '14px', fontWeight: '900' }}>{newLead.aiStatus === 'rescue' ? 'Alta' : 'Baixa'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                            <h4 style={{ fontSize: '13px', fontWeight: '900', color: '#1e293b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}><Brain size={16} /> Última Análise da IA</h4>
+                                            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+                                                {newLead.aiStatus === 'rescue'
+                                                    ? "O algoritmo detectou uma queda na temperatura do lead. Iniciando estratégia de resgate em múltiplos canais."
+                                                    : "O lead está seguindo a cadência padrão com boa taxa de engajamento."}
+                                            </p>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Brain size={16} /> Notas de Resgate (IA)</label>
+                                            <textarea
+                                                className="input-field"
+                                                rows={3}
+                                                placeholder="Anotações geradas automaticamente pela IA..."
+                                                value={newLead.contactSummary || ''}
+                                                readOnly
+                                                style={{ background: '#f8fafc', fontStyle: 'italic', fontSize: '12px' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 5: PRÓXIMO PASSO & HISTÓRICO */}
+                            {formStep === 5 && (
+                                <div className="animate-fade-in space-y-4">
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Calendar size={16} /> Próxima Tarefa</label>
+                                            <input type="datetime-local" className="input-field" value={newLead.nextTaskDate || ''} onChange={e => setNewLead({ ...newLead, nextTaskDate: e.target.value })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Check size={16} /> Tipo</label>
+                                            <select className="input-field" value={newLead.nextTaskType} onChange={e => setNewLead({ ...newLead, nextTaskType: e.target.value })}>
+                                                <option>Nova Tentativa</option>
+                                                <option>Agendamento</option>
+                                                <option>Retomar Contato</option>
+                                                <option>Negociar</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={16} /> Observações de Matrícula</label>
+                                        <textarea className="input-field" rows={4} placeholder="Detalhes importantes do atendimento..." value={newLead.observation} onChange={e => setNewLead({ ...newLead, observation: e.target.value })} />
+                                    </div>
+
+                                    {/* History Log Section */}
+                                    {selectedLead && (
+                                        <div className="form-group pt-4 border-t border-gray-100">
+                                            <label className="flex items-center gap-2 text-sm font-bold text-gray-600 mb-2">
+                                                <Clock size={16} /> Histórico Completo
+                                            </label>
+                                            <div className="bg-slate-50 rounded-lg border border-slate-200 h-[250px] overflow-y-auto p-2 space-y-2">
+                                                {(() => {
+                                                    let history = [];
+                                                    try {
+                                                        history = selectedLead.history ? (typeof selectedLead.history === 'string' ? JSON.parse(selectedLead.history) : selectedLead.history) : [];
+                                                    } catch (e) { history = [] }
+
+                                                    if (!Array.isArray(history)) history = [];
+
+                                                    if (history.length === 0) return <div className="text-center py-8 text-gray-400 text-xs">Nenhum histórico disponível</div>;
+
+                                                    return [...history].reverse().map((item, i) => (
+                                                        <div key={i} className="bg-white p-3 rounded-md border border-gray-200 shadow-sm relative pl-3">
+                                                            <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${item.action === 'move_stage' ? 'bg-indigo-500' : 'bg-gray-400'}`}></div>
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">{item.action === 'create' ? 'Novo Lead' : item.actor === 'HUMAN' ? 'Usuário' : 'Sistema'}</span>
+                                                                <span className="text-[10px] text-gray-400 font-mono">{new Date(item.date).toLocaleString('pt-BR')}</span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 leading-relaxed">{item.content}</p>
+                                                            {item.details && typeof item.details === 'string' && <p className="text-xs text-gray-500 mt-1 italic">{item.details}</p>}
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                        </div>
+                        {/* NAVIGATION & ACTIONS */}
+                        <div style={{ marginTop: 'auto', padding: '20px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '12px', background: '#f8fafc' }}>
+                            {selectedLead && formStep === 1 && (
+                                <button
+                                    className="btn-secondary transition-all hover:scale-105"
+                                    style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', width: '48px', padding: '0', justifyContent: 'center' }}
+                                    onClick={handleDeleteLead}
+                                    title="Excluir Lead"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
+
+                            <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => formStep > 1 ? setFormStep(formStep - 1) : setShowNewLeadModal(false)}>
+                                {formStep === 1 ? 'Cancelar' : '< Voltar'}
+                            </button>
+
+                            <button
+                                className="btn-primary"
+                                style={{ flex: 1, justifyContent: 'center', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                                onClick={() => {
+                                    if (selectedLead) {
+                                        handleCreateLead();
+                                    } else {
+                                        if (formStep < 5) setFormStep(formStep + 1);
+                                        else handleCreateLead();
+                                    }
+                                }}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>Salvando...</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Logic: If Edit Mode, allow Save on any step. If New Lead, require flow or check validity */}
+                                        {(selectedLead || formStep === 5) ? (
+                                            <div className="flex items-center gap-2" onClick={handleCreateLead}>
+                                                <Check size={18} />
+                                                <span>{selectedLead ? 'Salvar Alterações' : 'Cadastrar Lead'}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2" onClick={() => setFormStep(formStep + 1)}>
+                                                <span>Próximo</span>
+                                                <ArrowRight size={18} />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div >
+            )
+        }
+
+        {/* DELETE MODAL */}
+        <VoxModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            title="Excluir Lead"
+            width="400px"
+            theme="danger"
+        >
+            <div className="text-center p-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-short">
+                    <Trash2 className="text-red-600" size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Excluir Lead?</h3>
+                <p className="text-gray-500 mb-6 text-sm">
+                    Você está prestes a excluir o lead <strong>{selectedLead?.name || selectedLead?.title}</strong>.
+                    <br /><span className="text-red-500 font-semibold text-xs mt-2 block">Todo o histórico de negociação será perdido.</span>
+                </p>
+
+                <div className="flex gap-3 justify-center">
+                    <button
+                        onClick={() => setIsDeleteModalOpen(false)}
+                        className="btn-secondary"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={confirmDelete}
+                        className="btn-danger"
+                    >
+                        {isSaving ? 'Excluindo...' : 'Confirmar Exclusão'}
+                    </button>
+                </div>
+            </div>
+        </VoxModal>
+
+        {/* WhatsApp Mkt Content */}
+        {
+            activeTab === 'whatsapp' && (
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <WhatsAppMarketing />
+                </div>
+            )
+        }
+    </div >
+);
+};
+
+export default CRMBoard;

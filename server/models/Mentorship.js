@@ -3,8 +3,8 @@ const sequelize = require('../config/database');
 
 const Mentorship = sequelize.define('Mentorship', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     scheduledDate: {
@@ -17,6 +17,14 @@ const Mentorship = sequelize.define('Mentorship', {
     },
     notes: {
         type: DataTypes.TEXT
+    },
+    studentId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    mentorId: {
+        type: DataTypes.INTEGER,
+        allowNull: true // Can be assigned later or changed
     }
 });
 // Relações: Student, Professor (Mentor)

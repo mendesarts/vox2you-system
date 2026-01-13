@@ -3,8 +3,8 @@ const sequelize = require('../config/database');
 
 const Holiday = sequelize.define('Holiday', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     name: {
@@ -20,8 +20,12 @@ const Holiday = sequelize.define('Holiday', {
         allowNull: false
     },
     type: {
-        type: DataTypes.ENUM('holiday', 'recess'),
+        type: DataTypes.STRING,
         defaultValue: 'holiday'
+    },
+    unitId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 });
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 150" width="500" height="150">
+  <defs>
+    <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e6ac1c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a9f9c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M65.1,75l-3.9-10.1l-4.4,14.4l-3.7-8.8l-4.2,6.7l-3.7-13.1l-4.6,19.5l-3.7-5.9l-4.2,12.5L29,75H25v-7h4l2.6-6.9l4.2,13.6l3.7-6.1l4.6,20.8l3.7-14.4l4.2,7.7l3.7-9.9l4.4,15.5l3.9-10.9l3.9,7.2l3.9-19.5l3.9,12.8l3.7-4.8l4.4,10.7L87,75h4v7h-4l-2.6,6.7l-4.4-11.7l-3.7,5.3l-3.9-13.9l-3.9,20.8l-3.9-7.7l-3.9,11.7l-4.4-16.8l-3.7,10.9l-4.2-8.3L65.1,75z" fill="url(#waveGradient)"/>
+  <text x="115" y="95" font-family="sans-serif" font-size="52" font-weight="bold" fill="#e6ac1c">Vox</text>
+  <text x="218" y="95" font-family="sans-serif" font-size="52" font-weight="bold" fill="#1a9f9c">Flow</text>
+</svg>

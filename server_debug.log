@@ -1,0 +1,87 @@
+
+
+🚀🚀🚀 VX-SYSTEM STARTING ON PORT 3000 🚀🚀🚀
+
+
+Database Storage Path: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/voxflow.sqlite
+✅ Rota carregada: /api/tasks
+✅ Rota carregada: /api/auth
+✅ Rota carregada: /api/users
+✅ Rota carregada: /api/students
+✅ Rota carregada: /api/courses
+✅ Rota carregada: /api/classes
+✅ Rota carregada: /api/financial
+✅ Rota carregada: /api/dashboard
+✅ Rota carregada: /api/ai-config
+✅ Rota carregada: /api/crm
+✅ Rota carregada: /api/leads
+✅ Rota carregada: /api/pedagogical
+✅ Rota carregada: /api/calendar
+✅ Rota carregada: /api/health
+✅ Rota carregada: /api/units
+✅ Rota carregada: /api/enrollments
+✅ Rota carregada: /api
+✅ Rota carregada: /api/migration
+Connecting to DB...
+🚀 Server UP on 3000 (Optimistic Start)
+DB Connected.
+🛠️ INICIANDO CORREÇÃO DO BANCO (Dialect: sqlite)...
+💾 Ambiente SQLite detectado. Pulando ajustes de ENUM/Type do Postgres.
+✅ Tabela 'StudentLogs' verificada.
+Executando Sync (Safe Mode)...
+⚠️ Aviso: Erro no sync (Auto-Healing), mas tentando continuar: Validation error
+DB & Sync Complete.
+--- Iniciando WhatsApp ---
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.
+GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
+GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
+Found 558 holidays
+🔍 Checking Duplicates for Unit: 2 | Phones: 0
+🔌 IMPORT DEBUG: Received Leads Count: 41
+Import Validation Error Row 0 (Natalia Almeida Bezena):  []
+Import Validation Error Row 1 (Luiz Ricardo Sena Portela):  []
+Import Validation Error Row 2 (Lead #30207319):  []
+Import Validation Error Row 3 (Lead #30166141):  []
+Import Validation Error Row 4 (Kleber):  []
+Import Validation Error Row 5 (Thais Barbosa):  []
+Import Validation Error Row 6 (Lead #28859958):  []
+Import Validation Error Row 7 (Mariana Markes):  []
+Import Validation Error Row 8 (Ian Beira Salgado):  []
+Import Validation Error Row 9 (Lead #26818414):  []
+Import Validation Error Row 10 (Andrey):  []
+Import Validation Error Row 11 (Carlos André):  []
+Import Validation Error Row 12 (Mark):  []
+Import Validation Error Row 13 (Grazi):  []
+Import Validation Error Row 14 (Leticia França):  []
+Import Validation Error Row 15 (Sara Santos):  []
+Import Validation Error Row 16 (HELENIRA):  []
+Import Validation Error Row 17 (Larissa Lisboa):  []
+Import Validation Error Row 18 (Emily Mendes):  []
+Import Validation Error Row 19 (Marluci Leite):  []
+Import Validation Error Row 20 (Leide Daiana Mendes):  []
+Import Validation Error Row 21 (CIRO):  []
+Import Validation Error Row 22 (Kelly Shirley):  []
+Import Validation Error Row 23 (ALINE LISBOA):  []
+Import Validation Error Row 24 (Felipe Carvalho):  []
+Import Validation Error Row 25 (Roberto):  []
+Import Validation Error Row 26 (Lucas Carvalho):  []
+Import Validation Error Row 27 (Fabiana Carvalho):  []
+Import Validation Error Row 28 (Lead #21729942):  []
+Import Validation Error Row 29 (Letícia Rodrigues):  []
+Import Validation Error Row 30 (Juliana Barreto):  []
+Import Validation Error Row 31 (Neiva Cristina):  []
+Import Validation Error Row 32 (Marcos):  []
+Import Validation Error Row 33 (Susy Vrech):  []
+Import Validation Error Row 34 (Douglas):  []
+Import Validation Error Row 35 (DAMIANA BERNARDO DE OLIVEIRA NETO):  []
+Import Validation Error Row 36 (FELIPE LOPES):  []
+Import Validation Error Row 37 (Eric Vinicio):  []
+Import Validation Error Row 38 (Nicolas Faganelly):  []
+Import Validation Error Row 39 (Marlene):  []
+Import Validation Error Row 40 (Ilda):  []
+GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
+GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
+Found 558 holidays
+Conexao fechada. Reconectar? true
+--- Iniciando WhatsApp ---
+⚠️ The printQRInTerminal option has been deprecated. You will no longer receive QR codes in the terminal automatically. Please listen to the connection.update event yourself and handle the QR your way. You can remove this message by removing this opttion. This message will be removed in a future version.

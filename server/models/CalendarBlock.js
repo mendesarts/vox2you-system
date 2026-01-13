@@ -3,7 +3,7 @@ const sequelize = require('../config/database');
 
 const CalendarBlock = sequelize.define('CalendarBlock', {
     userId: {
-        type: DataTypes.UUID,
+        type: DataTypes.INTEGER,
         allowNull: false
     },
     startTime: {
@@ -17,7 +17,12 @@ const CalendarBlock = sequelize.define('CalendarBlock', {
     reason: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    unitId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 });
+
 
 module.exports = CalendarBlock;

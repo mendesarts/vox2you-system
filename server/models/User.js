@@ -3,8 +3,8 @@ const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4, // Restored UUID
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true
     },
     name: {
@@ -36,7 +36,7 @@ const User = sequelize.define('User', {
     },
     // ------------------------------------
     unitId: {
-        type: DataTypes.UUID, // Restored UUID
+        type: DataTypes.INTEGER,
         allowNull: true
     },
     phone: {
@@ -66,6 +66,24 @@ const User = sequelize.define('User', {
     active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
+    },
+    workingHours: {
+        type: DataTypes.JSON,
+        allowNull: true
+    },
+    canMentorship: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    goal: {
+        type: DataTypes.INTEGER,
+        defaultValue: 10,
+        allowNull: true
+    },
+    secondaryRoles: {
+        type: DataTypes.JSON, // Stores array of role IDs e.g. [51, 41]
+        defaultValue: [],
+        allowNull: true
     }
 });
 

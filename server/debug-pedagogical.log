@@ -1,0 +1,851 @@
+2025-12-28T13:50:37.303Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T13:50:37.307Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T13:50:37.701Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T13:50:38.855Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T13:50:38.856Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T13:50:39.436Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T13:52:10.749Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T13:52:10.749Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T13:52:12.909Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T13:52:14.280Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T13:52:14.281Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T13:52:14.655Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:02:36.834Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:02:36.835Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:02:38.586Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:02:39.824Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:02:39.825Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:02:40.160Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:09:31.966Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:09:31.983Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:09:32.034Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:09:32.034Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:09:34.240Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:09:34.252Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:09:35.579Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:09:35.622Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:09:35.624Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:09:35.625Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:09:35.980Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:09:35.982Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:41:17.815Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:41:17.816Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:41:18.586Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:41:18.587Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:41:20.056Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:41:20.123Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:41:20.952Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:41:20.953Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:41:21.069Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T14:41:21.069Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T14:41:21.242Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T14:41:21.390Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:18:41.394Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:18:41.400Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:18:42.877Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:18:43.793Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:18:43.794Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:18:44.172Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:19:58.767Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:19:58.778Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:19:59.377Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:20:00.473Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:20:00.473Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:20:00.867Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:20:37.296Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:20:37.297Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:20:38.902Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:20:39.827Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:20:39.828Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:20:40.125Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:23:23.046Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:23:23.046Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:23:24.928Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:23:26.188Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:23:26.189Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:23:26.694Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:25:17.968Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:25:17.981Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:25:18.412Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:25:19.439Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:25:19.440Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:25:19.846Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:27:23.466Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:27:23.466Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:27:23.856Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:27:24.931Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:27:24.932Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:27:25.287Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:30:22.881Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:30:22.882Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:30:23.259Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:30:24.389Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:30:24.390Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:30:24.795Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:32:31.622Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:32:31.622Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:32:31.929Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:32:32.917Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:32:32.917Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:32:33.309Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:36:23.034Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:36:23.036Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:36:23.430Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:36:24.561Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:36:24.561Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:36:24.855Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:41:45.259Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:41:45.260Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T15:41:45.618Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:41:46.817Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:41:46.817Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T15:41:47.101Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:44:23.176Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:44:23.177Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:44:24.916Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:44:25.790Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:44:25.791Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:44:26.247Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:45:17.196Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:45:17.197Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:45:18.676Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:45:19.800Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:45:19.805Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:45:20.147Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:45:29.823Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:45:29.824Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T15:45:30.126Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:45:31.076Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:45:31.077Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T15:45:31.477Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:50:03.088Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:50:03.089Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:50:04.785Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:50:05.916Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:50:05.918Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:50:06.321Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:56:18.983Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:56:18.985Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:56:19.371Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:56:20.602Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:56:20.603Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T15:56:21.005Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:57:30.121Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:57:30.121Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T15:57:31.816Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T15:57:33.000Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T15:57:33.000Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T15:57:33.404Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:02:22.249Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:02:22.250Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:02:24.026Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:02:26.081Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:02:26.082Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:02:26.392Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:08:32.088Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:08:32.089Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:08:33.780Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:08:35.547Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:08:35.548Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:08:35.880Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:17:50.626Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:17:50.629Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:17:52.477Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:17:53.732Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:17:53.737Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:17:54.136Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:19:24.511Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:19:24.526Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:19:24.966Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:19:26.300Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:19:26.301Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:19:26.607Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:22:06.229Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:22:06.230Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:22:07.605Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:22:08.605Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:22:08.610Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:22:09.013Z: COUNTS: ActiveClasses=1, ActiveStudents=0
+2025-12-28T16:24:09.398Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:24:09.399Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:24:10.870Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:24:11.906Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:24:11.907Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:24:12.218Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:24:55.757Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:24:55.759Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:24:57.409Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:24:58.544Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:24:58.546Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:24:58.897Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:25:20.768Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:25:20.768Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:25:21.192Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:25:22.351Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:25:22.352Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:25:22.859Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:37:22.098Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:37:22.101Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:37:22.430Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:37:23.630Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:37:23.631Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:37:24.073Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:45:40.896Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:45:40.897Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:45:43.077Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:45:44.086Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:45:44.086Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:45:44.420Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:50:53.616Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:50:53.616Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:50:54.930Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:50:55.862Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:50:55.863Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T16:50:56.258Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:53:46.933Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:53:46.936Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:53:47.318Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T16:53:48.557Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T16:53:48.558Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T16:53:48.956Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T17:08:18.107Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T17:08:18.117Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T17:08:20.211Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T17:08:21.932Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T17:08:21.999Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T17:08:22.420Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T17:28:55.688Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T17:28:55.690Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T17:28:56.945Z: STATS REQ: User=undefined Role=Pedagogico Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T17:28:56.946Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active","professorId":"29f76a19-d26e-4856-b37f-dc8c71c07d7a"}
+2025-12-28T17:29:10.862Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T17:29:10.863Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T17:29:11.008Z: STATS REQ: User=undefined Role=20 Unit=b52a8cdc-5340-4b96-836e-4765e0fe87ba
+2025-12-28T17:29:11.008Z: CLASS WHERE: {"unitId":"b52a8cdc-5340-4b96-836e-4765e0fe87ba","status":"active"}
+2025-12-28T18:47:53.270Z: STATS REQ: User=undefined Role=master Unit=null
+2025-12-28T18:47:53.272Z: CLASS WHERE: {"status":"active"}
+2025-12-28T18:47:55.406Z: COUNTS: ActiveClasses=0, ActiveStudents=0
+2025-12-28T18:47:56.864Z: STATS REQ: User=undefined Role=master Unit=null
+2025-12-28T18:47:56.865Z: CLASS WHERE: {"status":"active"}
+2025-12-28T18:47:57.270Z: COUNTS: ActiveClasses=0, ActiveStudents=0
+2025-12-28T18:58:58.322Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T18:58:58.324Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T18:58:58.698Z: COUNTS: ActiveClasses=0, ActiveStudents=0
+2025-12-28T18:58:59.891Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T18:58:59.914Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T18:59:00.235Z: COUNTS: ActiveClasses=0, ActiveStudents=0
+2025-12-28T19:02:09.249Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T19:02:09.257Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T19:02:09.540Z: COUNTS: ActiveClasses=0, ActiveStudents=0
+2025-12-28T19:02:10.626Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T19:02:10.627Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T19:02:11.073Z: COUNTS: ActiveClasses=0, ActiveStudents=0
+2025-12-28T19:28:36.753Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T19:28:36.755Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T19:28:38.376Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T19:28:39.515Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T19:28:39.515Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T19:28:39.912Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T19:29:21.207Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T19:29:21.208Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T19:29:23.051Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-28T19:29:25.489Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-28T19:29:25.489Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-28T19:29:25.893Z: COUNTS: ActiveClasses=2, ActiveStudents=0
+2025-12-29T10:27:20.265Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T10:27:20.270Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T10:27:20.590Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T10:27:21.620Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T10:27:21.620Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T10:27:22.026Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T11:54:37.388Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T11:54:37.390Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T11:54:39.204Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T11:54:40.233Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T11:54:40.234Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T11:54:40.688Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:06:05.361Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:06:05.362Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:06:05.731Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:06:07.015Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:06:07.015Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:06:07.418Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:09:07.653Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:09:07.654Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:09:08.062Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:09:09.235Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:09:09.236Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:09:09.701Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:32:15.693Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:32:15.698Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:32:17.444Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:32:18.512Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:32:18.513Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:32:18.914Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:36:28.699Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:36:28.700Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:36:30.347Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:36:31.478Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:36:31.479Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:36:31.779Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:36:57.701Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:36:57.702Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:36:59.506Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:37:00.650Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:37:00.651Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:37:00.997Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:44:16.438Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:44:16.439Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:44:19.155Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T12:44:20.344Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T12:44:20.344Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T12:44:20.764Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T13:39:29.416Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T13:39:29.421Z: CLASS WHERE: {"status":"active"}
+2025-12-29T13:39:32.072Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T13:39:33.056Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T13:39:33.056Z: CLASS WHERE: {"status":"active"}
+2025-12-29T13:39:33.505Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T13:39:37.579Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T13:39:37.580Z: CLASS WHERE: {"status":"active"}
+2025-12-29T13:39:37.911Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T13:39:39.148Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T13:39:39.155Z: CLASS WHERE: {"status":"active"}
+2025-12-29T13:39:39.576Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T14:19:05.034Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T14:19:05.035Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T14:19:05.864Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T14:19:06.858Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T14:19:06.861Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T14:19:07.180Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T18:01:40.771Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T18:01:40.772Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T18:01:41.193Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T18:01:42.220Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T18:01:42.220Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T18:01:42.626Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T18:09:22.750Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T18:09:22.751Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T18:09:24.980Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T18:09:26.130Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T18:09:26.130Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T18:09:26.462Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T19:43:49.489Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T19:43:49.491Z: CLASS WHERE: {"status":"active"}
+2025-12-29T19:43:50.960Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T19:43:52.026Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T19:43:52.029Z: CLASS WHERE: {"status":"active"}
+2025-12-29T19:43:52.344Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T19:44:21.734Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T19:44:21.735Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T19:44:22.050Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T19:44:23.154Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T19:44:23.154Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T19:44:23.535Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T19:44:42.207Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T19:44:42.207Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T19:44:42.606Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T19:44:43.645Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T19:44:43.645Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T19:44:44.198Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T20:04:23.966Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T20:04:23.972Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T20:04:24.397Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T20:04:25.649Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-29T20:04:25.650Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-29T20:04:25.959Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T21:17:46.007Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T21:17:46.009Z: CLASS WHERE: {"status":"active"}
+2025-12-29T21:17:47.668Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T21:17:48.888Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T21:17:48.888Z: CLASS WHERE: {"status":"active"}
+2025-12-29T21:17:49.313Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T22:10:49.414Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T22:10:49.429Z: CLASS WHERE: {"status":"active"}
+2025-12-29T22:10:49.791Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T22:10:50.991Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T22:10:50.995Z: CLASS WHERE: {"status":"active"}
+2025-12-29T22:10:51.332Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T22:15:30.379Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T22:15:30.394Z: CLASS WHERE: {"status":"active"}
+2025-12-29T22:15:32.633Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-29T22:15:33.880Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-29T22:15:33.881Z: CLASS WHERE: {"status":"active"}
+2025-12-29T22:15:34.266Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-30T02:25:01.489Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T02:25:01.490Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T02:25:01.859Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-30T02:25:03.136Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T02:25:03.136Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T02:25:03.541Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-30T02:32:09.911Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T02:32:09.911Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T02:32:10.489Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-30T02:32:11.456Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T02:32:11.457Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T02:32:11.886Z: COUNTS: ActiveClasses=3, ActiveStudents=0
+2025-12-30T02:43:50.557Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:43:50.563Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:43:52.074Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:43:53.247Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:43:53.248Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:43:53.645Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:44:45.482Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T02:44:45.483Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T02:44:47.097Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:44:48.946Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T02:44:48.946Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T02:44:49.351Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:45:30.136Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:45:30.136Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:45:31.784Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:45:32.773Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:45:32.773Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:45:33.178Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:45:42.707Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:45:42.707Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:45:43.112Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:45:44.348Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:45:44.349Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:45:44.750Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:45:58.821Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:45:58.822Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:45:59.190Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:46:00.422Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:46:00.423Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:46:00.777Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:55:59.582Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:55:59.583Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:56:01.519Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T02:56:02.708Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T02:56:02.709Z: CLASS WHERE: {"status":"active"}
+2025-12-30T02:56:03.108Z: COUNTS: ActiveClasses=3, ActiveStudents=1
+2025-12-30T03:02:04.509Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T03:02:04.510Z: CLASS WHERE: {"status":"active"}
+2025-12-30T03:02:06.106Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T03:02:07.344Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T03:02:07.344Z: CLASS WHERE: {"status":"active"}
+2025-12-30T03:02:07.743Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:08:34.579Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T04:08:34.584Z: CLASS WHERE: {"status":"active"}
+2025-12-30T04:08:36.177Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:08:37.253Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T04:08:37.254Z: CLASS WHERE: {"status":"active"}
+2025-12-30T04:08:37.713Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:10:25.162Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T04:10:25.163Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T04:10:25.543Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:10:26.694Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T04:10:26.695Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T04:10:27.079Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:14:37.620Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T04:14:37.621Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T04:14:39.236Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:14:40.269Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T04:14:40.270Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T04:14:40.565Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:48:14.871Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T04:48:14.872Z: CLASS WHERE: {"status":"active"}
+2025-12-30T04:48:15.264Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:48:16.196Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T04:48:16.197Z: CLASS WHERE: {"status":"active"}
+2025-12-30T04:48:16.596Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:50:14.583Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T04:50:14.583Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T04:50:16.152Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T04:50:17.179Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T04:50:17.180Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T04:50:17.468Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:05:55.454Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T05:05:55.455Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T05:05:57.314Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:05:58.433Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T05:05:58.433Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T05:05:58.821Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:08:33.447Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T05:08:33.447Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T05:08:35.431Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:09:15.986Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:09:15.987Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:09:17.712Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:09:18.843Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:09:18.848Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:09:19.248Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:14:42.445Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T05:14:42.446Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T05:14:42.453Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:14:42.453Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:14:43.768Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:14:43.857Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:20:22.735Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:20:22.737Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:20:23.050Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:20:24.065Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:20:24.065Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:20:24.442Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:36:06.680Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:36:06.682Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:36:08.370Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:36:09.547Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:36:09.548Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:36:09.906Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:47:51.165Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:47:51.166Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:47:53.091Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:47:54.333Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:47:54.334Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:47:54.618Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:49:47.399Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T05:49:47.399Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T05:49:47.779Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:49:49.014Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T05:49:49.015Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T05:49:49.315Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:54:25.341Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:54:25.342Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:54:25.797Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T05:54:26.931Z: STATS REQ: User=undefined Role=master Unit=1
+2025-12-30T05:54:26.932Z: CLASS WHERE: {"status":"active"}
+2025-12-30T05:54:27.306Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T16:44:36.638Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T16:44:36.642Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T16:44:39.111Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T16:44:40.336Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T16:44:40.339Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T16:44:40.783Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T17:55:08.920Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T17:55:08.925Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T17:55:11.541Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T17:55:12.737Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T17:55:12.737Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T17:55:13.119Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T17:56:54.058Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T17:56:54.059Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T17:56:55.930Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T17:56:57.162Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T17:56:57.162Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T17:56:57.569Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T18:10:01.530Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T18:10:01.532Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T18:10:01.925Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T18:10:03.055Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2025-12-30T18:10:03.056Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T18:10:03.384Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T18:29:06.218Z: STATS REQ: User=undefined Role=1 Unit=1
+2025-12-30T18:29:06.221Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T18:29:06.674Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2025-12-30T18:29:08.015Z: STATS REQ: User=undefined Role=1 Unit=1
+2025-12-30T18:29:08.015Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2025-12-30T18:29:08.416Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:05:35.239Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:05:35.243Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:05:36.902Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:05:37.864Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:05:37.865Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:05:38.173Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:08:45.896Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:08:45.897Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:08:47.424Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:09:01.983Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:09:01.984Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:09:03.518Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:09:04.548Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:09:04.549Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:09:04.924Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:10:22.376Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:10:22.377Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:10:24.487Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:10:25.600Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:10:25.600Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:10:26.030Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:10:32.662Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:10:32.662Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:10:33.102Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:10:34.351Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:10:34.351Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:10:34.760Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:11:50.737Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:11:50.738Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:11:51.151Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:11:52.289Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:11:52.293Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:11:52.641Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:20:55.534Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:20:55.535Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:20:55.896Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:20:56.958Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:20:56.959Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:20:57.257Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:25:43.083Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:25:43.084Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:25:43.682Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:25:44.790Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:25:44.790Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:25:45.146Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:26:26.250Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:26:26.251Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:26:27.611Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:26:28.617Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:26:28.618Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:26:29.024Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:27:56.688Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:27:56.688Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:27:56.988Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:28:34.573Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:28:34.574Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:28:34.964Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:28:35.915Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:28:35.916Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:28:36.206Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:29:38.411Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:29:38.412Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:29:40.218Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:29:41.235Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:29:41.237Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:29:41.639Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:31:08.069Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:31:08.070Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:31:09.393Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:31:10.425Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:31:10.426Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:31:10.829Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:31:11.960Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:31:11.961Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:31:12.263Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:31:29.912Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:31:29.913Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:31:31.688Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:31:32.752Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:31:32.752Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:31:33.106Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:31:34.289Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:31:34.290Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:31:34.810Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:32:40.614Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:32:40.616Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:32:42.183Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:32:43.153Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:32:43.155Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:32:43.504Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:32:44.384Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:32:44.385Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:32:44.672Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:32:45.645Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:32:45.646Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:32:45.949Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:32:46.822Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:32:46.822Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:32:47.112Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:32:58.551Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:32:58.554Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:32:59.369Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:33:00.709Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:33:00.709Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:33:01.033Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:34:19.126Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:34:19.128Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:34:20.636Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:34:21.540Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:34:21.540Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:34:21.832Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:35:45.557Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:35:45.558Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:35:47.002Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:35:47.974Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:35:47.974Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:35:48.261Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:00.801Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:00.802Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:02.260Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:03.151Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:03.151Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:03.599Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:04.713Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:04.714Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:04.998Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:05.896Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:05.896Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:06.182Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:27.788Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:27.788Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:29.386Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:30.343Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:30.343Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:30.676Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:31.643Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:31.643Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:31.934Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:32.885Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:32.885Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:33.295Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:34.426Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:34.427Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:34.867Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:37:36.064Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:37:36.065Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:37:36.408Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:15.577Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:15.577Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:17.520Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:18.558Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:18.559Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:18.848Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:19.863Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:19.863Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:20.200Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:21.107Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:21.111Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:21.531Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:22.409Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:22.410Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:22.759Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:23.788Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:23.790Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:24.133Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:25.124Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:25.124Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:25.422Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:26.438Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:26.438Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:26.794Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:27.702Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:27.703Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:28.084Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:29.061Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:29.061Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:29.517Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:30.754Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:30.754Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:31.063Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:39:31.957Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:39:31.957Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:39:32.282Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:45:41.464Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:45:41.465Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:45:43.958Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:45:45.086Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:45:45.087Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:45:45.373Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:45:46.290Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:45:46.291Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:45:46.572Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:45:47.456Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:45:47.457Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:45:47.738Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:45:48.674Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:45:48.676Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:45:49.032Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T12:45:50.114Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T12:45:50.115Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T12:45:50.396Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T13:42:53.616Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T13:42:53.617Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T13:42:53.621Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T13:42:53.621Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T13:42:53.658Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T13:42:53.658Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T13:42:53.660Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T13:42:53.661Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T13:42:53.801Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T13:42:53.802Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T13:42:53.805Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T13:42:53.805Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:04:01.876Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T17:04:01.883Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:04:03.749Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:04:05.935Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T17:04:05.937Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:04:06.235Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:04:31.484Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T17:04:31.485Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:04:31.829Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:04:33.646Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T17:04:33.647Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:04:34.153Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:13:20.971Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T17:13:20.978Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:13:21.714Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:13:23.049Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T17:13:23.049Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:13:23.341Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:24:17.995Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T17:24:17.998Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:24:18.475Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:24:19.718Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T17:24:19.746Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:24:20.184Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:30:05.423Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T17:30:05.424Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:30:07.251Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:30:08.676Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T17:30:08.676Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:30:09.251Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:57:01.954Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T17:57:01.957Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:57:02.330Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T17:57:03.512Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T17:57:03.512Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T17:57:04.559Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T19:27:26.263Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T19:27:26.264Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T19:27:28.362Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T19:27:29.549Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T19:27:29.549Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T19:27:30.060Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T23:12:40.940Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-01T23:12:40.941Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T23:12:41.371Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-01T23:35:59.759Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-01T23:35:59.772Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-01T23:36:01.036Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T00:03:57.972Z: STATS REQ: User=undefined Role=Franqueado Unit=1
+2026-01-02T00:03:57.978Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T00:04:00.753Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T00:20:28.627Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T00:20:28.643Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T00:20:30.252Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T00:21:58.962Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T00:21:58.962Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T00:22:00.446Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T00:57:40.487Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T00:57:40.489Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T00:57:41.516Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:12:54.922Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:12:54.924Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:12:56.931Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:13:17.099Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:13:17.099Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:13:19.399Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:15:04.163Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:15:04.163Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:15:06.353Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:16:49.026Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:16:49.027Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:16:50.735Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:21:10.052Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:21:10.053Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:21:10.483Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:23:10.689Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:23:10.690Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:23:13.368Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:27:31.711Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:27:31.714Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:27:32.460Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:35:52.148Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:35:52.149Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:35:54.130Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:37:35.368Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:37:35.370Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:37:35.398Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:37:35.398Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:37:37.786Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:37:37.925Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T01:37:39.092Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T01:37:39.093Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T01:37:39.455Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T23:48:17.289Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T23:48:17.295Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T23:48:19.041Z: COUNTS: ActiveClasses=3, ActiveStudents=2
+2026-01-02T23:49:36.222Z: STATS REQ: User=undefined Role=1 Unit=1
+2026-01-02T23:49:36.224Z: CLASS WHERE: {"unitId":1,"status":"active"}
+2026-01-02T23:49:36.838Z: COUNTS: ActiveClasses=3, ActiveStudents=2

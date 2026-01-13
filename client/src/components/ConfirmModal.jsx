@@ -1,36 +1,38 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle } from 'lucide-react';
-import './Modal.css';
 
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, isDangerous = false }) => {
     if (!isOpen) return null;
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {isDangerous && <AlertTriangle size={20} color="#ef4444" />}
+    return createPortal(
+        <div className="vox-modal-overlay">
+            <div className="vox-modal-content" style={{ maxWidth: '400px' }}>
+                <div className="vox-modal-header">
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {isDangerous && <AlertTriangle size={20} color="#f87171" />}
                         {title}
                     </h3>
-                    <button onClick={onClose} className="modal-close-btn">
+                    <button onClick={onClose} className="vox-modal-close-btn">
                         <X size={20} />
                     </button>
                 </div>
-                <div className="modal-body">
+                <div className="vox-modal-body">
                     <p>{message}</p>
                 </div>
-                <div className="modal-footer">
+                <div className="vox-modal-footer">
                     <button onClick={onClose} className="btn-secondary">Cancelar</button>
                     <button
                         onClick={() => { onConfirm(); onClose(); }}
                         className={isDangerous ? "btn-danger" : "btn-primary"}
+                        style={isDangerous ? { backgroundColor: '#ef4444', color: 'white', border: 'none' } : {}}
                     >
                         Confirmar
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
