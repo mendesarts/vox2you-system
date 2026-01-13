@@ -1,7 +1,7 @@
 // ⚠️ ATTENTION: Read ARCHITECTURE_GUIDELINES.md in the root directory before modifying logic related to roles, units, or permissions. Always use numeric roleId [1, 10, etc.] and unitId.
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = 'vox2you-secret-key-change-in-prod';
+const JWT_SECRET = process.env.JWT_SECRET || 'vox2you-secret-key-change-in-prod';
 
 module.exports = (req, res, next) => {
     try {
