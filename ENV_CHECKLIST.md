@@ -2,16 +2,19 @@
 Antes de concluir o deploy, vá em Settings > Environment Variables na Vercel e garanta que estas chaves estão lá:
 
 ### 1. Banco de Dados (Neon)
-- DATABASE_URL (Deve ser a URL "Pooled" do Neon para melhor performance em Serverless)
-- DIRECT_URL (URL direta para migrações)
+- DATABASE_URL (URL do Neon para conexão via Sequelize)
 
-### 2. Google Cloud (Vertex AI / Gemini)
-- GOOGLE_PROJECT_ID
-- GOOGLE_PRIVATE_KEY (Cuidado com as quebras de linha!)
-- GOOGLE_CLIENT_EMAIL
+### 2. Inteligência Artificial (Gemini)
+- GEMINI_API_KEY (Chave da API obtida no Google AI Studio)
 
-### 3. Sistema
+### 3. Sistema & Segurança
 - NODE_ENV=production
-- VITE_API_URL=https://meuvoxflow.vercel.app/api
-- API_SECRET (Sua senha interna de segurança)
-- JWT_SECRET (Para autenticação de tokens)
+- JWT_SECRET (Chave para assinatura de tokens de login)
+- VITE_API_URL (URL final do seu sistema na Vercel + /api)
+- INTEGRATION_TOKEN (Token para webhooks de marketing - opcional)
+
+### 4. Google Cloud (Opcional/Futuro)
+*Nota: Se você for usar Vertex AI em vez do AI Studio, estas serão necessárias:*
+- GOOGLE_PROJECT_ID
+- GOOGLE_PRIVATE_KEY
+- GOOGLE_CLIENT_EMAIL

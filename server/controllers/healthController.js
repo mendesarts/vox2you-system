@@ -20,7 +20,7 @@ exports.getSystemHealth = async (req, res) => {
             database: {
                 status: 'unknown',
                 latency: 0,
-                name: 'Neon PostgreSQL'
+                name: sequelize.getDialect() === 'postgres' ? 'Neon PostgreSQL' : 'SQLite Local'
             },
             stats: {
                 totalLeads: 0,

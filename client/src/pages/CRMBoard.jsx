@@ -2,16 +2,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import Papa from 'papaparse';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical, X, Check, MapPin, FileText, Upload, Download, Mail, Building, Tag, Trash2, User, MessageSquare, ChevronLeft, Thermometer, Brain, ArrowRight, PhoneOff, Settings, LayoutList, LayoutGrid, ArrowLeftRight, GraduationCap } from 'lucide-react';
 import KanbanCard from '../components/KanbanCard';
 import FilterModal from './components/FilterModal';
 import LeadDetailsModal from './components/LeadDetailsModal';
 import ImportLeadsModal from './components/ImportLeadsModal';
+import EnrollmentModal from '../components/EnrollmentModal';
 import { useAuth } from '../context/AuthContext';
 import { VoxModal } from '../components/VoxUI';
 import * as XLSX from 'xlsx';
-import WhatsAppMarketing from './commercial/WhatsAppMarketing';
+
 import api from '../services/api';
 import DashboardFilters from '../components/DashboardFilters';
 
@@ -186,35 +187,17 @@ const CRMBoard = () => {
         'connecting': { id: 'connecting', title: 'Conectando', color: '#8b5cf6', icon: Phone },
         'connected': { id: 'connected', title: 'Conexão', color: '#6366f1', icon: Check },
         'scheduled': { id: 'scheduled', title: 'Agendamento', color: '#f59e0b', icon: Calendar },
-        'no_show': { id: 'no_show', title: 'No-Show (IA Resgate)', color: '#ef4444', icon: Clock },
+        'no_show': { id: 'no_show', title: 'Bolo', color: '#ef4444', icon: Clock },
         'negotiation': { id: 'negotiation', title: 'Negociação', color: '#10b981', icon: DollarSign },
-        'won': { id: 'won', title: 'Matriculados', color: '#059669', icon: Check },
-        'closed': { id: 'closed', title: 'Atendimento Encerrado', color: '#6b7280', icon: X },
-        // Social Media Funnel
-        'social_comment': { id: 'social_comment', title: 'Novo Comentário', color: '#E1306C', icon: MessageSquare },
-        'social_direct': { id: 'social_direct', title: 'Novo Direct', color: '#833AB4', icon: Mail },
-        'social_prospect': { id: 'social_prospect', title: 'Prospects em Qualificação', color: '#F77737', icon: User },
-        // Internal Funnel
-        'internal_students': { id: 'internal_students', title: 'Alunos', color: '#10b981', icon: GraduationCap },
-        'internal_other': { id: 'internal_other', title: 'Outros não Leads', color: '#64748b', icon: User },
-        'internal_team': { id: 'internal_team', title: 'Time Interno', color: '#0f172a', icon: Building }
+        'won': { id: 'won', title: 'Matricular', color: '#059669', icon: Check },
+        'closed': { id: 'closed', title: 'Encerrado', color: '#6b7280', icon: X },
     };
 
     const crmOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
-    const socialOrder = ['social_comment', 'social_direct', 'social_prospect'];
-    const internalOrder = ['internal_students', 'internal_other', 'internal_team'];
 
     const getColumnOrder = () => {
-        if (activeTab === 'social') return socialOrder;
-        if (activeTab === 'internal') return internalOrder;
         return crmOrder;
     };
-
-    // State for Move Funnel
-    const [showFunnelModal, setShowFunnelModal] = useState(false);
-    const [targetFunnel, setTargetFunnel] = useState('crm');
-    const [targetStage, setTargetStage] = useState('');
-    const [leadToMove, setLeadToMove] = useState(null);
 
     // Interaction Modal State
     const [interactionModal, setInteractionModal] = useState({ isOpen: false, lead: null });
@@ -304,26 +287,6 @@ const CRMBoard = () => {
         }
     };
 
-    const handleMoveFunnel = (lead) => {
-        setLeadToMove(lead);
-        setShowFunnelModal(true);
-        setTargetFunnel('crm');
-        setTargetStage('new');
-    };
-
-    const confirmFunnelMove = async () => {
-        if (!leadToMove || !targetStage) return;
-        await executeMove(leadToMove.id, targetStage, { funnel: targetFunnel });
-        setShowFunnelModal(false);
-        setLeadToMove(null);
-    };
-
-    useEffect(() => {
-        if (targetFunnel === 'crm') setTargetStage('new');
-        else if (targetFunnel === 'social') setTargetStage('social_comment');
-        else if (targetFunnel === 'internal') setTargetStage('internal_other');
-    }, [targetFunnel]);
-
     // Fallback for logic that uses 'columnOrder' variable directly if any
     const columnOrder = getColumnOrder();
 
@@ -334,8 +297,6 @@ const CRMBoard = () => {
         // 1. Funnel Filter (Tab based)
         list = list.filter(l => {
             const f = l.funnel || 'crm';
-            if (activeTab === 'social') return f === 'social';
-            if (activeTab === 'internal') return f === 'internal';
             return f === 'crm' || f === '';
         });
 
@@ -353,7 +314,12 @@ const CRMBoard = () => {
         }
 
         if (activeFilters.status && activeFilters.status !== 'all') {
-            list = list.filter(l => l.status === activeFilters.status);
+            if (activeFilters.status === 'active') {
+                const finalStatuses = ['won', 'closed', 'lost', 'archived', 'closed_won', 'matriculado', 'closed_lost'];
+                list = list.filter(l => !finalStatuses.includes(l.status));
+            } else {
+                list = list.filter(l => l.status === activeFilters.status);
+            }
         }
         if (activeFilters.unitId && activeFilters.unitId !== 'all') {
             list = list.filter(l => Number(l.unitId) === Number(activeFilters.unitId));
@@ -573,6 +539,9 @@ const CRMBoard = () => {
         scheduledMeeting: 'no'
     });
 
+    // Enrollment Modal State
+    const [enrollmentModal, setEnrollmentModal] = useState({ isOpen: false, lead: null });
+
     // Helper: Business Hours (9h - 19h, Weekdays) + Holidays
     const calculateNextAttempt = (baseDate) => {
         let target = new Date(baseDate);
@@ -611,6 +580,10 @@ const CRMBoard = () => {
 
             // 1. Weekend or Holiday -> Next day StartHour
             if (d.getDay() === 0 || d.getDay() === 6 || isHoliday(d)) {
+                d.setDate(d.getDate() + 1);
+                d.setHours(startHour, 0, 0, 0);
+                changed = true;
+            } else if (d.getHours() >= endHour) { // Late hours same day -> Next day
                 d.setDate(d.getDate() + 1);
                 d.setHours(startHour, 0, 0, 0);
                 changed = true;
@@ -673,6 +646,7 @@ const CRMBoard = () => {
     };
 
     const handleDragEnd = async (result) => {
+        console.log('handleDragEnd RESULT:', result);
         const { destination, source, draggableId } = result;
         if (!destination) return;
         if (destination.droppableId === source.droppableId && destination.index === source.index) return;
@@ -686,16 +660,12 @@ const CRMBoard = () => {
             if (!confirmReopen) return;
         }
 
-        // Trigger modal for stages that require data or smart flow
+        // Optimistic Update can cause 'freeze' if not handled well with React 18 concurrency
+        // We will move state update to AFTER modal is set to avoid re-render race conditions in slow environments
+
         if (['connecting', 'connected', 'scheduled', 'negotiation', 'closed'].includes(destId)) {
-            // Optimistic UI Update: Move card immediately to target column
-            const optimisticLeads = leads.map(l => {
-                if (l.id.toString() === draggableId.toString()) {
-                    return { ...l, status: destId };
-                }
-                return l;
-            });
-            setLeads(optimisticLeads);
+            // Calculate Next Attempt properly using Business Logic
+            const nextAttempt = calculateNextAttempt(new Date());
 
             setMoveModal({
                 isOpen: true,
@@ -704,16 +674,41 @@ const CRMBoard = () => {
                 sourceId: source.droppableId,
                 data: {}
             });
+
             setMoveData({
                 notes: '',
                 proposedValue: '',
                 appointmentDate: '',
-                outcome: 'success', // 'success' or 'failure'
-                scheduledMeeting: 'no', // 'yes' or 'no'
-                nextTaskDate: calculateNextAttempt(new Date()).date.toISOString().slice(0, 16)
+                outcome: 'success',
+                scheduledMeeting: 'no',
+                nextTaskDate: nextAttempt.date.toISOString().slice(0, 16)
             });
+
+            // Optimistic UI Update - Doing this AFTER modal state is safer for perceived performance
+            const optimisticLeads = leads.map(l => {
+                if (l.id.toString() === draggableId.toString()) {
+                    return { ...l, status: destId };
+                }
+                return l;
+            });
+            setLeads(optimisticLeads);
+
             return;
         }
+
+        // Special handling for "won" status - Open enrollment modal
+        if (destId === 'won') {
+            const lead = leads.find(l => l.id.toString() === draggableId.toString());
+            if (lead) {
+                // First execute the move to update status
+                await executeMove(draggableId, destId);
+
+                // Then open enrollment modal
+                setEnrollmentModal({ isOpen: true, lead });
+            }
+            return;
+        }
+
         executeMove(draggableId, destination.droppableId);
     };
 
@@ -924,16 +919,7 @@ const CRMBoard = () => {
         let finalStatus = destinationId;
         let finalData = { ...moveData };
 
-        // 1. Check if moving to Social or Internal logic (No Tasks Required)
-        const isSocial = socialOrder.includes(destinationId);
-        const isInternal = internalOrder.includes(destinationId);
 
-        if (isSocial || isInternal) {
-            // Bypass Smart Flow logic and Task requirements
-            executeMove(leadId, finalStatus, finalData);
-            setMoveModal({ ...moveModal, isOpen: false });
-            return;
-        }
 
         // SMART FLOW LOGIC
         if (destinationId === 'connecting') {
@@ -1319,15 +1305,7 @@ const CRMBoard = () => {
                         <button onClick={() => setActiveTab('crm')} style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: activeTab === 'crm' ? '#fff' : 'transparent', color: activeTab === 'crm' ? '#000' : '#666', boxShadow: activeTab === 'crm' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
                             Comercial
                         </button>
-                        <button onClick={() => setActiveTab('social')} style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: activeTab === 'social' ? '#fff' : 'transparent', color: activeTab === 'social' ? '#E1306C' : '#666', boxShadow: activeTab === 'social' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                            Redes Sociais
-                        </button>
-                        <button onClick={() => setActiveTab('internal')} style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: activeTab === 'internal' ? '#fff' : 'transparent', color: activeTab === 'internal' ? '#0f172a' : '#666', boxShadow: activeTab === 'internal' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                            Interno
-                        </button>
-                        <button onClick={() => { setActiveTab('all'); setViewMode('list'); }} style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: activeTab === 'all' ? '#fff' : 'transparent', color: activeTab === 'all' ? '#000' : '#666', boxShadow: activeTab === 'all' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                            Todos
-                        </button>
+
                     </div>
                 </div>
 
@@ -1385,16 +1363,15 @@ const CRMBoard = () => {
                         Filtrar
                         {Object.entries(activeFilters).filter(([k, v]) => {
                             if (v === 'all' || v === '') return false;
-                            // Don't count Unit filter if user is restricted
-                            if (k === 'period' && v === 'month') return false; // Don't count default period
-                            if (k === 'unitId' && !GLOBAL_VIEW_ROLES.includes(Number(user?.roleId))) return false;
+                            if (k === 'period') return false;
+                            if (k === 'unitId') return false;
                             return true;
                         }).length > 0 && (
                                 <span style={{ background: 'var(--ios-teal)', color: 'white', fontSize: '10px', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     {Object.entries(activeFilters).filter(([k, v]) => {
                                         if (v === 'all' || v === '') return false;
-                                        if (k === 'period' && v === 'month') return false;
-                                        if (k === 'unitId' && !GLOBAL_VIEW_ROLES.includes(Number(user?.roleId))) return false;
+                                        if (k === 'period') return false;
+                                        if (k === 'unitId') return false;
                                         return true;
                                     }).length}
                                 </span>
@@ -1421,9 +1398,7 @@ const CRMBoard = () => {
                             }}>
                                 <h4 style={{ margin: '8px 12px', fontSize: '11px', textTransform: 'uppercase', color: '#8E8E93', fontWeight: '800' }}>Ferramentas</h4>
 
-                                <button onClick={() => { setActiveTab('whatsapp'); setShowSettingsMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', fontSize: '14px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#1C1C1E', borderRadius: '8px', textAlign: 'left' }} className="hover:bg-gray-100">
-                                    <MessageSquare size={16} color="#25D366" /> Marketing (WhatsApp)
-                                </button>
+
 
                                 <button onClick={() => { setViewMode('list'); setShowSettingsMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', fontSize: '14px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#1C1C1E', borderRadius: '8px', textAlign: 'left' }} className="hover:bg-gray-100">
                                     <ArrowLeftRight size={16} /> Transferência em Massa
@@ -1484,7 +1459,7 @@ const CRMBoard = () => {
 
             {/* CRM Content */}
             {
-                (activeTab === 'crm' || activeTab === 'social' || activeTab === 'internal' || activeTab === 'all') && (
+                (activeTab === 'crm') && (
                     viewMode === 'list' ? (
                         <div style={{ flex: 1, padding: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -1572,7 +1547,7 @@ const CRMBoard = () => {
                                                         </span>
                                                     </td>
                                                     <td style={{ padding: '12px', color: '#475569' }}>
-                                                        {consultants.find(c => Number(c.id) === Number(lead.responsibleId))?.name || 'Sem Dono'}
+                                                        {lead.responsible || 'Sem Dono'}
                                                     </td>
                                                     <td style={{ padding: '12px', color: '#64748b', fontSize: '12px' }}>
                                                         {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString('pt-BR') : '-'}
@@ -1659,7 +1634,7 @@ const CRMBoard = () => {
                                                     </button>
                                                 )}
 
-                                                <Droppable droppableId={colId}>
+                                                <Droppable droppableId={colId} type="CARD">
                                                     {(provided, snapshot) => (
                                                         <div
                                                             {...provided.droppableProps}
@@ -1667,6 +1642,7 @@ const CRMBoard = () => {
                                                             className="custom-scrollbar"
                                                             style={{
                                                                 flex: 1,
+                                                                minHeight: '150px', // Ensure drop target exists
                                                                 overflowY: 'auto',
                                                                 padding: '8px 0',
                                                                 background: snapshot.isDraggingOver ? (column.color) + '10' : 'transparent',
@@ -1684,7 +1660,6 @@ const CRMBoard = () => {
                                                                     statusColor={column.color}
                                                                     onClick={() => handleOpenEditLead(lead)}
                                                                     onQuickAction={handleQuickAction}
-                                                                    onMoveFunnel={handleMoveFunnel}
                                                                 />
                                                             ))}
                                                             {provided.placeholder}
@@ -1702,93 +1677,6 @@ const CRMBoard = () => {
             }
 
             {/* Move Funnel Modal */}
-            {showFunnelModal && (
-                <VoxModal
-                    isOpen={true}
-                    onClose={() => setShowFunnelModal(false)}
-                    title="Mover Lead de Funil"
-                    width="450px"
-                    footer={
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={() => setShowFunnelModal(false)} style={{ background: '#F2F2F7', border: 'none', padding: '12px 24px', borderRadius: '99px', fontWeight: '700', cursor: 'pointer' }}>
-                                Cancelar
-                            </button>
-                            <button onClick={confirmFunnelMove} className="btn-primary" disabled={!targetStage}>
-                                Mover Lead
-                            </button>
-                        </div>
-                    }
-                >
-                    <div className="space-y-6">
-                        <div className="form-group">
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px' }}>
-                                <Filter size={14} /> Funil de Destino
-                            </label>
-                            <div style={{ display: 'flex', background: '#F2F2F7', padding: '4px', borderRadius: '12px', gap: '4px' }}>
-                                <button
-                                    onClick={() => setTargetFunnel('crm')}
-                                    style={{
-                                        flex: 1, padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
-                                        background: targetFunnel === 'crm' ? 'white' : 'transparent',
-                                        color: targetFunnel === 'crm' ? '#000' : '#8E8E93',
-                                        boxShadow: targetFunnel === 'crm' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-                                        transition: 'all 0.2s', border: 'none', cursor: 'pointer'
-                                    }}
-                                >
-                                    Comercial
-                                </button>
-                                <button
-                                    onClick={() => setTargetFunnel('social')}
-                                    style={{
-                                        flex: 1, padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
-                                        background: targetFunnel === 'social' ? 'white' : 'transparent',
-                                        color: targetFunnel === 'social' ? '#000' : '#8E8E93',
-                                        boxShadow: targetFunnel === 'social' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-                                        transition: 'all 0.2s', border: 'none', cursor: 'pointer'
-                                    }}
-                                >
-                                    Social
-                                </button>
-                                <button
-                                    onClick={() => setTargetFunnel('internal')}
-                                    style={{
-                                        flex: 1, padding: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
-                                        background: targetFunnel === 'internal' ? 'white' : 'transparent',
-                                        color: targetFunnel === 'internal' ? '#000' : '#8E8E93',
-                                        boxShadow: targetFunnel === 'internal' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-                                        transition: 'all 0.2s', border: 'none', cursor: 'pointer'
-                                    }}
-                                >
-                                    Interno
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px' }}>
-                                <ArrowRight size={14} /> Etapa de Destino
-                            </label>
-                            <select
-                                className="input-field"
-                                value={targetStage}
-                                onChange={e => setTargetStage(e.target.value)}
-                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', fontWeight: '600' }}
-                            >
-                                {targetFunnel === 'crm' && crmOrder.map(sId => (
-                                    <option key={sId} value={sId}>{columns[sId].title}</option>
-                                ))}
-                                {targetFunnel === 'social' && socialOrder.map(sId => (
-                                    <option key={sId} value={sId}>{columns[sId].title}</option>
-                                ))}
-                                {targetFunnel === 'internal' && internalOrder.map(sId => (
-                                    <option key={sId} value={sId}>{columns[sId].title}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                </VoxModal>
-            )}
-
             {/* Move Stage Modal iOS Style */}
             {
                 moveModal.isOpen && (
@@ -1848,20 +1736,24 @@ const CRMBoard = () => {
 
                                     {moveData.outcome === 'success' && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
                                                 <input
                                                     type="checkbox"
                                                     checked={moveData.scheduledMeeting === 'yes'}
                                                     onChange={e => setMoveData(prev => ({ ...prev, scheduledMeeting: e.target.checked ? 'yes' : 'no' }))}
+                                                    style={{ margin: 0 }}
                                                 />
                                                 Houve agendamento de reunião?
                                             </label>
                                             {moveData.scheduledMeeting === 'yes' && (
-                                                <input
-                                                    type="datetime-local"
-                                                    value={moveData.appointmentDate}
-                                                    onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })}
-                                                />
+                                                <div className="animate-fade-in">
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={moveData.appointmentDate}
+                                                        onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })}
+                                                        className="input-field"
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -2248,14 +2140,20 @@ const CRMBoard = () => {
                 </div>
             )}
 
+            {/* Enrollment Modal */}
+            <EnrollmentModal
+                isOpen={enrollmentModal.isOpen}
+                onClose={() => setEnrollmentModal({ isOpen: false, lead: null })}
+                lead={enrollmentModal.lead}
+                onSuccess={(student) => {
+                    console.log('Student enrolled:', student);
+                    fetchLeads(); // Refresh leads to show updated status
+                    setEnrollmentModal({ isOpen: false, lead: null });
+                }}
+            />
+
             {/* WhatsApp Mkt Content */}
-            {
-                activeTab === 'whatsapp' && (
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <WhatsAppMarketing />
-                    </div>
-                )
-            }
+
         </div >
     );
 };

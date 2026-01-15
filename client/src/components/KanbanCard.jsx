@@ -1,5 +1,5 @@
 import React from 'react';
-import { Draggable } from 'react-beautiful-dnd';
+import { Draggable } from '@hello-pangea/dnd';
 import { Clock, MessageCircle, AlertCircle, Phone, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -103,8 +103,10 @@ const KanbanCard = ({ lead, index, onClick }) => {
     // Card Background Logic
     let cardBg = '#FFFFFF';
     const s = (lead.status || '').toLowerCase();
-    if (['won', 'closed_won', 'matriculado'].includes(s)) {
-        cardBg = '#DCFCE7'; // Green-100
+    const isConverted = lead.metadata?.convertedToStudent === true;
+
+    if (['won', 'closed_won', 'matriculado'].includes(s) || isConverted) {
+        cardBg = '#DCFCE7'; // Green-100 - Matriculado ou Convertido
     } else if (['closed', 'lost', 'closed_lost', 'archived'].includes(s)) {
         cardBg = '#E2E8F0'; // Slate-200
     }
@@ -118,7 +120,6 @@ const KanbanCard = ({ lead, index, onClick }) => {
                     {...provided.dragHandleProps}
                     onClick={() => onClick(lead)}
                     style={{
-                        ...provided.draggableProps.style,
                         width: '100%',
                         boxSizing: 'border-box',
                         background: cardBg,
@@ -126,15 +127,19 @@ const KanbanCard = ({ lead, index, onClick }) => {
                         padding: '10px 12px',
                         marginBottom: '1px',
                         border: '1px solid #E5E5EA',
+                        display: 'flex',
+                        gap: '8px',
+                        alignItems: 'flex-start',
+
+                        // Apply RBD styles
+                        ...provided.draggableProps.style,
+
+                        // Overrides
                         boxShadow: snapshot.isDragging
                             ? '0 4px 12px rgba(0, 0, 0, 0.15)'
                             : 'none',
-                        transform: snapshot.isDragging ? 'rotate(1deg)' : 'none',
-                        transition: 'box-shadow 0.2s ease',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        gap: '8px',
-                        alignItems: 'flex-start'
+                        transition: snapshot.isDragging ? 'none' : 'box-shadow 0.2s ease',
+                        cursor: 'grab'
                     }}
                     onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'}
                     onMouseLeave={e => e.currentTarget.style.boxShadow = snapshot.isDragging ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none'}
@@ -202,19 +207,19 @@ const KanbanCard = ({ lead, index, onClick }) => {
                     }}>
                         {/* Date */}
                         <span style={{ fontSize: '10px', color: '#8E8E93', whiteSpace: 'nowrap' }}>
-                            {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR', { 
-                                day: '2-digit', 
+                            {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric'
                             }) : ''}
                         </span>
 
                         {/* Task Status Circle */}
-                        <div 
+                        <div
                             title={taskStatus.tooltip}
-                            style={{ 
-                                width: '10px', 
-                                height: '10px', 
+                            style={{
+                                width: '10px',
+                                height: '10px',
                                 borderRadius: '50%',
                                 background: taskStatus.color,
                                 border: '2px solid white',
@@ -233,7 +238,7 @@ const KanbanCard = ({ lead, index, onClick }) => {
 
                         {/* Days Badge or Closing Date */}
                         {!['won', 'closed_won', 'matriculado', 'closed', 'lost', 'closed_lost', 'archived', 'encerrado'].includes(s) ? (
-                            <div style={{ 
+                            <div style={{
                                 background: ageInfo.color === '#34C759' ? '#34C759' : '#FF3B30',
                                 color: 'white',
                                 padding: '1px 5px',
@@ -247,16 +252,17 @@ const KanbanCard = ({ lead, index, onClick }) => {
                             </div>
                         ) : (
                             <div style={{ fontSize: '9px', color: '#8E8E93', whiteSpace: 'nowrap', fontWeight: '800', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '2px' }}>
-                                F: {new Date(lead.updatedAt || lead.createdAt).toLocaleDateString('pt-BR', { 
-                                    day: '2-digit', 
+                                F: {new Date(lead.updatedAt || lead.createdAt).toLocaleDateString('pt-BR', {
+                                    day: '2-digit',
                                     month: '2-digit'
                                 })}
                             </div>
                         )}
                     </div>
                 </div>
-            )}
-        </Draggable>
+            )
+            }
+        </Draggable >
     );
 };
 

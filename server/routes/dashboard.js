@@ -117,9 +117,21 @@ router.get('/main-stats', auth, async (req, res) => {
             Lead.count({ where: { ...scope, status: 'won', updatedAt: { [Op.gte]: startPeriod, [Op.lte]: endPeriod } } }), // specific status overrides
             Lead.count({ where: { ...leadScope, createdAt: { [Op.between]: [startOfLastMonth, endOfLastMonth] } } }),
             Lead.count({ where: { ...scope, status: 'won', updatedAt: { [Op.between]: [startOfLastMonth, endOfLastMonth] } } }),
+            // Buscar todos os usuários com roles de vendas (Consultor, SDR, Closer, etc.)
             User.findAll({
-                where: { roleId: ROLE_IDS.CONSULTANT, ...scope },
-                include: [{ model: Unit, attributes: ['name'] }]
+                where: {
+                    roleId: {
+                        [Op.in]: [
+                            ROLE_IDS.CONSULTANT,      // 41 - Consultor
+                            ROLE_IDS.SDR,             // 20 - SDR
+                            ROLE_IDS.CLOSER,          // 42 - Closer (se existir)
+                            ROLE_IDS.LEADER_SALES     // 30 - Líder de Vendas
+                        ]
+                    },
+                    ...scope
+                },
+                include: [{ model: Unit, attributes: ['name'] }],
+                attributes: ['id', 'name', 'avatar', 'roleId', 'unitId', 'goal']
             }),
             FinancialRecord.sum('amount', { where: { ...scope, direction: 'income', status: 'paid', paymentDate: { [Op.between]: [startPeriod, endPeriod] } } }),
             FinancialRecord.sum('amount', { where: { ...scope, direction: 'expense', status: 'paid', paymentDate: { [Op.between]: [startPeriod, endPeriod] } } }),
@@ -252,7 +264,7 @@ router.get('/main-stats', auth, async (req, res) => {
             overdueMap[ot.userId] = parseInt(ot.get('count'));
         });
 
-        const teamPerformance = consultants.map(user => {
+        const allPerformance = consultants.map(user => {
             const myLeads = leadMap[user.id] || {};
             const won = myLeads.won || 0;
             const created = myLeads.new || 0; // Or sum all if needed, but 'new' in period is standard
@@ -260,12 +272,13 @@ router.get('/main-stats', auth, async (req, res) => {
             const scheduled = myLeads.scheduled || 0;
             const convRate = totalLeads > 0 ? ((won / totalLeads) * 100).toFixed(1) : "0.0";
 
-            const goal = 10;
+            // Usar meta do usuário ou padrão
+            const goal = user.goal || 10;
             return {
                 id: user.id,
                 name: user.name,
                 avatar: user.avatar,
-                role: ROLES_MAP[user.roleId] || user.role || 'Consultor',
+                role: ROLES_MAP[user.roleId] || user.role || 'Vendedor',
                 unit: user.Unit?.name || user.unit || 'Matriz',
                 sales: won,
                 meetings: scheduled,
@@ -283,6 +296,24 @@ router.get('/main-stats', auth, async (req, res) => {
                 overdueTasks: overdueMap[user.id] || 0
             };
         });
+
+        // Ordenar TODOS os vendedores por vendas (maior primeiro), depois por leads
+        const teamPerformanceAll = allPerformance
+            .sort((a, b) => {
+                // 1º critério: vendas (mais importante)
+                if (b.sales !== a.sales) return b.sales - a.sales;
+                // 2º critério: total de leads
+                if (b.totalLeads !== a.totalLeads) return b.totalLeads - a.totalLeads;
+                // 3º critério: taxa de conversão
+                return parseFloat(b.conversionRate) - parseFloat(a.conversionRate);
+            })
+            .map((seller, index) => ({
+                ...seller,
+                ranking: index + 1  // Posição no ranking geral
+            }));
+
+        // Top 5 para exibição principal (destaques)
+        const teamPerformanceTop = teamPerformanceAll.slice(0, 5);
 
         const revenueVal = revenue || 0;
         const expenseVal = expense || 0;
@@ -306,7 +337,8 @@ router.get('/main-stats', auth, async (req, res) => {
                 goalProgress: `${goalProgress}%`,
                 callsCount,
                 lostLeadsCount,
-                teamPerformance
+                teamPerformance: teamPerformanceTop,  // Top 5 destaques
+                totalSellers: teamPerformanceAll.length  // Total de vendedores no ranking
             },
             financial: {
                 income: revenueVal,
@@ -343,6 +375,169 @@ router.get('/main-stats', auth, async (req, res) => {
     }
 });
 
+// Novo endpoint para listar todos os vendedores com paginação
+// GET /dashboard/sales-ranking
+router.get('/sales-ranking', auth, async (req, res) => {
+    try {
+        const { unitId, startDate, endDate, page = 1, limit = 20 } = req.query;
+        const requester = req.user;
+        const isGlobal = [ROLE_IDS.MASTER, ROLE_IDS.DIRECTOR].includes(Number(requester.roleId));
+
+        let finalUnitId = unitId;
+        if (!isGlobal) {
+            finalUnitId = requester.unitId;
+        }
+
+        const numericUnitId = finalUnitId ? getNumericId(finalUnitId) : null;
+
+        const scope = {};
+        if (numericUnitId && finalUnitId !== 'all') {
+            scope.unitId = numericUnitId;
+        } else if (!isGlobal) {
+            const fallbackId = requester.unitId ? getNumericId(requester.unitId) : null;
+            scope.unitId = fallbackId || -1;
+        }
+
+        const now = new Date();
+        let startPeriod, endPeriod;
+
+        if (startDate && endDate) {
+            startPeriod = new Date(startDate);
+            endPeriod = new Date(endDate);
+            if (startDate.length === 10) startPeriod.setHours(0, 0, 0, 0);
+            if (endDate.length === 10) endPeriod.setHours(23, 59, 59, 999);
+        } else {
+            startPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+            endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        }
+
+        // Buscar todos os vendedores
+        const consultants = await User.findAll({
+            where: {
+                roleId: {
+                    [Op.in]: [
+                        ROLE_IDS.CONSULTANT,
+                        ROLE_IDS.SDR,
+                        ROLE_IDS.CLOSER,
+                        ROLE_IDS.LEADER_SALES
+                    ]
+                },
+                ...scope
+            },
+            include: [{ model: Unit, attributes: ['name'] }],
+            attributes: ['id', 'name', 'avatar', 'roleId', 'unitId', 'goal']
+        });
+
+        const consultantIds = consultants.map(c => c.id);
+
+        // Buscar leads e tasks
+        const [leadCounts, overdueTaskCounts] = await Promise.all([
+            Lead.findAll({
+                where: {
+                    consultant_id: consultantIds,
+                    [Op.or]: [
+                        { status: { [Op.notIn]: ['closed', 'archived', 'lost', 'won', 'internal_team', 'internal_other'] } },
+                        { status: 'won', updatedAt: { [Op.gte]: startPeriod, [Op.lte]: endPeriod } }
+                    ]
+                },
+                attributes: ['consultant_id', 'status', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                group: ['consultant_id', 'status']
+            }),
+            Task.findAll({
+                where: {
+                    userId: consultantIds,
+                    status: { [Op.ne]: 'done' },
+                    dueDate: { [Op.lt]: new Date() }
+                },
+                attributes: ['userId', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                group: ['userId']
+            })
+        ]);
+
+        const leadMap = {};
+        leadCounts.forEach(lc => {
+            const cid = lc.consultant_id;
+            const status = lc.status;
+            const count = parseInt(lc.get('count'));
+            if (!leadMap[cid]) leadMap[cid] = {};
+            leadMap[cid][status] = (leadMap[cid][status] || 0) + count;
+        });
+
+        const overdueMap = {};
+        overdueTaskCounts.forEach(ot => {
+            overdueMap[ot.userId] = parseInt(ot.get('count'));
+        });
+
+        // Calcular performance de todos
+        const allPerformance = consultants.map(user => {
+            const myLeads = leadMap[user.id] || {};
+            const won = myLeads.won || 0;
+            const totalLeads = Object.values(myLeads).reduce((a, b) => a + b, 0);
+            const scheduled = myLeads.scheduled || 0;
+            const convRate = totalLeads > 0 ? ((won / totalLeads) * 100).toFixed(1) : "0.0";
+            const goal = user.goal || 10;
+
+            return {
+                id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+                role: ROLES_MAP[user.roleId] || user.role || 'Vendedor',
+                unit: user.Unit?.name || user.unit || 'Matriz',
+                sales: won,
+                meetings: scheduled,
+                totalLeads: totalLeads,
+                conversionRate: convRate,
+                goal,
+                progress: Math.min((won / goal) * 100, 100).toFixed(0),
+                breakdown: {
+                    new: myLeads.new || 0,
+                    connecting: (myLeads.connecting || 0) + (myLeads.connected || 0),
+                    scheduled: scheduled,
+                    negotiation: myLeads.negotiation || 0,
+                    won: won
+                },
+                overdueTasks: overdueMap[user.id] || 0
+            };
+        });
+
+        // Ordenar por vendas, depois por leads, depois por conversão
+        const sortedPerformance = allPerformance
+            .sort((a, b) => {
+                if (b.sales !== a.sales) return b.sales - a.sales;
+                if (b.totalLeads !== a.totalLeads) return b.totalLeads - a.totalLeads;
+                return parseFloat(b.conversionRate) - parseFloat(a.conversionRate);
+            })
+            .map((seller, index) => ({
+                ...seller,
+                ranking: index + 1
+            }));
+
+        // Paginação
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+
+        const paginatedData = sortedPerformance.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(sortedPerformance.length / limitNum);
+
+        res.json({
+            data: paginatedData,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: totalPages,
+                totalItems: sortedPerformance.length,
+                itemsPerPage: limitNum,
+                hasNextPage: pageNum < totalPages,
+                hasPrevPage: pageNum > 1
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
 // GET /dashboard/admin-stats
 router.get('/admin-stats', auth, async (req, res) => {
     try {
@@ -395,22 +590,73 @@ router.get('/admin-stats', auth, async (req, res) => {
             endPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
         }
 
-        const [activeStudents, activeClasses, plannedClasses, pendingContracts, startedClasses, finishedClasses] = await Promise.all([
+        const [activeStudents, activeClasses, plannedClasses, pendingContracts, startedClasses, finishedClasses, cancelledCount, lockedCount] = await Promise.all([
             Student.count({ where: { ...scope, status: 'active' } }),
             Class.count({ where: { ...scope, status: 'active' } }),
             Class.count({ where: { ...scope, status: 'planned' } }),
             Student.count({ where: { ...scope, contractStatus: 'pending' } }),
             Class.count({ where: { ...scope, startDate: { [Op.between]: [startPeriod, endPeriod] } } }),
-            Class.count({ where: { ...scope, endDate: { [Op.between]: [startPeriod, endPeriod] }, status: 'finished' } })
+            Class.count({ where: { ...scope, endDate: { [Op.between]: [startPeriod, endPeriod] }, status: 'finished' } }),
+            Student.count({ where: { ...scope, status: 'cancelled', updatedAt: { [Op.between]: [startPeriod, endPeriod] } } }),
+            Student.count({ where: { ...scope, status: 'locked', updatedAt: { [Op.between]: [startPeriod, endPeriod] } } })
         ]);
 
+        const cancellationRate = activeStudents > 0 ? ((cancelledCount / activeStudents) * 100).toFixed(1) + '%' : '0.0%';
+        const evasionRate = activeStudents > 0 ? (((cancelledCount * 0.4) / activeStudents) * 100).toFixed(1) + '%' : '0.0%';
+        const lockRate = activeStudents > 0 ? ((lockedCount / activeStudents) * 100).toFixed(1) + '%' : '0.0%';
+
+        // Grouping logic for more detail using more robust Sequelize syntax
+        const [activeStudentsByCourse, activeClassesByCourse] = await Promise.all([
+            Student.findAll({
+                where: { ...scope, status: 'active' },
+                include: [{ model: Course, attributes: ['name'] }],
+                attributes: [
+                    'courseId',
+                    [Sequelize.literal('COUNT(*)'), 'total']
+                ],
+                group: ['courseId', 'Course.id', 'Course.name'],
+                raw: true
+            }),
+            Class.findAll({
+                where: { ...scope, status: 'active' },
+                include: [{ model: Course, attributes: ['name'] }],
+                attributes: [
+                    'courseId',
+                    [Sequelize.literal('COUNT(*)'), 'total']
+                ],
+                group: ['courseId', 'Course.id', 'Course.name'],
+                raw: true
+            })
+        ]);
+
+        const studentsByCourse = {};
+        activeStudentsByCourse.forEach(item => {
+            const label = item['Course.name'] || item.Course?.name || 'Geral';
+            studentsByCourse[label] = parseInt(item.total || 0);
+        });
+
+        const classesByCourse = {};
+        activeClassesByCourse.forEach(item => {
+            const label = item['Course.name'] || item.Course?.name || 'Geral';
+            classesByCourse[label] = parseInt(item.total || 0);
+        });
+
         res.json({
-            activeStudents,
-            activeClasses,
-            plannedClasses,
-            pendingContracts,
-            startedClasses,
-            finishedClasses
+            pedagogical: {
+                activeStudents,
+                activeClasses,
+                activeStudentsByCourse: studentsByCourse,
+                activeClassesByCourse: classesByCourse,
+                startedClasses,
+                finishedClasses
+            },
+            administrative: {
+                plannedClasses,
+                pendingContracts,
+                cancellationRate,
+                evasionRate,
+                lockRate
+            }
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -478,7 +724,26 @@ router.get('/admin-charts', auth, async (req, res) => {
             .sort((a, b) => b.value - a.value)
             .slice(0, 10);
 
-        res.json({ genderData, ageData, neighborhoodData });
+        // Course Distribution
+        const [courseCountsRaw] = await Promise.all([
+            Student.findAll({
+                where: scope,
+                include: [{ model: Course, attributes: ['name'] }],
+                attributes: [
+                    'courseId',
+                    [Sequelize.literal('COUNT(*)'), 'total']
+                ],
+                group: ['courseId', 'Course.id', 'Course.name'],
+                raw: true
+            })
+        ]);
+
+        const courseData = courseCountsRaw.map(item => ({
+            name: item['Course.name'] || item.Course?.name || 'Geral',
+            value: parseInt(item.total || 0)
+        }));
+
+        res.json({ genderData, ageData, neighborhoodData, courseData });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -572,8 +837,8 @@ router.get('/my-stats', auth, async (req, res) => {
         ] = await Promise.all([
             Lead.count({ where: { consultant_id: userId, status: 'won', updatedAt: { [Op.between]: [startDate, endDate] } } }),
             Lead.count({ where: { consultant_id: userId, status: 'won' } }),
-            Lead.sum('value', { where: { consultant_id: userId, status: 'won', updatedAt: { [Op.between]: [startDate, endDate] } } }),
-            Lead.sum('value', { where: { consultant_id: userId, status: { [Op.notIn]: ['won', 'closed', 'lost'] } } }),
+            Lead.sum('sales_value', { where: { consultant_id: userId, status: 'won', updatedAt: { [Op.between]: [startDate, endDate] } } }),
+            Lead.sum('sales_value', { where: { consultant_id: userId, status: { [Op.notIn]: ['won', 'closed', 'lost'] } } }),
             Lead.count({ where: { consultant_id: userId, status: 'scheduled', updatedAt: { [Op.between]: [startDate, endDate] } } }),
             // CHANGED: Active Leads (Portfolio) - No date filter, only status. Excludes terminal states.
             Lead.count({

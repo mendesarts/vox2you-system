@@ -15,20 +15,16 @@ const FinancialDashboard = () => {
         payableAmount: 0,
         revenueData: []
     });
-    // Set default view to 'records' (Lançamentos) directly, bypassing the "Dashboard" menu if that's the intent of removing "Dashboard Financeiro".
-    // Or if the user just wants the TEXT removed.
-    // User said "exclua Dashboard Financeiro... Monitoramento de fluxo de caixa... e o botão atualizar".
-    // I will search for these strings first.
-    const [view, setView] = useState('categories'); // Default to Análise Financeira
+
+    const [view, setView] = useState('analysis');
     const [showAIAdvisor, setShowAIAdvisor] = useState(false);
 
     const renderTabs = () => (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px', background: 'rgba(0,0,0,0.05)', borderRadius: '14px', width: 'fit-content' }}>
                 {[
-                    { id: 'categories', label: 'Análise Financeira' },
+                    { id: 'analysis', label: 'Análise' },
                     { id: 'records', label: 'Lançamentos' },
-                    { id: 'cashflow', label: 'Fluxo de Caixa' },
                     { id: 'dre', label: 'DRE' }
                 ].map(tab => (
                     <button
@@ -80,9 +76,8 @@ const FinancialDashboard = () => {
 
     const renderContent = () => {
         switch (view) {
-            case 'cashflow': return <CashFlowManager />;
+            case 'analysis': return <FinancialCategories />;
             case 'dre': return <DREReport />;
-            case 'categories': return <FinancialCategories />;
             case 'records':
             default:
                 return <FinancialManager />;
@@ -99,10 +94,11 @@ const FinancialDashboard = () => {
             {showAIAdvisor && <AIAdvisorModal onClose={() => setShowAIAdvisor(false)} />}
 
             <HelpButton context={
-                view === 'cashflow' ? 'cash_flow' :
-                    view === 'records' ? 'financial_records' :
-                        view === 'dre' ? 'dre' :
-                            'financial_dashboard'
+                view === 'analysis' ? 'financial_analysis' :
+                    view === 'cashflow' ? 'cash_flow' :
+                        view === 'records' ? 'financial_records' :
+                            view === 'dre' ? 'dre' :
+                                'financial_dashboard'
             } />
         </div>
     );

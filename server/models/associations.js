@@ -126,7 +126,7 @@ function defineAssociations() {
     User.hasMany(Task, { foreignKey: 'userId' });
     Task.belongsTo(User, { foreignKey: 'userId' });
 
-    Lead.hasMany(Task, { foreignKey: 'leadId', onDelete: 'CASCADE' });
+    Lead.hasMany(Task, { foreignKey: 'leadId', as: 'tasks', onDelete: 'CASCADE' });
     Task.belongsTo(Lead, { foreignKey: 'leadId', onDelete: 'CASCADE' });
 
     Unit.hasOne(UnitConfig, { foreignKey: 'unitId' });

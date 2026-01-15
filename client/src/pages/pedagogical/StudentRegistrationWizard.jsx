@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ArrowRight, ArrowLeft, Check, AlertTriangle } from 'lucide-react';
 import { validateCPF, formatCPF, validatePhone, formatPhone, validateCEP, formatCEP, fetchAddressByCEP } from '../../utils/validators';
 import { useAuth } from '../../context/AuthContext';
@@ -283,9 +284,9 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [], initialData 
         }
     };
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content" style={{ width: '800px', maxWidth: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
+    return createPortal(
+        <div className="modal-overlay" style={{ zIndex: 11000, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="modal-content" style={{ width: '800px', maxWidth: '95%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
                 <div className="modal-header">
                     <h3>{isEdit ? 'Editar Matrícula' : 'Nova Matrícula'} - Passo {step}/3</h3>
                     <button onClick={onClose}><X size={20} /></button>
@@ -682,7 +683,8 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [], initialData 
 
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

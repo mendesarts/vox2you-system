@@ -123,7 +123,12 @@ router.post('/login', async (req, res) => {
                 unitId: user.unitId, // UUID
                 profilePicture: user.profilePicture,
                 color: user.color,
-                forcePasswordChange: user.forcePasswordChange
+                forcePasswordChange: user.forcePasswordChange,
+                phone: user.phone,
+                whatsapp: user.whatsapp,
+                workingHours: user.workingHours,
+                secondaryRoles: user.secondaryRoles,
+                canMentorship: user.canMentorship
             }
         });
 

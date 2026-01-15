@@ -20,7 +20,9 @@ import {
     User,
     MessageSquare,
     Clock,
-    Filter
+    Filter,
+    CheckSquare,
+    Minus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -136,7 +138,9 @@ const EventChip = ({ event }) => {
         // Distinct Color for Block: Slate/Dark Gray
         theme = { bg: 'rgba(71, 85, 105, 0.2)', color: '#1e293b', label: 'BLO', border: '#475569' };
     } else if (event.type === 'financial') {
-        theme = { bg: 'rgba(16, 185, 129, 0.15)', color: '#064e3b', label: 'FIN', border: '#10B981' };
+        theme = { bg: 'rgba(52, 199, 89, 0.15)', color: '#166534', label: 'FIN', border: '#34C759' };
+    } else if (event.type === 'task') {
+        theme = { bg: 'rgba(175, 82, 222, 0.15)', color: '#6b21a8', label: 'TAR', border: '#AF52DE' };
     }
 
     const timeStr = event.start && !event.isAllDay ? new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -374,9 +378,59 @@ const EventModal = ({ isOpen, onClose, event, onSave, onDelete, onUpdate, isOwne
                                     </div>
                                 );
                             })()
+                        ) : event.type === 'task' ? (
+                            <div className="mt-0 space-y-2">
+                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <CheckSquare size={16} className="text-purple-600" />
+                                        <span className="text-xs font-bold text-purple-800 uppercase">Tarefa</span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-gray-900">{event.title}</h4>
+                                    <p className="text-xs text-gray-600 mt-1">{event.data?.description || 'Sem descrição.'}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Status</span>
+                                        <span className={`text-xs font-bold uppercase ${event.data?.status === 'pending' ? 'text-orange-600' : 'text-green-600'}`}>
+                                            {event.data?.status === 'pending' ? 'Pendente' : 'Concluída'}
+                                        </span>
+                                    </div>
+                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Prioridade</span>
+                                        <span className="text-xs font-bold uppercase text-gray-700">{event.data?.priority || 'Normal'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : event.type === 'financial' ? (
+                            <div className="mt-0 space-y-2">
+                                <div className={`p-3 rounded-lg border ${event.data?.direction === 'income' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        {event.data?.direction === 'income' ? <Plus size={16} className="text-green-600" /> : <Minus size={16} className="text-red-600" />}
+                                        <span className={`text-xs font-bold uppercase ${event.data?.direction === 'income' ? 'text-green-800' : 'text-red-800'}`}>
+                                            {event.data?.direction === 'income' ? 'Receita' : 'Despesa'}
+                                        </span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-gray-900">{event.data?.description}</h4>
+                                    <p className="text-lg font-black text-gray-900 mt-1">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.data?.amount || 0)}
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Vencimento</span>
+                                        <span className="text-xs font-bold text-gray-700">{format(new Date(event.start), 'dd/MM/yyyy')}</span>
+                                    </div>
+                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Status</span>
+                                        <span className={`text-xs font-bold uppercase ${event.data?.status === 'paid' ? 'text-green-600' : 'text-orange-600'}`}>
+                                            {event.data?.status === 'paid' ? 'Pago' : 'Pendente'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             event.data && Object.entries(event.data).map(([k, v]) => {
-                                if (typeof v !== 'object') return <p key={k} className="text-xs mt-1"><strong className="capitalize">{k}:</strong> {v}</p>
+                                if (typeof v !== 'object') return <p key={k} className="text-xs mt-1"><strong className="capitalize">{k}:</strong> {String(v)}</p>
                                 return null;
                             })
                         )
@@ -390,6 +444,8 @@ const EventModal = ({ isOpen, onClose, event, onSave, onDelete, onUpdate, isOwne
 
 const CalendarView = ({ events, currentDate, setCurrentDate, onEventClick }) => {
     const { user } = useAuth();
+    const [expandedDay, setExpandedDay] = useState(null);
+
     const [filters, setFilters] = useState(() => {
         const defaults = { commercial: true, pedagogical: true, administrative: true, financial: true, holiday: true, blocks: true };
         try {
@@ -483,6 +539,9 @@ const CalendarView = ({ events, currentDate, setCurrentDate, onEventClick }) => 
                 {monthDays.map((dayObj, i) => {
                     const isToday = new Date().toDateString() === dayObj.date.toDateString();
                     const dailyEvents = getEventsForDay(dayObj.date);
+                    const MAX_EVENTS = 4;
+                    const hasMore = dailyEvents.length > MAX_EVENTS;
+                    const displayEvents = hasMore ? dailyEvents.slice(0, MAX_EVENTS) : dailyEvents;
 
                     return (
                         <div
@@ -491,16 +550,51 @@ const CalendarView = ({ events, currentDate, setCurrentDate, onEventClick }) => 
                         >
                             <div className="calendar-day-number">{dayObj.date.getDate()}</div>
                             <div className="calendar-events-container">
-                                {dailyEvents.map(ev => (
+                                {displayEvents.map(ev => (
                                     <div key={ev.id} onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}>
                                         <EventChip event={ev} />
                                     </div>
                                 ))}
+                                {hasMore && (
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedDay({ date: dayObj.date, events: dailyEvents });
+                                        }}
+                                        style={{
+                                            fontSize: '10px',
+                                            color: '#64748b',
+                                            background: '#f1f5f9',
+                                            borderRadius: '4px',
+                                            padding: '2px 6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            textAlign: 'center',
+                                            marginTop: '2px'
+                                        }}
+                                    >
+                                        + {dailyEvents.length - MAX_EVENTS} mais
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
                 })}
             </div>
+            <VoxModal
+                isOpen={!!expandedDay}
+                onClose={() => setExpandedDay(null)}
+                title={expandedDay ? format(expandedDay.date, "EEEE, dd 'de' MMMM", { locale: ptBR }) : ''}
+                width="600px"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '60vh', overflowY: 'auto' }}>
+                    {expandedDay?.events.map(ev => (
+                        <div key={ev.id} onClick={() => { setExpandedDay(null); onEventClick(ev); }} style={{ cursor: 'pointer' }}>
+                            <EventChip event={ev} />
+                        </div>
+                    ))}
+                </div>
+            </VoxModal>
         </div>
     );
 };
@@ -939,6 +1033,14 @@ const AgendaPage = () => {
     const [selectedFilterUnit, setSelectedFilterUnit] = useState('');
     const [selectedFilterRole, setSelectedFilterRole] = useState('');
     const [selectedFilterUser, setSelectedFilterUser] = useState('');
+
+    // Initialize unit filter for non-global users
+    useEffect(() => {
+        if (user && user.unitId && ![1, 10].includes(Number(user.roleId))) {
+            // For franchisees, managers, etc., pre-select their unit
+            setSelectedFilterUnit(String(user.unitId));
+        }
+    }, [user]);
 
     useEffect(() => {
         if (user && [1, 10, 20, 30, 50].includes(Number(user.roleId))) {

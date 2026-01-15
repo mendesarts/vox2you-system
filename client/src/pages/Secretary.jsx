@@ -47,9 +47,22 @@ const Secretary = () => {
                 fetch(`${apiBase}/dashboard/admin-stats${query}`, { headers }).then(r => r.json()),
                 fetch(`${apiBase}/dashboard/admin-charts${query}`, { headers }).then(r => r.json())
             ]);
-            if (s) setStats(s);
-            if (c) {
-                setCharts(c);
+
+            if (s && !s.error) {
+                setStats(s);
+            } else if (s?.error) {
+                console.error('Admin Stats Error:', s.error);
+            }
+
+            if (c && !c.error) {
+                setCharts({
+                    genderData: Array.isArray(c.genderData) ? c.genderData : [],
+                    ageData: Array.isArray(c.ageData) ? c.ageData : [],
+                    neighborhoodData: Array.isArray(c.neighborhoodData) ? c.neighborhoodData : [],
+                    courseData: Array.isArray(c.courseData) ? c.courseData : []
+                });
+            } else if (c?.error) {
+                console.error('Admin Charts Error:', c.error);
             }
         } catch (error) { console.error(error); } finally { setLoading(false); }
     };

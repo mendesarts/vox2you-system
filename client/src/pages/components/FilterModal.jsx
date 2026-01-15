@@ -28,11 +28,11 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
     }, [leads]);
 
     const presets = [
-        { id: 'all', label: 'Todas etapas' },
         { id: 'active', label: 'Leads ativos' },
         { id: 'mine', label: 'Meus leads' },
         { id: 'won', label: 'Leads ganhos' },
         { id: 'lost', label: 'Leads perdidos' },
+        { id: 'all', label: 'Todos os Leads' },
         { id: 'no_task', label: 'Leads sem Tarefas', color: '#f59e0b' },
         { id: 'overdue', label: 'Leads com Tarefas Atrasadas', color: '#ef4444' }
     ];
@@ -44,6 +44,9 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
         newFilters.specialFilter = null;
 
         switch (preset.id) {
+            case 'active':
+                newFilters.status = 'active';
+                break;
             case 'mine':
                 newFilters.responsibleId = user.id;
                 break;
@@ -59,6 +62,10 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
             case 'overdue':
                 newFilters.specialFilter = 'overdue';
                 break;
+            case 'all':
+            default:
+                newFilters.status = 'all';
+                break;
         }
         setLocalFilters(newFilters);
     };
@@ -66,6 +73,20 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
     const handleApply = () => {
         setFilters(localFilters);
         onClose();
+    };
+
+    const handleClear = () => {
+        setLocalFilters({
+            unitId: 'all',
+            responsibleId: 'all',
+            source: 'all',
+            temperature: 'all',
+            startDate: '',
+            endDate: '',
+            status: 'all',
+            specialFilter: null,
+            name: ''
+        });
     };
 
     // Shared Styles
@@ -95,6 +116,7 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
                     <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#334155' }}>Filtro e Busca</h2>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={onClose} style={{ padding: '8px 16px', border: 'none', background: '#f1f5f9', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', color: '#64748b', cursor: 'pointer' }}>Cancelar</button>
+                        <button onClick={handleClear} style={{ padding: '8px 16px', border: 'none', background: '#fee2e2', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', color: '#dc2626', cursor: 'pointer' }}>Limpar</button>
                         <button onClick={handleApply} className="btn-primary" style={{ fontSize: '14px', borderRadius: '6px', padding: '8px 24px' }}>Buscar</button>
                     </div>
                 </div>
@@ -108,15 +130,76 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
                                 key={p.id}
                                 onClick={() => handlePresetClick(p)}
                                 style={{
-                                    textAlign: 'left', padding: '10px 12px', fontSize: '13px', background: 'transparent',
+                                    textAlign: 'left',
+                                    padding: '10px 12px',
+                                    fontSize: '13px',
+                                    // Highlight if active logic (checking if filters match preset)
+                                    background: (
+                                        (p.id === 'all' && localFilters.status === 'all' && (!localFilters.responsibleId || localFilters.responsibleId === 'all') && !localFilters.specialFilter) ||
+                                        (p.id === 'active' && localFilters.status === 'active') ||
+                                        (p.id === 'mine' && Number(localFilters.responsibleId) === Number(user.id)) ||
+                                        (p.id === 'won' && localFilters.status === 'won') ||
+                                        (p.id === 'lost' && localFilters.status === 'closed') ||
+                                        (p.id === 'no_task' && localFilters.specialFilter === 'no_task') ||
+                                        (p.id === 'overdue' && localFilters.specialFilter === 'overdue')
+                                    ) ? '#2563eb' : 'transparent', // Blue-600 for active
+                                    boxShadow: (
+                                        (p.id === 'all' && localFilters.status === 'all' && (!localFilters.responsibleId || localFilters.responsibleId === 'all') && !localFilters.specialFilter) ||
+                                        (p.id === 'active' && localFilters.status === 'active') ||
+                                        (p.id === 'mine' && Number(localFilters.responsibleId) === Number(user.id)) ||
+                                        (p.id === 'won' && localFilters.status === 'won') ||
+                                        (p.id === 'lost' && localFilters.status === 'closed') ||
+                                        (p.id === 'no_task' && localFilters.specialFilter === 'no_task') ||
+                                        (p.id === 'overdue' && localFilters.specialFilter === 'overdue')
+                                    ) ? '0 2px 4px rgba(37, 99, 235, 0.2)' : 'none',
                                     border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px',
-                                    color: '#475569', transition: '0.2s'
+                                    color: (
+                                        (p.id === 'all' && localFilters.status === 'all' && (!localFilters.responsibleId || localFilters.responsibleId === 'all') && !localFilters.specialFilter) ||
+                                        (p.id === 'active' && localFilters.status === 'active') ||
+                                        (p.id === 'mine' && Number(localFilters.responsibleId) === Number(user.id)) ||
+                                        (p.id === 'won' && localFilters.status === 'won') ||
+                                        (p.id === 'lost' && localFilters.status === 'closed') ||
+                                        (p.id === 'no_task' && localFilters.specialFilter === 'no_task') ||
+                                        (p.id === 'overdue' && localFilters.specialFilter === 'overdue')
+                                    ) ? '#ffffff' : '#475569',
+                                    transition: '0.2s',
+                                    fontWeight: (
+                                        (p.id === 'all' && localFilters.status === 'all' && (!localFilters.responsibleId || localFilters.responsibleId === 'all') && !localFilters.specialFilter) ||
+                                        (p.id === 'active' && localFilters.status === 'active') ||
+                                        (p.id === 'mine' && Number(localFilters.responsibleId) === Number(user.id)) ||
+                                        (p.id === 'won' && localFilters.status === 'won') ||
+                                        (p.id === 'lost' && localFilters.status === 'closed') ||
+                                        (p.id === 'no_task' && localFilters.specialFilter === 'no_task') ||
+                                        (p.id === 'overdue' && localFilters.specialFilter === 'overdue')
+                                    ) ? '600' : '500'
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#fff'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                onMouseEnter={e => {
+                                    const isActive = (
+                                        (p.id === 'all' && localFilters.status === 'all' && (!localFilters.responsibleId || localFilters.responsibleId === 'all') && !localFilters.specialFilter) ||
+                                        (p.id === 'active' && localFilters.status === 'active') ||
+                                        (p.id === 'mine' && Number(localFilters.responsibleId) === Number(user.id)) ||
+                                        (p.id === 'won' && localFilters.status === 'won') ||
+                                        (p.id === 'lost' && localFilters.status === 'closed') ||
+                                        (p.id === 'no_task' && localFilters.specialFilter === 'no_task') ||
+                                        (p.id === 'overdue' && localFilters.specialFilter === 'overdue')
+                                    );
+                                    if (!isActive) e.currentTarget.style.background = '#f1f5f9';
+                                }}
+                                onMouseLeave={e => {
+                                    const isActive = (
+                                        (p.id === 'all' && localFilters.status === 'all' && (!localFilters.responsibleId || localFilters.responsibleId === 'all') && !localFilters.specialFilter) ||
+                                        (p.id === 'active' && localFilters.status === 'active') ||
+                                        (p.id === 'mine' && Number(localFilters.responsibleId) === Number(user.id)) ||
+                                        (p.id === 'won' && localFilters.status === 'won') ||
+                                        (p.id === 'lost' && localFilters.status === 'closed') ||
+                                        (p.id === 'no_task' && localFilters.specialFilter === 'no_task') ||
+                                        (p.id === 'overdue' && localFilters.specialFilter === 'overdue')
+                                    );
+                                    if (!isActive) e.currentTarget.style.background = 'transparent';
+                                }}
                             >
                                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: p.color || '#cbd5e1' }}></div>
-                                {p.label}
+                                {p.label === 'Todas etapas' ? 'Todos os Leads' : p.label}
                             </button>
                         ))}
                     </div>
@@ -153,9 +236,9 @@ const FilterModal = ({ isOpen, onClose, filters, setFilters, consultants, leads 
                                     <option value="connecting">Conectando</option>
                                     <option value="connected">Conexão</option>
                                     <option value="scheduled">Agendamento</option>
-                                    <option value="no_show">No-Show</option>
+                                    <option value="no_show">Bolo</option>
                                     <option value="negotiation">Negociação</option>
-                                    <option value="won">Matriculados</option>
+                                    <option value="won">Matricular</option>
                                     <option value="closed">Encerrado</option>
                                 </select>
                             </div>

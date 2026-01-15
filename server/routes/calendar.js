@@ -14,6 +14,7 @@ const Holiday = require('../models/Holiday');
 const User = require('../models/User');
 const Mentorship = require('../models/Mentorship');
 const Student = require('../models/Student');
+const FinancialRecord = require('../models/FinancialRecord');
 const { rescheduleAffectedClasses } = require('../utils/scheduleGenerator');
 
 // Helper for Numeric ID compatibility - REMOVED (Strict Integer System)
@@ -274,6 +275,10 @@ router.get('/events', auth, async (req, res) => {
         }
         if (targetUserId) scope = 'target';
 
+        // Force String Comparison for DATEONLY (YYYY-MM-DD)
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+
         // Base Where Clauses
         let leadWhere = {
             appointmentDate: { [Op.between]: [startDate, endDate] },
@@ -281,7 +286,11 @@ router.get('/events', auth, async (req, res) => {
         };
         let taskWhere = {
             dueDate: { [Op.between]: [startDate, endDate] },
-            status: 'pending'
+            status: { [Op.in]: ['pending', 'in_progress'] }
+        };
+        let financialWhere = {
+            dueDate: { [Op.between]: [startStr, endStr] },
+            status: { [Op.ne]: 'cancelled' }
         };
         let blockWhere = {
             startTime: { [Op.gte]: startDate },
@@ -291,16 +300,10 @@ router.get('/events', auth, async (req, res) => {
         if (scope === 'own') {
             blockWhere.userId = Number(id);
         }
-        // Include owner user for display
-        const blockInclude = [{ model: User, as: 'owner', attributes: ['name', 'roleId'] }]; let mentorshipWhere = {
+        let mentorshipWhere = {
             scheduledDate: { [Op.between]: [startDate, endDate] },
             status: 'scheduled'
         };
-
-        // Classes Logic
-        // Force String Comparison for DATEONLY (YYYY-MM-DD)
-        const startStr = startDate.toISOString().split('T')[0];
-        const endStr = endDate.toISOString().split('T')[0];
 
         let classSessionWhere = {
             date: { [Op.between]: [startStr, endStr] },
@@ -315,6 +318,7 @@ router.get('/events', auth, async (req, res) => {
                 taskWhere.unitId = numericUnitId;
                 blockWhere.unitId = numericUnitId;
                 classIncludeWhere.unitId = numericUnitId;
+                financialWhere.unitId = numericUnitId;
             }
         }
 
@@ -339,6 +343,7 @@ router.get('/events', auth, async (req, res) => {
             if (numericRoleId === ROLE_IDS.LEADER_SALES) {
                 mentorshipWhere = null;
                 classSessionWhere = null;
+                financialWhere = null; // Sales Focus
                 // Sees all Unit Leads & Tasks (Set by generic unit logic above)
             }
             // PEDAGOGICAL LEADER (50): Focus on Pedagogical
@@ -374,6 +379,10 @@ router.get('/events', auth, async (req, res) => {
             blockWhere ? CalendarBlock.findAll({
                 where: blockWhere,
                 include: [{ model: User, as: 'owner', attributes: ['name', 'roleId'], where: roleWhere }]
+            }) : Promise.resolve([]),
+
+            financialWhere ? FinancialRecord.findAll({
+                where: financialWhere
             }) : Promise.resolve([]),
         ];
 
@@ -468,7 +477,7 @@ router.get('/events', auth, async (req, res) => {
             promises.push(Promise.resolve([]));
         }
 
-        const [leads, tasks, blocks, mentorships, dbHolidays, classSessions] = await Promise.all(promises);
+        const [leads, tasks, blocks, financialRecords, mentorships, dbHolidays, classSessions] = await Promise.all(promises);
 
         const events = [];
 
@@ -507,6 +516,32 @@ router.get('/events', auth, async (req, res) => {
             end: new Date(new Date(m.scheduledDate).getTime() + 60 * 60000),
             type: 'mentorship',
             data: m
+        }));
+
+
+        // Tasks -> Administrative (Only show tasks with leadId - appointments/consultations)
+        // Other tasks should only appear in the Tasks page
+        tasks.filter(t => t.leadId).forEach(t => events.push({
+            id: `task_${t.id}`,
+            title: t.title,
+            start: t.dueDate,
+            end: t.dueDate,
+            type: 'administrative',
+            isAllDay: false,
+            responsibleName: t.User ? t.User.name : null,
+            responsibleRoleId: t.User ? t.User.roleId : null,
+            data: t
+        }));
+
+        // Financial -> Financial
+        financialRecords.forEach(f => events.push({
+            id: `fin_${f.id}`,
+            title: `${f.direction === 'income' ? '💰' : '💸'} ${f.description || f.category}`,
+            start: f.dueDate,
+            end: f.dueDate,
+            type: 'financial',
+            isAllDay: true,
+            data: f
         }));
 
         // Holidays & Recesses (Intelligence: Feriado > Recesso)

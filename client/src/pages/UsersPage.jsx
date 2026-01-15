@@ -3,6 +3,7 @@ import { UserPlus, Edit, Trash2, Search, Store, Mail, Shield, ChevronRight } fro
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import RegisterUserPremium from '../components/RegisterUserPremium';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const UsersPage = () => {
     const { user: currentUser } = useAuth();
@@ -12,6 +13,8 @@ const UsersPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [units, setUnits] = useState([]);
     const [unitFilter, setUnitFilter] = useState('all');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
 
     useEffect(() => {
         fetchUsers();
@@ -65,6 +68,35 @@ const UsersPage = () => {
         if ([40, 41].includes(id)) return 'Executivos Comerciais';
         if ([50, 51].includes(id)) return 'Corpo Docente & Pedagógico';
         return 'Suporte & Operações';
+    };
+
+    const handleDeleteClick = (user) => {
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!userToDelete) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/users/${userToDelete.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                fetchUsers(); // Recarrega a lista
+                setShowDeleteModal(false);
+                setUserToDelete(null);
+            } else {
+                const error = await res.json();
+                alert('Erro ao excluir usuário: ' + (error.error || 'Erro desconhecido'));
+            }
+        } catch (error) {
+            console.error('Erro ao excluir usuário:', error);
+            alert('Erro ao excluir usuário. Tente novamente.');
+        }
     };
 
     const groupOrder = ['Governança & Master', 'Proprietários & Franqueados', 'Direção de Unidade', 'Executivos Comerciais', 'Corpo Docente & Pedagógico', 'Suporte & Operações'];
@@ -164,7 +196,7 @@ const UsersPage = () => {
                                                     <button onClick={() => { setSelectedUser(u); setIsModalOpen(true); }} style={{ border: 'none', background: 'rgba(0,122,255,0.1)', color: '#007AFF', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}>
                                                         <Edit size={16} />
                                                     </button>
-                                                    <button style={{ border: 'none', background: 'rgba(255,59,48,0.1)', color: '#FF3B30', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}>
+                                                    <button onClick={() => handleDeleteClick(u)} style={{ border: 'none', background: 'rgba(255,59,48,0.1)', color: '#FF3B30', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}>
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
@@ -186,6 +218,21 @@ const UsersPage = () => {
                     userToEdit={selectedUser}
                 />
             )}
+
+            <DeleteConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setUserToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Excluir Usuário"
+                message="Tem certeza que deseja excluir este usuário do sistema?"
+                itemName={userToDelete?.name}
+                warningText="Esta ação removerá permanentemente o acesso do usuário ao sistema. Todos os dados associados serão mantidos, mas o usuário não poderá mais fazer login."
+                confirmText="Excluir Usuário"
+                cancelText="Cancelar"
+            />
         </div>
     );
 };

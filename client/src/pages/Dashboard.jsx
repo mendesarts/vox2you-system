@@ -260,8 +260,8 @@ const Dashboard = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {stats?.commercial?.teamPerformance
-                                            ?.sort((a, b) => b.sales - a.sales)
+                                        {(Array.isArray(stats?.commercial?.teamPerformance) ? stats.commercial.teamPerformance : [])
+                                            .sort((a, b) => b.sales - a.sales)
                                             .slice(0, 5)
                                             .map((con, idx) => (
                                                 <tr key={con.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.02)', transition: '0.2s' }} className="hover:bg-gray-50">

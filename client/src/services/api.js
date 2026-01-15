@@ -102,7 +102,14 @@ export const api = {
     // System Health
     verificarSaudeDoSistema: async () => {
         const response = await fetch(`${API_URL}/health/full`, { headers: getHeaders() });
-        if (!response.ok) throw new Error('Falha no Health Check');
+        if (!response.ok) {
+            let msg = 'Falha no Health Check';
+            try {
+                const data = await response.json();
+                msg = data.message || data.error || msg;
+            } catch (e) { }
+            throw new Error(msg);
+        }
         return response.json();
     },
 

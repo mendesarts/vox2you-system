@@ -196,6 +196,26 @@ router.delete('/:id', auth, checkClassManageAccess, async (req, res) => {
     }
 });
 
+// GET /classes/:id/capacity
+// Get class capacity information (current students vs total capacity)
+router.get('/:id/capacity', auth, async (req, res) => {
+    try {
+        const classObj = await Class.findByPk(req.params.id);
+        if (!classObj) return res.status(404).json({ error: 'Turma não encontrada' });
+
+        const currentStudents = await Student.count({ where: { classId: req.params.id } });
+
+        res.json({
+            total: classObj.capacity || 20,
+            current: currentStudents,
+            available: (classObj.capacity || 20) - currentStudents,
+            percentage: Math.round((currentStudents / (classObj.capacity || 20)) * 100)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST /classes/:id/generate-schedule
 router.post('/:id/generate-schedule', auth, checkClassManageAccess, async (req, res) => {
     try {

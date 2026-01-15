@@ -255,6 +255,7 @@ router.get('/leads', auth, async (req, res) => {
                 { model: User, as: 'consultant', attributes: ['name', 'roleId'] },
                 {
                     model: Task,
+                    as: 'tasks',
                     required: false,
                     where: { status: 'pending' },
                     attributes: ['dueDate', 'status']
@@ -269,9 +270,9 @@ router.get('/leads', auth, async (req, res) => {
 
             // Calculate Next Task Date (Newest/Furthest Pending Task)
             let nextTaskDate = null;
-            if (plain.Tasks && plain.Tasks.length > 0) {
+            if (plain.tasks && plain.tasks.length > 0) {
                 // Sort tasks by due date (DESC) as requested to get the 'newest'
-                const sorted = plain.Tasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+                const sorted = plain.tasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
                 nextTaskDate = sorted[0].dueDate;
             }
 
@@ -602,7 +603,21 @@ router.put('/leads/:id', auth, async (req, res) => {
             company,
             city,
             neighborhood,
-            tags: Array.isArray(tags) ? JSON.stringify(tags) : tags,
+            tags: (() => {
+                if (tags === undefined) return lead.tags;
+                if (Array.isArray(tags)) return JSON.stringify(tags);
+                if (typeof tags === 'string') {
+                    // If already a JSON string, parse and re-stringify to normalize
+                    try {
+                        const parsed = JSON.parse(tags);
+                        return JSON.stringify(Array.isArray(parsed) ? parsed : [tags]);
+                    } catch {
+                        // If not valid JSON, treat as comma-separated string
+                        return JSON.stringify(tags.split(',').map(t => t.trim()).filter(Boolean));
+                    }
+                }
+                return lead.tags;
+            })(),
             attempts: typeof attempts === 'object' ? JSON.stringify(attempts) : attempts,
             contactSummary,
             nextTaskType,
@@ -623,7 +638,14 @@ router.put('/leads/:id', auth, async (req, res) => {
             courseInterest,
             lossReason,
             tracking: typeof tracking === 'object' ? JSON.stringify(tracking) : tracking,
-            metadata: typeof metadata === 'object' ? JSON.stringify(metadata) : metadata,
+            metadata: (() => {
+                if (metadata === undefined) return lead.metadata;
+                if (typeof metadata === 'string') return metadata;
+                // Merge with existing metadata
+                const existing = lead.metadata ? (typeof lead.metadata === 'string' ? JSON.parse(lead.metadata) : lead.metadata) : {};
+                const updated = typeof metadata === 'object' ? metadata : {};
+                return JSON.stringify({ ...existing, ...updated });
+            })(),
 
             // SPIN & Sales
             painPoint,
@@ -1850,6 +1872,99 @@ router.post('/import/save-mapping', auth, async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error('Save Mapping Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /api/crm/leads/:id/convert-to-student
+// Convert a won lead to a student with enrollment
+router.post('/leads/:id/convert-to-student', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { courseId, classId, registrationNumber } = req.body;
+
+        // Fetch lead
+        const lead = await Lead.findByPk(id);
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead não encontrado' });
+        }
+
+        // Verify lead is in won status
+        if (lead.status !== 'won') {
+            return res.status(400).json({ error: 'Lead deve estar em status "Matricular" para conversão' });
+        }
+
+        // Check if already converted
+        const Student = require('../models/Student');
+        const existingStudent = await Student.findOne({ where: { leadId: id } });
+        if (existingStudent) {
+            return res.status(400).json({ error: 'Lead já foi convertido em aluno', studentId: existingStudent.id });
+        }
+
+        // Fetch class to verify capacity
+        const Class = require('../models/Class');
+        const classData = await Class.findByPk(classId);
+        if (!classData) {
+            return res.status(404).json({ error: 'Turma não encontrada' });
+        }
+
+        // Count current students in class
+        const currentStudents = await Student.count({ where: { classId } });
+        if (currentStudents >= classData.capacity) {
+            return res.status(400).json({ error: 'Turma está com capacidade máxima', capacity: classData.capacity, current: currentStudents });
+        }
+
+        // Create student from lead data
+        const student = await Student.create({
+            leadId: id,
+            unitId: lead.unitId,
+            userId: lead.consultant_id || req.user.id,
+            name: lead.name,
+            email: lead.email,
+            mobile: lead.phone1 || lead.phone2,
+            phone: lead.phone2,
+            cpf: lead.cpf,
+            cep: lead.cep,
+            address: lead.address,
+            neighborhood: lead.neighborhood,
+            city: lead.city,
+            classId,
+            courseId,
+            registrationNumber: registrationNumber || null,
+            status: 'active',
+            contractStatus: 'pending',
+            paymentStatus: 'pending'
+        });
+
+        // Update lead to mark as converted
+        await lead.update({
+            status: 'won',
+            metadata: {
+                ...(lead.metadata || {}),
+                convertedToStudent: true,
+                studentId: student.id,
+                conversionDate: new Date().toISOString()
+            }
+        });
+
+        // Log activity
+        const history = lead.history || [];
+        history.push({
+            date: new Date().toISOString(),
+            action: 'converted_to_student',
+            user: req.user.name,
+            details: `Convertido em aluno #${student.id} - Turma: ${classData.name}`
+        });
+        await lead.update({ history });
+
+        res.json({
+            success: true,
+            student,
+            lead,
+            message: 'Lead convertido em aluno com sucesso'
+        });
+    } catch (error) {
+        console.error('Convert Lead to Student Error:', error);
         res.status(500).json({ error: error.message });
     }
 });

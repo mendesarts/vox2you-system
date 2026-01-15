@@ -130,11 +130,6 @@ const Settings = () => {
 
     return (
         <div style={styles.container}>
-            <header style={styles.header}>
-                <h1 style={styles.title}>Configurações</h1>
-                <p style={styles.subtitle}>Gerencie sua conta, equipe e integrações avançadas.</p>
-            </header>
-
             <div style={styles.tabContainer}>
                 {sections.map(s => {
                     if (s.condition === false) return null;
@@ -201,19 +196,89 @@ const Settings = () => {
                                     <div style={{ width: '100px', height: '100px', borderRadius: '30px', background: 'linear-gradient(135deg, #5856D6, #007AFF)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', fontWeight: '800' }}>
                                         {user?.name?.charAt(0)}
                                     </div>
-                                    <div>
+                                    <div style={{ flex: 1 }}>
                                         <h3 style={{ fontSize: '28px', fontWeight: '900', margin: 0 }}>{user?.name}</h3>
-                                        <p style={{ color: '#8E8E93', margin: '4px 0 0 0' }}>{user?.role} na {user?.unit || 'Unidade Brasília'}</p>
+                                        <p style={{ color: '#8E8E93', margin: '4px 0 0 0' }}>{getRoleName(user?.roleId)} na {user?.unit?.name || user?.unit || 'Unidade Brasília'}</p>
                                     </div>
+                                    <button
+                                        onClick={() => setActiveTab('security')}
+                                        className="btn-primary"
+                                        style={{ background: '#F2F2F7', color: '#1C1C1E', border: 'none', height: '50px' }}
+                                    >
+                                        <Key size={18} style={{ marginRight: '8px' }} />
+                                        Alterar Senha
+                                    </button>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+
+                                    {/* Personal Info */}
                                     <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
                                         <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>E-MAIL</label>
-                                        <div style={{ fontSize: '16px', fontWeight: '600' }}>{user?.email}</div>
+                                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#1C1C1E', marginTop: '4px' }}>{user?.email}</div>
                                     </div>
                                     <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
-                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>CARGO</label>
-                                        <div style={{ fontSize: '16px', fontWeight: '600' }}>{user?.role}</div>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>TELEFONE</label>
+                                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#1C1C1E', marginTop: '4px' }}>{user?.phone || user?.whatsapp || 'Não informado'}</div>
+                                    </div>
+
+                                    {/* Professional Info */}
+                                    <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>CARGO PRINCIPAL</label>
+                                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#1C1C1E', marginTop: '4px' }}>{getRoleName(user?.roleId)}</div>
+                                    </div>
+                                    <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>UNIDADE</label>
+                                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#1C1C1E', marginTop: '4px' }}>{user?.unit?.name || user?.unit || 'Unidade Principal'}</div>
+                                    </div>
+
+                                    {/* Advanced Info */}
+                                    <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>ID DO USUÁRIO</label>
+                                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#1C1C1E', marginTop: '4px' }}>#{user?.id}</div>
+                                    </div>
+                                    <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93' }}>STATUS</label>
+                                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#34C759', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34C759' }} />
+                                            Active
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Extra Details Section */}
+                                <div style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                                    {/* Secondary Roles */}
+                                    <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93', marginBottom: '8px', display: 'block' }}>ACÚMULO DE FUNÇÕES</label>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {user?.secondaryRoles && Array.isArray(user.secondaryRoles) && user.secondaryRoles.map(rId => (
+                                                <span key={rId} style={{ background: '#fff', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', color: '#1C1C1E' }}>
+                                                    {getRoleName(rId)}
+                                                </span>
+                                            ))}
+                                            {(!user?.secondaryRoles || user.secondaryRoles.length === 0) && <span style={{ opacity: 0.5, fontSize: '13px' }}>Nenhuma função extra</span>}
+                                            {user?.canMentorship && <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '700' }}>Mentoria</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* Working Hours Summary */}
+                                    <div style={{ background: '#F2F2F7', padding: '20px', borderRadius: '16px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '800', color: '#8E8E93', marginBottom: '8px', display: 'block' }}>HORÁRIO DE TRABALHO</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {user?.workingHours ? (
+                                                Object.entries(user.workingHours).map(([day, config]) => {
+                                                    if (!config.active) return null;
+                                                    return (
+                                                        <div key={day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '2px' }}>
+                                                            <strong style={{ textTransform: 'capitalize' }}>{day}</strong>
+                                                            <span>{config.start} - {config.end}</span>
+                                                        </div>
+                                                    )
+                                                })
+                                            ) : (
+                                                <span style={{ opacity: 0.5, fontSize: '13px' }}>Padrão Comercial</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -244,6 +309,23 @@ const Settings = () => {
             </div>
         </div>
     );
+};
+
+const getRoleName = (roleId) => {
+    const id = Number(roleId);
+    switch (id) {
+        case 1: return 'Master';
+        case 10: return 'Diretor';
+        case 20: return 'Franqueado';
+        case 30: return 'Gerente';
+        case 40: return 'Líder Comercial';
+        case 41: return 'Consultor';
+        case 50: return 'Líder Pedagógico';
+        case 51: return 'Instrutor';
+        case 60: return 'Financeiro';
+        case 61: return 'Administrativo';
+        default: return 'Colaborador';
+    }
 };
 
 export default Settings;

@@ -489,6 +489,7 @@ const TasksPage = () => {
                                     {(() => {
                                         let history = [];
                                         try { history = JSON.parse(fetchedLead.history || '[]'); } catch (e) { }
+                                        history = Array.isArray(history) ? history : [];
                                         return history.slice(0, 5).map((log, i) => (
                                             <div key={`h-${i}`} style={{ fontSize: '12px', padding: '8px', background: '#fff', borderRadius: '8px', borderLeft: '3px solid #6366f1' }}>
                                                 <div style={{ fontWeight: '800', fontSize: '10px', color: '#94a3b8' }}>{new Date(log.date).toLocaleString('pt-BR')}</div>

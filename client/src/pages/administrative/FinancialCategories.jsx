@@ -63,9 +63,15 @@ const FinancialCategories = () => {
             });
             const data = await res.json();
 
-            console.log('📦 Registros recebidos do backend:', data.length);
+            if (!res.ok || data.error) {
+                console.error('❌ Erro da API:', data.error || res.statusText);
+                setRecords([]);
+                return;
+            }
 
-            setRecords(data);
+            console.log('📦 Registros recebidos do backend:', Array.isArray(data) ? data.length : 'não é array');
+
+            setRecords(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching records:', error);
         } finally {

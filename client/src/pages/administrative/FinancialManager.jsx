@@ -24,9 +24,9 @@ const FinancialManager = () => {
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'grouped'
     const [activeFinancialTab, setActiveFinancialTab] = useState('receivables'); // 'receivables' | 'payables'
-    const [filterStatus, setFilterStatus] = useState('pending');
+    const [filterStatus, setFilterStatus] = useState('all');
     const [selectedRecordId, setSelectedRecordId] = useState(null);
-    const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
+    const [filterMonth, setFilterMonth] = useState('all');
     const [favorecidoSearch, setFavorecidoSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const recordsPerPage = 15;

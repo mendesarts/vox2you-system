@@ -94,7 +94,7 @@ router.get('/', auth, async (req, res) => {
                 },
                 {
                     model: Lead,
-                    attributes: ['id', 'status', 'name', 'aiStatus', 'source']
+                    attributes: ['id', 'status', 'name', 'source']
                 }
             ]
         });
@@ -108,8 +108,8 @@ router.get('/', auth, async (req, res) => {
         tasks.forEach(t => {
             if (t.leadId && t.status === 'pending') {
                 // Rule 2: No tasks for Won/Closed leads
-                // Rule 2: No tasks for Won/Closed leads or Inactive/Matriculado ones
-                const isTerminal = t.Lead && (['won', 'closed'].includes(t.Lead.status) || ['inactive', 'matriculado'].includes(t.Lead.aiStatus));
+                // Rule 2: No tasks for Won/Closed leads
+                const isTerminal = t.Lead && ['won', 'closed'].includes(t.Lead.status);
                 const isEnrollmentTask = t.title?.startsWith('Matricular Aluno:');
 
                 if (isTerminal && !isEnrollmentTask) {
@@ -145,7 +145,7 @@ router.get('/', auth, async (req, res) => {
             // "Mostre as tarefas apenas dos leads ativos para o comercial."
             tasks = tasks.filter(t => {
                 if (!t.leadId) return true; // Generic tasks? or pedagogical?
-                if (t.Lead && t.Lead.aiStatus !== 'active') return false;
+                if (t.Lead && ['won', 'closed'].includes(t.Lead.status)) return false;
                 return true;
             });
         }
@@ -199,7 +199,7 @@ router.get('/', auth, async (req, res) => {
                     id: `session-${s.id}`,
                     title: `Aula: ${s.Class?.Course?.name || 'Curso'} - ${s.Class?.name || 'Turma'}`,
                     description: `Professor: ${s.Class?.professor?.name || 'Não definido'}`,
-                    dueDate: s.date,
+                    dueDate: `${s.date}T${s.startTime}:00`,
                     status: 'pending',
                     priority: 'high',
                     category: 'pedagogical',

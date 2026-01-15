@@ -6,9 +6,8 @@ const auth = require('../middleware/auth');
 // Middleware to ensure user is Master
 const verifyMaster = (req, res, next) => {
     // req.user is populated by 'auth' middleware
-    if (!req.user || req.user.role !== 'master') {
-        // Including 'franchisee' as they might need to see status too, or restrict strictly as requested.
-        // User requested: "EXCLUSIVAMENTE MASTER".
+    const isMaster = Number(req.user?.roleId) === 1 || req.user?.role?.toLowerCase() === 'master';
+    if (!isMaster) {
         return res.status(403).json({ message: 'Acesso negado. Requer permissão MASTER.' });
     }
     next();
