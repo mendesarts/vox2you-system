@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 // Task.sync({ alter: true }).catch(err => console.log('Task sync error:', err));
 
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 const { ROLE_IDS } = require('../config/roles');
 const { checkUnitIsolation } = require('../utils/unitIsolation');
 const User = require('../models/User');
@@ -83,6 +84,55 @@ router.get('/', auth, async (req, res) => {
         // Other Roles (Master, Director, Franchisee, Manager, Admin-Fin)
         // They fall through here and see ALL tasks in the unit (filtered by unitId above).
         // Global/Proiles (Master, Director, Franchisee, Manager, Admin-Fin) -> Access ALL in Unit (Base filter handles Unit, Master sees all if Unit not set).
+
+        // --- PRE-FETCH CLEANUP (Global Self-Healing for this User/Unit) ---
+        // 1. Close all pending commercial tasks for Won/Closed leads in this scope
+        const leadsToClear = await Lead.findAll({
+            where: {
+                status: ['won', 'closed'],
+                deletedAt: null,
+                ...(where.unitId ? { unitId: where.unitId } : {})
+            },
+            attributes: ['id']
+        });
+
+        if (leadsToClear.length > 0) {
+            await Task.update({ status: 'done' }, {
+                where: {
+                    leadId: { [Op.in]: leadsToClear.map(l => l.id) },
+                    status: 'pending',
+                    title: { [Op.notLike]: 'Matricular Aluno%' } // Keep enrollment tasks
+                }
+            });
+        }
+
+        // 2. Ensure only one pending commercial task per lead (keep the one with furthest dueDate)
+        // This query finds all leads with more than 1 pending task in this scope
+        const pendingCounts = await Task.findAll({
+            attributes: ['leadId', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+            where: {
+                leadId: { [Op.ne]: null },
+                status: 'pending',
+                ...(where.unitId ? { unitId: where.unitId } : {}),
+                ...(where.userId ? { userId: where.userId } : {})
+            },
+            group: ['leadId'],
+            having: sequelize.literal('count > 1')
+        });
+
+        for (const pc of pendingCounts) {
+            const lid = pc.leadId;
+            const lidTasks = await Task.findAll({
+                where: { leadId: lid, status: 'pending' },
+                order: [['dueDate', 'DESC']]
+            });
+            if (lidTasks.length > 1) {
+                const [keep, ...others] = lidTasks;
+                await Task.update({ status: 'done' }, {
+                    where: { id: { [Op.in]: others.map(o => o.id) } }
+                });
+            }
+        }
 
         let tasks = await Task.findAll({
             where,
