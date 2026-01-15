@@ -519,9 +519,13 @@ router.get('/events', auth, async (req, res) => {
         }));
 
 
-        // Tasks -> Administrative (Only show tasks with leadId - appointments/consultations)
-        // Other tasks should only appear in the Tasks page
-        tasks.filter(t => t.leadId).forEach(t => events.push({
+        // Tasks -> Administrative (Only show tasks with leadId AND related to Agendamento)
+        // Other tasks (non-CRM or CRM-Followup) should only appear in the Tasks page
+        tasks.filter(t => {
+            if (!t.leadId) return false;
+            const title = (t.title || '').toLowerCase();
+            return title.includes('reunião') || title.includes('agendamento') || title.includes('sessão');
+        }).forEach(t => events.push({
             id: `task_${t.id}`,
             title: t.title,
             start: t.dueDate,
