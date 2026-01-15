@@ -86,7 +86,7 @@ const FilterChip = ({ label, active, onClick, variant }) => {
         <button
             onClick={onClick}
             style={{
-                padding: '8px 16px', borderRadius: '50px', border: 'none',
+                padding: '8px 16px', borderRadius: '50px',
                 background: active ? scheme.bg : 'rgba(0,0,0,0.06)',
                 color: active ? scheme.text : '#444',
                 fontSize: '11px', fontWeight: '800', cursor: 'pointer',
