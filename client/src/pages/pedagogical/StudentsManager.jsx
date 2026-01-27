@@ -182,6 +182,19 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
 
     const years = [...new Set(students.map(s => new Date(s.createdAt).getFullYear()))].sort((a, b) => b - a);
 
+    // Pagination Logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(20);
+
+    // Reset page on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterCourse, filterClass, filterMonth, filterYear]);
+
+    const indexOfLastStudent = currentPage * itemsPerPage;
+    const indexOfFirstStudent = indexOfLastStudent - itemsPerPage;
+    const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+
     // Helper for Sponte Layout Actions
     // If a row is selected (ID visually selected), we grab the full object from filtered list or full list
     const studentForActions = selectedStudentId ? students.find(s => s.id === selectedStudentId) : null;
@@ -215,7 +228,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                     </div>
 
                     {/* Table Container */}
-                    <div style={{ flex: 1, overflow: 'auto' }}>
+                    <div style={{ flex: 1, overflow: 'auto', borderBottom: '1px solid #e0e0e0' }}>
                         {loading ? <p style={{ padding: '20px' }}>Carregando...</p> : (
                             <table className="finance-table">
                                 <thead style={{ position: 'sticky', top: 0, background: 'white', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
@@ -230,7 +243,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredStudents.map(student => (
+                                    {currentStudents.map(student => (
                                         <tr
                                             key={student.id}
                                             onClick={() => setSelectedStudentId(student.id)}
@@ -277,7 +290,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                                             </td>
                                         </tr>
                                     ))}
-                                    {filteredStudents.length === 0 && (
+                                    {currentStudents.length === 0 && (
                                         <tr>
                                             <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#999' }}>
                                                 Nenhum aluno encontrado.
@@ -287,6 +300,61 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                                 </tbody>
                             </table>
                         )}
+                    </div>
+
+                    {/* Pagination Footer */}
+                    <div style={{
+                        padding: '10px 20px',
+                        background: '#f8f9fa',
+                        borderTop: '1px solid #e0e0e0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                            Mostrando {indexOfFirstStudent + 1} a {Math.min(indexOfLastStudent, filteredStudents.length)} de {filteredStudents.length} registros
+                        </div>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                style={{
+                                    border: '1px solid #ddd',
+                                    background: 'white',
+                                    padding: '5px 10px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.8rem',
+                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                    opacity: currentPage === 1 ? 0.5 : 1
+                                }}
+                            >
+                                Anterior
+                            </button>
+                            <span style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0 10px',
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold'
+                            }}>
+                                Página {currentPage} de {Math.ceil(filteredStudents.length / itemsPerPage)}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredStudents.length / itemsPerPage)))}
+                                disabled={currentPage >= Math.ceil(filteredStudents.length / itemsPerPage)}
+                                style={{
+                                    border: '1px solid #ddd',
+                                    background: 'white',
+                                    padding: '5px 10px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.8rem',
+                                    cursor: currentPage >= Math.ceil(filteredStudents.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                                    opacity: currentPage >= Math.ceil(filteredStudents.length / itemsPerPage) ? 0.5 : 1
+                                }}
+                            >
+                                Próxima
+                            </button>
+                        </div>
                     </div>
                 </div>
 
