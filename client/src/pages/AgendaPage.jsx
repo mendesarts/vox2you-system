@@ -22,7 +22,11 @@ import {
     Clock,
     Filter,
     CheckSquare,
-    Minus
+    Minus,
+    TrendingUp,
+    TrendingDown,
+    Wallet,
+    AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -158,8 +162,13 @@ const EventChip = ({ event }) => {
             title={event.title || 'Evento sem título'}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1px' }}>
-                <span style={{ fontSize: '7px', fontWeight: '900', opacity: 0.8 }}>{theme.label}</span>
-                {event.responsibleName && (
+                <span style={{ fontSize: '7px', fontWeight: '900', opacity: 0.8 }}>
+                    {theme.label}
+                    {event.type === 'pedagogical' && event.responsibleName && (
+                        <> {event.responsibleName.split(' ')[0]}</>
+                    )}
+                </span>
+                {event.responsibleName && event.type !== 'pedagogical' && (
                     <span style={{ fontSize: '7px', fontWeight: '900', opacity: 0.8, marginLeft: '4px' }}>
                         - {getRoleName(event.responsibleRoleId)} {event.responsibleName.split(' ').slice(0, 2).join(' ')}
                     </span>
@@ -174,7 +183,22 @@ const EventChip = ({ event }) => {
                 lineHeight: '1',
                 fontSize: '8px'
             }}>
-                {event.title || 'Sem título'}
+                {event.type === 'pedagogical' && event.data?.lessonNumber ? (
+                    <>
+                        {(() => {
+                            const title = event.title || 'Sem título';
+                            const lastDashIndex = title.lastIndexOf(' - ');
+                            if (lastDashIndex > -1) {
+                                const classNamePart = title.substring(0, lastDashIndex);
+                                const modulePart = title.substring(lastDashIndex + 3);
+                                return <>{classNamePart}<br />{event.data.lessonNumber} - {modulePart}</>;
+                            }
+                            return <>{event.data.lessonNumber} - {title}</>;
+                        })()}
+                    </>
+                ) : (
+                    event.title || 'Sem título'
+                )}
             </div>
         </div>
     );
@@ -307,134 +331,193 @@ const EventModal = ({ isOpen, onClose, event, onSave, onDelete, onUpdate, isOwne
                     </>
                 ) : (
                     <div className="text-gray-600">
-                        {!event.id.toString().startsWith('lead_') && (
-                            <>
-                                <p><strong>Evento:</strong> {event.title}</p>
-                                <p><strong>Data:</strong> {
-                                    (event.type === 'holiday' || event.type === 'recess' || event.isAllDay)
-                                        ? format(new Date(event.start), 'dd/MM/yyyy')
-                                        : format(new Date(event.start), 'dd/MM/yyyy HH:mm')
-                                }</p>
-                            </>
-                        )}
                         {event.id.toString().startsWith('lead_') ? (
-                            (() => {
-                                const nameParts = (event.data?.consultant?.name || '').split(' ');
-                                const firstName = nameParts[0] || '';
-                                const secondName = nameParts[1] || '';
-                                const cargo = ROLE_LABELS[event.data?.consultant?.roleId] || 'Consultor';
-                                const respLine = `${cargo} - ${firstName} ${secondName}`.trim();
-
-                                return (
-                                    <div className="mt-0 space-y-2">
-                                        {/* Row 1: Cliente & Telefone */}
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                                <div className="flex items-center gap-1.5 mb-0.5" style={{ color: '#6b7280' }}>
-                                                    <User size={12} style={{ color: '#16a34a' }} />
-                                                    <span className="text-[10px] font-bold uppercase">Cliente</span>
-                                                </div>
-                                                <p className="text-xs font-bold text-gray-900 truncate pl-4">{event.data?.name}</p>
-                                            </div>
-                                            <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                                <div className="flex items-center gap-1.5 mb-0.5" style={{ color: '#6b7280' }}>
-                                                    <Phone size={12} style={{ color: '#2563eb' }} />
-                                                    <span className="text-[10px] font-bold uppercase">Telefone</span>
-                                                </div>
-                                                <p className="text-xs font-medium text-gray-800 truncate pl-4">{event.data?.phone || '-'}</p>
-                                            </div>
+                            <div className="mt-2 flex flex-col gap-5">
+                                {/* Header: Client Info */}
+                                <div className="pb-2 border-b border-gray-100">
+                                    <div className="flex items-center gap-2.5 mb-1.5">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                            <User size={16} />
                                         </div>
-
-                                        {/* Row 2: Responsável */}
-                                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                            <div className="flex items-center gap-1.5 mb-0.5" style={{ color: '#6b7280' }}>
-                                                <Briefcase size={12} style={{ color: '#9333ea' }} />
-                                                <span className="text-[10px] font-bold uppercase">Responsável</span>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 leading-tight">{event.data?.name}</h3>
+                                            <div className="flex items-center gap-1.5 text-gray-500">
+                                                <Phone size={12} />
+                                                <span className="text-sm font-medium">{event.data?.phone || 'Sem telefone'}</span>
                                             </div>
-                                            <p className="text-xs font-medium text-gray-800 truncate pl-4">{respLine}</p>
-                                        </div>
-
-                                        {/* Row 3: Agendamento */}
-                                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                            <div className="flex items-center gap-1.5 mb-0.5" style={{ color: '#6b7280' }}>
-                                                <Clock size={12} style={{ color: '#d97706' }} />
-                                                <span className="text-[10px] font-bold uppercase">Agendamento</span>
-                                            </div>
-                                            <p className="text-xs font-bold text-gray-800 capitalize pl-4">
-                                                {event.start ? format(new Date(event.start), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR }) : '-'}
-                                            </p>
-                                        </div>
-
-                                        {/* Row 4: Observações */}
-                                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                            <div className="flex items-center gap-1.5 mb-0.5" style={{ color: '#6b7280' }}>
-                                                <StickyNote size={12} style={{ color: '#9ca3af' }} />
-                                                <span className="text-[10px] font-bold uppercase">Observações</span>
-                                            </div>
-                                            <p className="text-xs text-gray-600 italic leading-tight pl-4">
-                                                {event.data?.notes || 'Nenhuma observação.'}
-                                            </p>
                                         </div>
                                     </div>
-                                );
-                            })()
-                        ) : event.type === 'task' ? (
-                            <div className="mt-0 space-y-2">
-                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <CheckSquare size={16} className="text-purple-600" />
-                                        <span className="text-xs font-bold text-purple-800 uppercase">Tarefa</span>
-                                    </div>
-                                    <h4 className="text-sm font-bold text-gray-900">{event.title}</h4>
-                                    <p className="text-xs text-gray-600 mt-1">{event.data?.description || 'Sem descrição.'}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Status</span>
-                                        <span className={`text-xs font-bold uppercase ${event.data?.status === 'pending' ? 'text-orange-600' : 'text-green-600'}`}>
-                                            {event.data?.status === 'pending' ? 'Pendente' : 'Concluída'}
-                                        </span>
+
+                                {/* Main Info Card */}
+                                <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-100/50 flex flex-col gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
+                                            <Clock size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-amber-800 uppercase tracking-widest leading-none mb-1">DATA E HORÁRIO</p>
+                                            <p className="text-sm font-bold text-gray-900 capitalize">
+                                                {event.start ? format(new Date(event.start), "EEEE, dd 'de' MMMM", { locale: ptBR }) : '-'}
+                                            </p>
+                                            <p className="text-xs font-semibold text-gray-500">
+                                                às {event.start ? format(new Date(event.start), "HH:mm", { locale: ptBR }) : '-'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Prioridade</span>
-                                        <span className="text-xs font-bold uppercase text-gray-700">{event.data?.priority || 'Normal'}</span>
+                                </div>
+
+                                {/* Secondary Details */}
+                                <div className="grid grid-cols-1 gap-3 px-1">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                                            <Briefcase size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-0.5">RESPONSÁVEL</p>
+                                            {(() => {
+                                                const nameParts = (event.data?.consultant?.name || '').split(' ');
+                                                const firstName = nameParts[0] || '';
+                                                const secondName = nameParts[1] || '';
+                                                const cargo = ROLE_LABELS[event.data?.consultant?.roleId] || 'Consultor';
+                                                const respLine = `${cargo} - ${firstName} ${secondName}`.trim();
+                                                return <p className="text-sm font-bold text-gray-800">{respLine}</p>;
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    {event.data?.notes && (
+                                        <div className="flex items-start gap-3 mt-1">
+                                            <div className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center shrink-0">
+                                                <StickyNote size={16} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">OBSERVAÇÕES</p>
+                                                <p className="text-sm text-gray-600 italic leading-relaxed">
+                                                    "{event.data.notes}"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : event.type === 'task' ? (
+                            <div className="mt-2 flex flex-col gap-5">
+                                {/* Header */}
+                                <div className="pb-2 border-b border-gray-100">
+                                    <div className="flex items-center gap-2.5 mb-1.5">
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                            <CheckSquare size={16} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 leading-tight">Detalhes da Tarefa</h3>
+                                            <p className="text-sm font-medium text-gray-500">Administrativo</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Title Card */}
+                                <div className="bg-purple-50/50 rounded-xl p-4 border border-purple-100/50">
+                                    <h4 className="text-base font-bold text-gray-900 mb-1">{event.title}</h4>
+                                    <p className="text-sm text-gray-600 leading-relaxed">{event.data?.description || 'Sem descrição.'}</p>
+                                </div>
+
+                                {/* Details Grid */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">DATA</p>
+                                        <div className="flex items-center gap-1.5 font-bold text-gray-800 text-sm">
+                                            <CalendarIcon size={14} />
+                                            {format(new Date(event.start), 'dd/MM/yyyy')}
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">STATUS</p>
+                                        <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${event.data?.status === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                                            {event.data?.status === 'pending' ? 'PENDENTE' : 'CONCLUÍDA'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         ) : event.type === 'financial' ? (
-                            <div className="mt-0 space-y-2">
-                                <div className={`p-3 rounded-lg border ${event.data?.direction === 'income' ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        {event.data?.direction === 'income' ? <Plus size={16} className="text-green-600" /> : <Minus size={16} className="text-red-600" />}
-                                        <span className={`text-xs font-bold uppercase ${event.data?.direction === 'income' ? 'text-green-800' : 'text-red-800'}`}>
-                                            {event.data?.direction === 'income' ? 'Receita' : 'Despesa'}
-                                        </span>
+                            <div className="mt-2 flex flex-col gap-5">
+                                {/* Header */}
+                                <div className="pb-2 border-b border-gray-100">
+                                    <div className="flex items-center gap-2.5 mb-1.5">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${event.data?.direction === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                            {event.data?.direction === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 leading-tight">Registro Financeiro</h3>
+                                            <p className="text-sm font-medium text-gray-500">{event.data?.direction === 'income' ? 'Receita' : 'Despesa'}</p>
+                                        </div>
                                     </div>
-                                    <h4 className="text-sm font-bold text-gray-900">{event.data?.description}</h4>
-                                    <p className="text-lg font-black text-gray-900 mt-1">
+                                </div>
+
+                                {/* Amount Card */}
+                                <div className={`rounded-xl p-4 border flex flex-col gap-1 ${event.data?.direction === 'income' ? 'bg-green-50/50 border-green-100/50' : 'bg-red-50/50 border-red-100/50'}`}>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${event.data?.direction === 'income' ? 'text-green-800' : 'text-red-800'}`}>VALOR</p>
+                                    <p className={`text-2xl font-black ${event.data?.direction === 'income' ? 'text-green-700' : 'text-red-700'}`}>
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.data?.amount || 0)}
                                     </p>
+                                    <p className="text-sm font-medium text-gray-600 mt-1">{event.data?.description}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Vencimento</span>
-                                        <span className="text-xs font-bold text-gray-700">{format(new Date(event.start), 'dd/MM/yyyy')}</span>
+
+                                {/* Details Grid */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">VENCIMENTO</p>
+                                        <div className="flex items-center gap-1.5 font-bold text-gray-800 text-sm">
+                                            <CalendarIcon size={14} />
+                                            {format(new Date(event.start), 'dd/MM/yyyy')}
+                                        </div>
                                     </div>
-                                    <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Status</span>
-                                        <span className={`text-xs font-bold uppercase ${event.data?.status === 'paid' ? 'text-green-600' : 'text-orange-600'}`}>
-                                            {event.data?.status === 'paid' ? 'Pago' : 'Pendente'}
+                                    <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">STATUS</p>
+                                        <span className={`text-xs font-black uppercase px-2 py-0.5 rounded ${event.data?.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                            {event.data?.status === 'paid' ? 'PAGO' : 'PENDENTE'}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            event.data && Object.entries(event.data).map(([k, v]) => {
-                                if (typeof v !== 'object') return <p key={k} className="text-xs mt-1"><strong className="capitalize">{k}:</strong> {String(v)}</p>
-                                return null;
-                            })
-                        )
-                        }
+                            <div className="mt-2 flex flex-col gap-5">
+                                {/* Header */}
+                                <div className="pb-2 border-b border-gray-100">
+                                    <div className="flex items-center gap-2.5 mb-1.5">
+                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                                            <CalendarIcon size={16} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-gray-900 leading-tight">{event.title}</h3>
+                                            <p className="text-sm font-medium text-gray-500 capitalize">{event.type === 'holiday' ? 'Feriado' : event.type === 'recess' ? 'Recesso' : 'Evento'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Date Card */}
+                                <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100/50 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-white text-gray-600 flex items-center justify-center shadow-sm border border-gray-100">
+                                        <Clock size={20} strokeWidth={2.5} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">DATA</p>
+                                        <p className="text-sm font-bold text-gray-900 capitalize">
+                                            {format(new Date(event.start), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Notes if any */}
+                                {event.data && Object.keys(event.data).length > 0 && (
+                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        {Object.entries(event.data).map(([k, v]) => (
+                                            typeof v !== 'object' && <p key={k} className="text-xs text-gray-600 mb-1"><strong className="capitalize text-gray-800">{k}:</strong> {String(v)}</p>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -1008,6 +1091,7 @@ const SettingsView = () => {
 
 const AgendaPage = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('calendar');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
@@ -1368,7 +1452,7 @@ const AgendaPage = () => {
                         <>
                             {[1, 10, 20, 30, 40, 50, 60].includes(Number(user?.roleId)) && (
                                 <button
-                                    onClick={() => setActiveTab('settings')}
+                                    onClick={() => navigate('/administrative/calendar')}
                                     className="btn-secondary"
                                     style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}
                                 >

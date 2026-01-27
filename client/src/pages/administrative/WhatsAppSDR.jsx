@@ -137,71 +137,103 @@ const WhatsAppSDR = () => {
                     </div>
                 </DataCard>
 
-                {/* SDR Installation Card */}
-                <DataCard
-                    title="Instalação Local (SDR)"
-                    subtitle="Transforme este computador no servidor da IA"
-                    statusColor="border-indigo-500"
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <p style={{ fontSize: '14px', color: '#444', margin: 0 }}>
-                            Para que a IA Julia responda seus leads, você precisa baixar e rodar o iniciador em um computador (servidor).
-                        </p>
+                {/* Separation Section - Installation */}
+                <div style={{ gridColumn: '1 / -1', marginTop: '16px' }}>
+                    <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px', color: '#1C1C1E' }}>
+                        <Monitor size={22} className="text-blue-600" /> Central de Instalação (Workers)
+                    </h3>
 
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            {/* Botão Windows */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+
+                        {/* Windows Card */}
+                        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #E5E7EB', borderLeft: '5px solid #0078D7', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1F2937', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Monitor size={20} color="#0078D7" /> Windows
+                                </h4>
+                                <span style={{ fontSize: '10px', background: '#DBEAFE', color: '#1E40AF', padding: '4px 8px', borderRadius: '12px', height: 'fit-content' }}>
+                                    Desktop
+                                </span>
+                            </div>
+
+                            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px', lineHeight: '1.5' }}>
+                                Ideal para computadores da recepção ou administrativos. Cria atalho automaticamente.
+                            </p>
+
                             <a
-                                href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')}/api/sdr/download-launcher`}
+                                href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')}/api/installers/download-setup-win`}
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#0078D7', color: 'white', padding: '12px', borderRadius: '10px', fontWeight: '600', textDecoration: 'none', transition: 'all 0.2s' }}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="btn-primary"
-                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#0078D7', color: 'white', padding: '10px 16px', borderRadius: '12px', fontSize: '13px' }}
                             >
-                                <Download size={16} /> Launcher .BAT (Win)
+                                <Download size={18} /> Baixar Instalador (.BAT)
                             </a>
 
-                            {/* Botão Linux */}
-                            <a
-                                href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')}/api/sdr/download-launcher-linux`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-primary"
-                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E95420', color: 'white', padding: '10px 16px', borderRadius: '12px', fontSize: '13px' }}
-                            >
-                                <Terminal size={16} /> Launcher .SH (Linux)
-                            </a>
-
-                            {/* Botão Peso Pena (NEW) */}
-                            <a
-                                href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/sdr/download-optimizer-linux`}
-                                className="btn-primary"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', background: '#9C27B0', color: 'white', gap: '8px', padding: '10px 16px', borderRadius: '12px', fontSize: '13px' }} // Roxo
-                                title="Remove LibreOffice e acelera o sistema"
-                            >
-                                <Zap size={16} /> Script Otimizador (Peso Pena)
-                            </a>
+                            <div style={{ marginTop: '20px', background: '#F9FAFB', padding: '12px', borderRadius: '8px', border: '1px solid #F3F4F6' }}>
+                                <strong style={{ fontSize: '12px', color: '#374151', display: 'block', marginBottom: '6px' }}>Instruções Rápidas:</strong>
+                                <ol style={{ fontSize: '12px', color: '#6B7280', paddingLeft: '16px', margin: 0, lineHeight: '1.6' }}>
+                                    <li>Baixe e execute como <strong>Administrador</strong>.</li>
+                                    <li>Aguarde a instalação.</li>
+                                    <li>Abra o atalho <strong>"Conectar WhatsApp"</strong>.</li>
+                                </ol>
+                            </div>
                         </div>
 
-                        {/* Instruções (NEW) */}
-                        <div style={{ marginTop: '10px', padding: '15px', background: '#FFF8E1', border: '1px solid #FFE082', borderRadius: '12px' }}>
-                            <strong style={{ display: 'block', marginBottom: '10px', color: '#F57F17', fontSize: '14px' }}>⚡ COMO PREPARAR O SERVIDOR LINUX:</strong>
-                            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#5D4037', lineHeight: '1.6' }}>
-                                <li>Baixe o <strong>Launcher .SH</strong> (Laranja) e o <strong>Otimizador</strong> (Roxo).</li>
-                                <li>Abra a pasta Downloads, clique com botão direito no espaço vazio e escolha <em>"Abrir no Terminal"</em>.</li>
-                                <li>
-                                    Para limpar e acelerar a máquina, digite: <br />
-                                    <code style={{ background: '#eee', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>sudo bash Otimizar_SDR.sh</code>
-                                </li>
-                                <li>
-                                    Para iniciar o robô, digite: <br />
-                                    <code style={{ background: '#eee', padding: '2px 6px', borderRadius: '4px', fontSize: '11px' }}>bash VoxFlow_Linux.sh</code>
-                                </li>
-                            </ol>
+                        {/* Linux Card */}
+                        <div style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #E5E7EB', borderLeft: '5px solid #E95420', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1F2937', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Terminal size={20} color="#E95420" /> Linux
+                                </h4>
+                                <span style={{ fontSize: '10px', background: '#FEF3C7', color: '#92400E', padding: '4px 8px', borderRadius: '12px', height: 'fit-content' }}>
+                                    Servidores / VPS
+                                </span>
+                            </div>
+
+                            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px', lineHeight: '1.5' }}>
+                                Recomendado para o servidor principal. Instalação via terminal ou script.
+                            </p>
+
+                            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                                <a
+                                    href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')}/api/installers/download-setup-linux`}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#E95420', color: 'white', padding: '12px', borderRadius: '10px', fontWeight: '600', textDecoration: 'none' }}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download size={18} /> Baixar Script Setup (.SH)
+                                </a>
+                            </div>
+
+                            <div style={{ marginTop: '20px', background: '#2d2d2d', padding: '12px', borderRadius: '8px', color: '#10B981', fontFamily: 'monospace', fontSize: '11px', overflowX: 'auto' }}>
+                                <span style={{ color: '#6B7280' }}># Ou instale via terminal:</span><br />
+                                wget -O install.sh {(import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')}/api/installers/download-setup-linux && bash install.sh
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Footer Guide Download */}
+                <div style={{ gridColumn: '1 / -1', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ background: '#DCFCE7', padding: '12px', borderRadius: '50%' }}>
+                            <MessageSquare size={24} color="#15803D" />
+                        </div>
+                        <div>
+                            <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#14532D' }}>Manual de Instalação (VoxBox)</h4>
+                            <p style={{ fontSize: '14px', color: '#166534', margin: 0 }}>Baixe o guia oficial em PDF/MD com fotos e passo-a-passo detalhado.</p>
                         </div>
                     </div>
-                </DataCard>
+                    <a
+                        href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')}/api/installers/download-guide`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', color: '#15803D', border: '1px solid #15803D', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <Download size={18} /> Baixar Guia
+                    </a>
+                </div>
             </div>
         </div>
     );

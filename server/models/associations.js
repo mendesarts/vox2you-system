@@ -17,6 +17,7 @@ const StudentLog = require('./StudentLog');
 const UnitConfig = require('./UnitConfig');
 const CadenceLog = require('./CadenceLog');
 const ContactAttempt = require('./ContactAttempt');
+const Message = require('./Message');
 
 
 function defineAssociations() {
@@ -98,6 +99,14 @@ function defineAssociations() {
     Enrollment.belongsTo(Course, { foreignKey: 'courseId' });
     Course.hasMany(Enrollment, { foreignKey: 'courseId' });
 
+    // FinancialRecord -> Student, Class
+    FinancialRecord.belongsTo(Student, { foreignKey: 'studentId' });
+    Student.hasMany(FinancialRecord, { foreignKey: 'studentId' });
+
+    FinancialRecord.belongsTo(Class, { foreignKey: 'classId' });
+    Class.hasMany(FinancialRecord, { foreignKey: 'classId' });
+
+
     // FinancialRecord -> Enrollment, Student
     FinancialRecord.belongsTo(Enrollment, { foreignKey: 'enrollmentId' });
     Enrollment.hasMany(FinancialRecord, { foreignKey: 'enrollmentId' });
@@ -138,6 +147,9 @@ function defineAssociations() {
 
     Lead.hasMany(ContactAttempt, { foreignKey: 'leadId', as: 'contactAttempts' });
     ContactAttempt.belongsTo(Lead, { foreignKey: 'leadId' });
+
+    Lead.hasMany(Message, { foreignKey: 'leadId', as: 'messages' });
+    Message.belongsTo(Lead, { foreignKey: 'leadId' });
 }
 
 module.exports = defineAssociations;

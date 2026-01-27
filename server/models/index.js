@@ -23,7 +23,8 @@ const models = {
     UserAvailability: require('./UserAvailability'),
     CadenceLog: require('./CadenceLog'),
     ContactAttempt: require('./ContactAttempt'),
-    StudentLog: require('./StudentLog')
+    StudentLog: require('./StudentLog'),
+    Message: require('./Message')
 };
 
 // Initialize associations

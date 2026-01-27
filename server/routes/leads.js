@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Lead = require('../models/Lead');
+const Message = require('../models/Message');
 const auth = require('../middleware/auth');
 const { Op } = require('sequelize');
 
@@ -54,6 +55,38 @@ router.put('/:id/stage', async (req, res) => {
 
         await Lead.update({ stage }, { where: { id } });
         res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET: Buscar histórico de conversa
+router.get('/:id/chat', auth, async (req, res) => {
+    try {
+        const messages = await Message.findAll({
+            where: { leadId: req.params.id },
+            order: [['createdAt', 'ASC']]
+        });
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Enviar mensagem manual
+router.post('/:id/chat', auth, async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        // 1. Salva no banco como 'PENDING_SEND' para o Robô Local pegar
+        const newMessage = await Message.create({
+            content,
+            direction: 'OUT',
+            status: 'PENDING_SEND',
+            leadId: req.params.id
+        });
+
+        res.json(newMessage);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

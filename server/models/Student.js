@@ -76,9 +76,31 @@ const Student = sequelize.define('Student', {
         type: DataTypes.STRING,
         validate: { isEmail: true }
     },
-    // Responsible (if minor)
+    // Responsible (if minor) / Financial Responsible
     responsibleName: { type: DataTypes.STRING },
     responsiblePhone: { type: DataTypes.STRING },
+    responsibleMobile: { type: DataTypes.STRING },
+    responsibleEmail: { type: DataTypes.STRING },
+    responsibleCPF: { type: DataTypes.STRING },
+    // Parent Information
+    fatherName: { type: DataTypes.STRING },
+    fatherProfession: { type: DataTypes.STRING },
+    fatherEmail: { type: DataTypes.STRING },
+    fatherPhone: { type: DataTypes.STRING },
+    fatherMobile: { type: DataTypes.STRING },
+    motherName: { type: DataTypes.STRING },
+    motherProfession: { type: DataTypes.STRING },
+    motherEmail: { type: DataTypes.STRING },
+    motherPhone: { type: DataTypes.STRING },
+    motherMobile: { type: DataTypes.STRING },
+    // Additional fields
+    rg: { type: DataTypes.STRING },
+    state: { type: DataTypes.STRING },
+    addressNumber: { type: DataTypes.STRING },
+    addressComplement: { type: DataTypes.STRING },
+    workPhone: { type: DataTypes.STRING },
+    observation: { type: DataTypes.TEXT },
+    registrationDate: { type: DataTypes.DATEONLY },
 
     // System Status
     status: {
@@ -100,6 +122,21 @@ const Student = sequelize.define('Student', {
     courseId: {
         type: DataTypes.INTEGER,
         allowNull: true
+    },
+    metadata: {
+        type: DataTypes.TEXT, // Using TEXT for SQLite JSON compatibility
+        allowNull: true,
+        get() {
+            const rawValue = this.getDataValue('metadata');
+            try {
+                return rawValue ? JSON.parse(rawValue) : {};
+            } catch (e) {
+                return {};
+            }
+        },
+        set(value) {
+            this.setDataValue('metadata', JSON.stringify(value));
+        }
     }
 });
 

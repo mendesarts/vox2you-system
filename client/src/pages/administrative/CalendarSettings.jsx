@@ -5,6 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../../context/AuthContext';
 import Toast from '../../components/Toast';
 import { VoxModal } from '../../components/VoxUI';
+import DeleteConfirmModal from '../../components/DeleteConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -50,7 +51,7 @@ const CalendarSettings = () => {
             const blocksData = eventsData.filter(e => e.type === 'block');
 
             const combined = [
-                ...holidaysData.map(h => ({ ...h, listType: 'holiday' })),
+                ...holidaysData.map(h => ({ ...h, listType: 'holiday', isGlobal: !h.unitId })),
                 ...blocksData.map(b => ({
                     id: b.id.replace('block_', ''),
                     name: b.title.replace('Bloqueio: ', ''),
@@ -173,70 +174,67 @@ const CalendarSettings = () => {
     // Filter logic
     const [searchTerm, setSearchTerm] = useState('');
     const filteredHolidays = holidays.filter(h =>
-        h.name.toLowerCase().includes(searchTerm.toLowerCase())
+        !h.isGlobal && h.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
         <div style={{ padding: '0 0 32px 0' }}>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            {/* Header matches UsersPage */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px', gap: '16px', flexWrap: 'wrap' }}>
-                <div>
-                    <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#1C1C1E', margin: 0 }}>
-                        Configuração de Calendário
-                    </h1>
-                    <p style={{ color: '#8E8E93', fontSize: '14px', marginTop: '4px' }}>
-                        Gerencie feriados, recessos e bloqueios administrativos.
-                    </p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={loadNationalHolidays} disabled={loading} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {loading ? <RefreshCw className="animate-spin" size={18} /> : <Download size={18} />}
+            {/* Header Master */}
+            {/* Header Actions Only (Title moved to Global Bar) */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '32px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                        onClick={loadNationalHolidays}
+                        disabled={loading}
+                        className="btn-secondary"
+                        style={{ height: '40px', padding: '0 20px', borderRadius: '14px', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', fontSize: '13px' }}
+                    >
+                        {loading ? <RefreshCw className="animate-spin" size={16} /> : <Download size={16} />}
                         <span>Importar Nacionais</span>
                     </button>
-                    <button onClick={() => setIsCreating(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Plus size={20} />
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        className="btn-primary"
+                        style={{ height: '40px', padding: '0 20px', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                        <Plus size={18} />
                         <span>Novo Evento</span>
                     </button>
                 </div>
             </div>
 
             {/* Filter Bar */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px', background: '#fff', padding: '16px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                <div style={{ position: 'relative', flexGrow: 1, maxWidth: '400px' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '12px', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-                        <Search size={16} color="#8E8E93" />
-                    </div>
-                    <input
-                        type="text"
-                        style={{
-                            width: '100%', padding: '10px 12px 10px 36px', borderRadius: '10px',
-                            border: '1px solid #E5E5EA', background: '#F2F2F7', fontSize: '14px', outline: 'none', transition: 'all 0.2s',
-                            color: '#1C1C1E'
-                        }}
-                        placeholder="Buscar eventos..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+            <div className="filter-bar-ios" style={{ marginBottom: '24px', padding: '8px 16px', background: 'rgba(255,255,255,0.8)' }}>
+                <Search size={16} color="#8E8E93" />
+                <input
+                    type="text"
+                    style={{
+                        background: 'transparent', border: 'none', outline: 'none', width: '100%',
+                        fontSize: '14px', fontWeight: '600', color: '#1C1C1E', padding: '8px'
+                    }}
+                    placeholder="Buscar por nome do evento..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             {/* Table Layout */}
-            <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
+            <div className="vox-card" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
-                        <tr style={{ background: '#F9F9F9', borderBottom: '1px solid #E5E5EA' }}>
-                            <th style={{ padding: '12px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Evento</th>
-                            <th style={{ padding: '12px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Tipo</th>
-                            <th style={{ padding: '12px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase' }}>Período</th>
-                            <th style={{ padding: '12px 24px', fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', textAlign: 'right' }}>Ações</th>
+                        <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                            <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '800', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evento</th>
+                            <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '800', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tipo</th>
+                            <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '800', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Período</th>
+                            <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: '800', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredHolidays.length === 0 ? (
                             <tr>
-                                <td colSpan="4" style={{ padding: '40px 24px', textAlign: 'center', color: '#8E8E93', fontSize: '14px' }}>
+                                <td colSpan="4" style={{ padding: '48px 24px', textAlign: 'center', color: '#8E8E93', fontSize: '14px', fontWeight: '500' }}>
                                     Nenhum evento encontrado.
                                 </td>
                             </tr>
@@ -248,59 +246,64 @@ const CalendarSettings = () => {
 
                                 let badgeBg = '#F2F2F7';
                                 let badgeColor = '#8E8E93';
+                                let iconColor = '#8E8E93';
 
-                                if (isHoliday) { badgeBg = 'rgba(255, 59, 48, 0.1)'; badgeColor = '#FF3B30'; }
-                                if (isRecess) { badgeBg = 'rgba(255, 149, 0, 0.1)'; badgeColor = '#FF9500'; }
+                                if (isHoliday) { badgeBg = 'rgba(255, 59, 48, 0.1)'; badgeColor = '#FF3B30'; iconColor = '#FF3B30'; }
+                                if (isRecess) { badgeBg = 'rgba(255, 149, 0, 0.1)'; badgeColor = '#FF9500'; iconColor = '#FF9500'; }
 
                                 return (
-                                    <tr key={h.id} style={{ borderBottom: '1px solid #E5E5EA', transition: 'background 0.2s' }} className="hover:bg-gray-50">
+                                    <tr key={h.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)', transition: 'background 0.2s' }} className="hover:bg-gray-50">
                                         <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                                 <div style={{
-                                                    width: '40px', height: '40px', borderRadius: '10px', display: 'flex', flexDirection: 'column',
-                                                    alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,0,0,0.05)',
-                                                    background: isHoliday ? 'rgba(255, 59, 48, 0.05)' : isRecess ? 'rgba(255, 149, 0, 0.05)' : '#F2F2F7',
-                                                    color: isHoliday ? '#FF3B30' : isRecess ? '#FF9500' : '#8E8E93'
+                                                    width: '42px', height: '42px', borderRadius: '12px', display: 'flex', flexDirection: 'column',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    background: badgeBg,
+                                                    color: iconColor,
+                                                    border: `1px solid ${badgeBg.replace('0.1', '0.2')}`
                                                 }}>
-                                                    <span style={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>{format(start, 'MMM', { locale: ptBR })}</span>
+                                                    <span style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', opacity: 0.8 }}>{format(start, 'MMM', { locale: ptBR })}</span>
                                                     <span style={{ fontSize: '16px', fontWeight: '900', lineHeight: 1 }}>{format(start, 'dd')}</span>
                                                 </div>
-                                                <div style={{ fontWeight: '600', color: '#1C1C1E', fontSize: '14px' }}>{h.name}</div>
+                                                <div style={{ fontWeight: '700', color: '#1C1C1E', fontSize: '15px' }}>{h.name}</div>
                                             </div>
                                         </td>
                                         <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
                                             <span style={{
-                                                padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase',
+                                                padding: '6px 12px', borderRadius: '50px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px',
                                                 background: badgeBg, color: badgeColor
                                             }}>
                                                 {isHoliday ? 'Feriado' : isRecess ? 'Recesso' : 'Bloqueio'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
-                                            <div style={{ fontSize: '13px', color: '#1C1C1E', fontWeight: '500' }}>
-                                                {format(new Date(h.startDate), 'dd/MM/yyyy')}
-                                                {h.endDate && h.endDate !== h.startDate && (
-                                                    <span style={{ color: '#8E8E93', margin: '0 4px' }}>à</span>
-                                                )}
-                                                {h.endDate && h.endDate !== h.startDate && format(new Date(h.endDate), 'dd/MM/yyyy')}
-                                            </div>
-                                            <div style={{ fontSize: '11px', color: '#8E8E93', textTransform: 'capitalize', marginTop: '2px' }}>
-                                                {format(new Date(h.startDate), 'EEEE', { locale: ptBR })}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                <div style={{ fontSize: '13px', color: '#1C1C1E', fontWeight: '600' }}>
+                                                    {format(new Date(h.startDate), 'dd/MM/yyyy')}
+                                                    {h.endDate && h.endDate !== h.startDate && (
+                                                        <span style={{ color: '#8E8E93', margin: '0 6px', fontWeight: '400' }}>até</span>
+                                                    )}
+                                                    {h.endDate && h.endDate !== h.startDate && format(new Date(h.endDate), 'dd/MM/yyyy')}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#8E8E93', textTransform: 'capitalize', fontWeight: '500' }}>
+                                                    {format(new Date(h.startDate), 'EEEE', { locale: ptBR })}
+                                                </div>
                                             </div>
                                         </td>
                                         <td style={{ padding: '16px 24px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                                <button
-                                                    onClick={() => handleDeleteClick(h)}
-                                                    style={{
-                                                        padding: '6px', borderRadius: '8px', background: 'rgba(255, 59, 48, 0.1)', color: '#FF3B30',
-                                                        border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                    }}
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteClick(h)}
+                                                style={{
+                                                    width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(255, 59, 48, 0.1)', color: '#FF3B30',
+                                                    border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                title="Excluir"
+                                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 59, 48, 0.2)'}
+                                                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 59, 48, 0.1)'}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -315,90 +318,103 @@ const CalendarSettings = () => {
                 onClose={() => setIsCreating(false)}
                 title="Novo Evento"
                 theme="ios"
+                width="450px"
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '900', color: '#8E8E93', marginBottom: '4px', textTransform: 'uppercase' }}>Nome do Evento</label>
-                        <input className="input-field" style={{ width: '100%' }} value={newHoliday.name} onChange={e => setNewHoliday({ ...newHoliday, name: e.target.value })} placeholder="Ex: Carnaval" />
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Nome do Evento</label>
+                        <input
+                            className="input-field"
+                            style={{ width: '100%', padding: '12px 16px', background: 'rgba(118, 118, 128, 0.12)', borderRadius: '10px', border: 'none', fontSize: '15px' }}
+                            value={newHoliday.name}
+                            onChange={e => setNewHoliday({ ...newHoliday, name: e.target.value })}
+                            placeholder="Ex: Carnaval, Feriado Municipal..."
+                        />
                     </div>
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '900', color: '#8E8E93', marginBottom: '4px', textTransform: 'uppercase' }}>Data de Início</label>
-                            <input type="date" className="input-field" style={{ width: '100%' }} value={newHoliday.startDate} onChange={e => setNewHoliday({ ...newHoliday, startDate: e.target.value, endDate: e.target.value })} />
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Início</label>
+                            <input
+                                type="date"
+                                style={{ width: '100%', padding: '12px 16px', background: 'rgba(118, 118, 128, 0.12)', borderRadius: '10px', border: 'none', fontSize: '15px' }}
+                                value={newHoliday.startDate}
+                                onChange={e => setNewHoliday({ ...newHoliday, startDate: e.target.value, endDate: e.target.value })}
+                            />
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: '900', color: '#8E8E93', marginBottom: '4px', textTransform: 'uppercase' }}>Data de Término</label>
-                            <input type="date" className="input-field" style={{ width: '100%' }} value={newHoliday.endDate} onChange={e => setNewHoliday({ ...newHoliday, endDate: e.target.value })} />
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Término</label>
+                            <input
+                                type="date"
+                                style={{ width: '100%', padding: '12px 16px', background: 'rgba(118, 118, 128, 0.12)', borderRadius: '10px', border: 'none', fontSize: '15px' }}
+                                value={newHoliday.endDate}
+                                onChange={e => setNewHoliday({ ...newHoliday, endDate: e.target.value })}
+                            />
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+
+                    <div>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Tipo de Evento</label>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => setNewHoliday({ ...newHoliday, type: 'holiday' })}
+                                style={{
+                                    flex: 1, padding: '12px', borderRadius: '12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
+                                    border: newHoliday.type === 'holiday' ? '2px solid #FF3B30' : '2px solid transparent',
+                                    background: newHoliday.type === 'holiday' ? 'rgba(255, 59, 48, 0.1)' : 'rgba(118, 118, 128, 0.12)',
+                                    color: newHoliday.type === 'holiday' ? '#FF3B30' : '#8E8E93'
+                                }}
+                            >
+                                Feriado
+                            </button>
+                            <button
+                                onClick={() => setNewHoliday({ ...newHoliday, type: 'recess' })}
+                                style={{
+                                    flex: 1, padding: '12px', borderRadius: '12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
+                                    border: newHoliday.type === 'recess' ? '2px solid #FF9500' : '2px solid transparent',
+                                    background: newHoliday.type === 'recess' ? 'rgba(255, 149, 0, 0.1)' : 'rgba(118, 118, 128, 0.12)',
+                                    color: newHoliday.type === 'recess' ? '#FF9500' : '#8E8E93'
+                                }}
+                            >
+                                Recesso
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                         <button
-                            onClick={() => setNewHoliday({ ...newHoliday, type: 'holiday' })}
+                            onClick={() => setIsCreating(false)}
                             style={{
-                                flex: 1, padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
-                                border: newHoliday.type === 'holiday' ? '1px solid #FF3B30' : '1px solid #E5E5EA',
-                                background: newHoliday.type === 'holiday' ? 'rgba(255, 59, 48, 0.1)' : 'transparent',
-                                color: newHoliday.type === 'holiday' ? '#FF3B30' : '#8E8E93'
+                                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#F2F2F7', color: '#000', fontWeight: '700', cursor: 'pointer'
                             }}
-                        >
-                            Feriado
-                        </button>
-                        <button
-                            onClick={() => setNewHoliday({ ...newHoliday, type: 'recess' })}
-                            style={{
-                                flex: 1, padding: '10px', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
-                                border: newHoliday.type === 'recess' ? '1px solid #FF9500' : '1px solid #E5E5EA',
-                                background: newHoliday.type === 'recess' ? 'rgba(255, 149, 0, 0.1)' : 'transparent',
-                                color: newHoliday.type === 'recess' ? '#FF9500' : '#8E8E93'
-                            }}
-                        >
-                            Recesso
-                        </button>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                        <button onClick={() => setIsCreating(false)} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
-                        <button onClick={handleCreateHoliday} className="btn-primary" style={{ flex: 1 }}>Salvar</button>
-                    </div>
-                </div>
-            </VoxModal>
-
-            {/* Delete Modal */}
-            <VoxModal
-                isOpen={deleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                title="Excluir Evento"
-                width="400px"
-            >
-                <div style={{ textAlign: 'center', padding: '16px' }}>
-                    <div style={{ width: '64px', height: '64px', background: 'rgba(255, 59, 48, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                        <Trash2 color="#FF3B30" size={32} />
-                    </div>
-                    <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#1C1C1E', marginBottom: '8px' }}>Confirmar Exclusão</h3>
-                    <p style={{ color: '#8E8E93', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
-                        O evento <strong>{itemToDelete?.name}</strong> será excluído permanentemente.
-                        <br /><span style={{ color: '#FF3B30', fontSize: '12px', fontWeight: '900' }}>Esta ação não pode ser desfeita.</span>
-                    </p>
-
-                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                        <button
-                            onClick={() => setDeleteModalOpen(false)}
-                            className="btn-secondary"
-                            style={{ width: '100px' }}
                         >
                             Cancelar
                         </button>
                         <button
-                            onClick={confirmDelete}
-                            className="btn-primary"
-                            style={{ width: '100px', background: '#FF3B30', borderColor: '#FF3B30' }}
+                            onClick={handleCreateHoliday}
+                            style={{
+                                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'var(--ios-teal)', color: '#fff', fontWeight: '700', cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(48, 176, 199, 0.3)'
+                            }}
                         >
-                            Excluir
+                            Salvar Evento
                         </button>
                     </div>
                 </div>
             </VoxModal>
-        </div>
+
+            <DeleteConfirmModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Excluir Evento"
+                message="Tem certeza que deseja excluir este evento?"
+                itemName={itemToDelete?.name}
+                warningText="Esta ação não poderá ser desfeita."
+                confirmText="Excluir"
+                cancelText="Cancelar"
+            />
+        </div >
     );
 };
 

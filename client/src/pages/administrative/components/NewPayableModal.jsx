@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Plus, Save, Trash, Power, CheckCircle } from 'lucide-react';
 import SettlePayableModal from './SettlePayableModal';
+import RecurringActionModal from './RecurringActionModal';
 
 const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', editRecord = null }) => {
     const [activeTab, setActiveTab] = useState('dados');
@@ -8,6 +9,9 @@ const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', ed
     const [showSettleModal, setShowSettleModal] = useState(false);
     const [createdRecordForSettle, setCreatedRecordForSettle] = useState(null);
     const [showPlanConfirmModal, setShowPlanConfirmModal] = useState(false);
+
+    // Recurring Action Modal
+    const [showRecurringDeleteModal, setShowRecurringDeleteModal] = useState(false);
 
     // Initial Data
     const initialData = {
@@ -365,23 +369,27 @@ const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', ed
     const handleDelete = async () => {
         if (!editRecord) return;
 
-        let deleteFutures = false;
+        const isRecurring = editRecord.launchType === 'recorrente';
+        const isInstallment = editRecord.installments > 1;
 
-        // Se faz parte de um plano (recorrente/parcelado), perguntar escopo
-        if (editRecord.planId) {
-            deleteFutures = window.confirm(
-                'Este lançamento faz parte de uma recorrência/parcelamento.\n\n' +
-                'Clique em OK para excluir ESTA e TODAS AS FUTURAS.\n' +
-                'Clique em Cancelar para excluir APENAS ESTA.'
-            );
-        } else {
-            if (!window.confirm('Deseja realmente excluir este lançamento?')) return;
-        }
+        console.log('🔍 handleDelete DEBUG:', {
+            editRecord,
+            isRecurring,
+            isInstallment,
+            planId: editRecord.planId,
+            shouldShowModal: isRecurring || isInstallment
+        });
 
+        // Sempre mostrar o modal de confirmação (UI consistente)
+        console.log('✅ Mostrando RecurringDeleteModal');
+        setShowRecurringDeleteModal(true);
+    };
+
+    const executeDelete = async (deleteScope) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${editRecord.id}${deleteFutures ? '?deleteFutures=true' : ''}`;
+            const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${editRecord.id}?deleteScope=${deleteScope}`;
             const res = await fetch(url, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -922,6 +930,21 @@ const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', ed
                         onSuccess={() => {
                             if (onRefresh) onRefresh();
                         }}
+                    />
+                )
+            }
+
+            {
+                showRecurringDeleteModal && editRecord && (
+                    <RecurringActionModal
+                        isOpen={showRecurringDeleteModal}
+                        onClose={() => setShowRecurringDeleteModal(false)}
+                        onConfirm={(scope) => {
+                            setShowRecurringDeleteModal(false);
+                            executeDelete(scope);
+                        }}
+                        actionType="delete"
+                        record={editRecord}
                     />
                 )
             }

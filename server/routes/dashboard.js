@@ -122,10 +122,9 @@ router.get('/main-stats', auth, async (req, res) => {
                 where: {
                     roleId: {
                         [Op.in]: [
-                            ROLE_IDS.CONSULTANT,      // 41 - Consultor
-                            ROLE_IDS.SDR,             // 20 - SDR
-                            ROLE_IDS.CLOSER,          // 42 - Closer (se existir)
-                            ROLE_IDS.LEADER_SALES     // 30 - Líder de Vendas
+                            ROLE_IDS.CONSULTANT,      // 41
+                            ROLE_IDS.LEADER_SALES,    // 40
+                            ROLE_IDS.MANAGER          // 30
                         ]
                     },
                     ...scope

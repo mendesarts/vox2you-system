@@ -8,6 +8,7 @@ import DREReport from './DREReport';
 import FinancialCategories from './FinancialCategories';
 import HelpButton from '../../components/HelpButton';
 import AIAdvisorModal from '../components/AIAdvisorModal';
+import FinancialReportsPage from '../FinancialReportsPage.jsx';
 
 const FinancialDashboard = () => {
     const [stats, setStats] = useState({
@@ -24,6 +25,7 @@ const FinancialDashboard = () => {
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px', background: 'rgba(0,0,0,0.05)', borderRadius: '14px', width: 'fit-content' }}>
                 {[
                     { id: 'analysis', label: 'Análise' },
+                    { id: 'reports', label: 'Relatórios' },
                     { id: 'records', label: 'Lançamentos' },
                     { id: 'dre', label: 'DRE' }
                 ].map(tab => (
@@ -78,6 +80,7 @@ const FinancialDashboard = () => {
         switch (view) {
             case 'analysis': return <FinancialCategories />;
             case 'dre': return <DREReport />;
+            case 'reports': return <FinancialReportsPage />;
             case 'records':
             default:
                 return <FinancialManager />;

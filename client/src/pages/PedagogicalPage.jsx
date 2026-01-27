@@ -10,13 +10,14 @@ import MentorshipsManager from './pedagogical/MentorshipsManager';
 import StudentsManager from './pedagogical/StudentsManager';
 import ClassesManager from './pedagogical/ClassesManager';
 import HelpButton from '../components/HelpButton';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import DashboardFilters from '../components/DashboardFilters';
 
 const PedagogicalPage = () => {
     const { user, selectedUnit } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Helper: Format Days (e.g. ["Qui"] -> "Quinta")
     const formatDays = (days) => {
@@ -181,7 +182,7 @@ const PedagogicalPage = () => {
                         <CheckCircle size={24} color="#34C759" opacity={0.3} />
                     </div>
                 </DataCard>
-                <DataCard title="Alunos em Risco" variant="white">
+                <DataCard title="Alunos em Risco" variant="white" onClick={() => navigate('/reports/students-at-risk')}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ fontSize: '32px', fontWeight: '900', color: '#FF3B30' }}>{statsData.atRisk || 0}</div>
                         <AlertCircle size={24} color="#FF3B30" opacity={0.3} />

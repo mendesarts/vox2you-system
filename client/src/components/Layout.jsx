@@ -65,6 +65,12 @@ const Layout = () => {
                 return <div style={titleStyle}>Monitoramento <span style={highlightStyle}>Técnico</span></div>;
             case currentPath === '/commercial':
                 return <div style={titleStyle}>Dashboard <span style={highlightStyle}>Comercial</span></div>;
+            case currentPath === '/reports/students-at-risk':
+                return <div style={titleStyle}>Alunos em <span style={highlightStyle}>Risco</span></div>;
+            case currentPath === '/reports/financial':
+                return <div style={titleStyle}>Relatórios <span style={highlightStyle}>Financeiros</span></div>;
+            case currentPath === '/administrative/calendar':
+                return <div style={titleStyle}>Configuração de <span style={highlightStyle}>Calendário</span></div>;
             default:
                 return <div style={titleStyle}>Vox<span style={highlightStyle}>2You</span></div>;
         }

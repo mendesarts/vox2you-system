@@ -96,6 +96,10 @@ const FinancialRecord = sequelize.define('FinancialRecord', {
     periodicity: {
         type: DataTypes.STRING, // 'diaria', 'semanal', 'mensal', etc.
         defaultValue: 'mensal'
+    },
+    enrollmentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 });
 

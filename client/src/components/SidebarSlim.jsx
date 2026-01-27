@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-    LayoutDashboard, PieChart, Target, GraduationCap, Briefcase, Calendar, CheckSquare, DollarSign, Settings, LogOut, Wallet, Activity
+    LayoutDashboard, PieChart, Target, GraduationCap, Briefcase, Calendar, CheckSquare, DollarSign, Settings, LogOut, Wallet, Activity, BarChart3, AlertTriangle, Users
 } from 'lucide-react';
+
 import logoFinal from '../assets/voxflow-logo-final.png';
 
 const SidebarSlim = () => {
-    const { logout, user } = useAuth();
+    const { logout, user, selectedUnit } = useAuth();
     const [taskCount, setTaskCount] = useState(0);
+    const [atRiskCount, setAtRiskCount] = useState(0);
 
     useEffect(() => {
         const fetchTasksCount = async () => {
@@ -26,13 +28,14 @@ const SidebarSlim = () => {
                 const token = localStorage.getItem('token');
                 if (!token) return;
 
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-                const res = await fetch(`${API_URL}/tasks?summary=true&start=${s}&end=${e}`, {
+                let url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tasks?summary=true&start=${s}&end=${e}`;
+                if (selectedUnit) url += `&unitId=${selectedUnit}`;
+
+                const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    // data.count is pending tasks
                     setTaskCount(data.count || 0);
                 }
             } catch (error) {
@@ -40,10 +43,33 @@ const SidebarSlim = () => {
             }
         };
 
+        const fetchAtRiskCount = async () => {
+            if (!user) return;
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reports/students-at-risk`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setAtRiskCount(data.total || 0);
+                }
+            } catch (error) {
+                console.error("Error fetching at-risk count:", error);
+            }
+        };
+
         fetchTasksCount();
-        const interval = setInterval(fetchTasksCount, 60000); // Poll every minute
+        fetchAtRiskCount();
+        const interval = setInterval(() => {
+            fetchTasksCount();
+            fetchAtRiskCount();
+        }, 60000);
         return () => clearInterval(interval);
-    }, [user]);
+    }, [user, selectedUnit]);
 
     // Map roles for display
     const ROLES_MAP = {
@@ -144,7 +170,30 @@ const SidebarSlim = () => {
 
                 {hasPedagogical && (
                     <NavLink to="/pedagogical" style={({ isActive }) => isActive ? activeStyle : linkBase} title="Pedagógico">
-                        <GraduationCap size={20} strokeWidth={2.5} />
+                        <div style={{ position: 'relative' }}>
+                            <GraduationCap size={20} strokeWidth={2.5} />
+                            {atRiskCount > 0 && (
+                                <span style={{
+                                    position: 'absolute',
+                                    top: '-6px',
+                                    right: '-8px',
+                                    backgroundColor: '#FF3B30',
+                                    color: 'white',
+                                    fontSize: '9px',
+                                    fontWeight: 'bold',
+                                    height: '14px',
+                                    minWidth: '14px',
+                                    borderRadius: '7px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '0 3px',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}>
+                                    {atRiskCount}
+                                </span>
+                            )}
+                        </div>
                         <span style={labelStyle}>Pedagógico</span>
                     </NavLink>
                 )}
@@ -162,6 +211,7 @@ const SidebarSlim = () => {
                         <span style={labelStyle}>Financeiro</span>
                     </NavLink>
                 )}
+
 
 
                 {hasCRM && (

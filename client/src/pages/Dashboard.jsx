@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Store, Award, TrendingUp, DollarSign, Activity, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import DashboardFilters from '../components/DashboardFilters';
+import StudentsAtRiskModal from '../components/StudentsAtRiskModal';
 
 import { ROLE_LABELS } from '../utils/roles';
 
@@ -12,6 +13,7 @@ const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
+    const [showAtRiskModal, setShowAtRiskModal] = useState(false);
 
     const displayName = user?.name ? user.name.split(' ').slice(0, 2).join(' ') : 'Gestor';
     const roleId = user?.roleId ? Number(user.roleId) : null;
@@ -228,9 +230,30 @@ const Dashboard = () => {
                                     <div style={{ fontSize: '9px', fontWeight: '900', color: '#5856D6', marginBottom: '8px', textTransform: 'uppercase' }}>Presença</div>
                                     <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.attendanceRate || '0%'}</h4>
                                 </div>
-                                <div style={{ background: 'rgba(255, 59, 48, 0.05)', padding: '16px', borderRadius: '16px' }}>
+                                <div
+                                    onClick={() => setShowAtRiskModal(true)}
+                                    style={{
+                                        background: 'rgba(255, 59, 48, 0.05)',
+                                        padding: '16px',
+                                        borderRadius: '16px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        border: '2px solid transparent'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 59, 48, 0.1)';
+                                        e.currentTarget.style.borderColor = '#FF3B30';
+                                        e.currentTarget.style.transform = 'scale(1.02)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 59, 48, 0.05)';
+                                        e.currentTarget.style.borderColor = 'transparent';
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                    }}
+                                >
                                     <div style={{ fontSize: '9px', fontWeight: '900', color: '#FF3B30', marginBottom: '8px', textTransform: 'uppercase' }}>Alunos em Risco</div>
                                     <h4 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}>{stats?.pedagogical?.atRisk || 0}</h4>
+                                    <div style={{ fontSize: '10px', color: '#FF3B30', marginTop: '4px', fontWeight: '600' }}>Clique para ver</div>
                                 </div>
                                 <div style={{ background: 'rgba(255, 149, 0, 0.05)', padding: '16px', borderRadius: '16px' }}>
                                     <div style={{ fontSize: '9px', fontWeight: '900', color: '#FF9500', marginBottom: '8px', textTransform: 'uppercase' }}>Mentoria/Aluno</div>
@@ -311,6 +334,12 @@ const Dashboard = () => {
                     )}
                 </>
             )}
+
+            {/* Students At Risk Modal */}
+            <StudentsAtRiskModal
+                isOpen={showAtRiskModal}
+                onClose={() => setShowAtRiskModal(false)}
+            />
         </div>
     );
 };

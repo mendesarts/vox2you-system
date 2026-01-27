@@ -87,11 +87,16 @@ fi
 
 # 3. Execucao
 echo ""
-echo "[3/3] INICIANDO O ROBO SDR..."
+echo "[3/3] INICIANDO O ROBO SDR (ONLINE - NEON DB)..."
 echo "------------------------------------------"
 echo "Pressione CTRL+C para parar o servidor."
 echo ""
 
+# Configuração de Conexão (Neon Tech)
+export NODE_ENV=production
+export DATABASE_URL="postgresql://neondb_owner:npg_Z0nhGM3LBOjQ@ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech/neondb?ssl=true"
+
+# Iniciando Aplicação
 npm start
 `;
 

@@ -790,7 +790,10 @@ router.put('/leads/:id/move', auth, async (req, res) => {
 
         if (notes) logContent += ` Obs: ${notes}.`;
         if (proposedValue) logContent += ` Valor: ${proposedValue}.`;
-        if (appointmentDate) logContent += ` Agendado para: ${new Date(appointmentDate).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`;
+        if (appointmentDate) {
+            const type = req.body.appointmentType ? ` (${req.body.appointmentType})` : '';
+            logContent += ` Agendado para: ${new Date(appointmentDate).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}${type}.`;
+        }
         if (nextTaskDate) logContent += ` Próxima tarefa (${nextTaskType}) agendada para: ${new Date(nextTaskDate).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`;
 
         history.push({
@@ -1510,6 +1513,7 @@ router.post('/leads/import/bulk', auth, async (req, res) => {
                     });
                 }
 
+
                 // 3. DATA PREPARATION (Sanitization)
                 // Filter strict keys to avoid pollution
                 const validKeys = Object.keys(Lead.rawAttributes);
@@ -1518,6 +1522,21 @@ router.post('/leads/import/bulk', auth, async (req, res) => {
                     if (validKeys.includes(key) && key !== 'id') {
                         let val = leadData[key];
                         if (key === 'origin_id_importado' && (!val || String(val).trim() === '')) val = null;
+
+                        // Normalize phone (remove all non-digits)
+                        if (key === 'phone' && val) {
+                            val = String(val).replace(/\D/g, '');
+                            // Pad with zeros if needed (for Excel formatting issues)
+                            if (val.length > 0 && val.length < 10) {
+                                val = val.padStart(11, '0');
+                            }
+                        }
+
+                        // Normalize CPF (remove all non-digits and pad)
+                        if ((key === 'cpf' || key === 'cpf__contato_' || key === 'cpf___responsavel_financeiro') && val) {
+                            val = String(val).replace(/\D/g, '').padStart(11, '0');
+                        }
+
                         modelData[key] = val;
                     }
                 });
@@ -1544,6 +1563,7 @@ router.post('/leads/import/bulk', auth, async (req, res) => {
                 if (leadData.lastScheduleDate) {
                     modelData.appointmentDate = leadData.lastScheduleDate;
                 }
+
 
                 // 4. PERSISTENCE
                 let targetLeadId;

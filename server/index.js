@@ -134,6 +134,10 @@ safeLoadRoute('/api/enrollments', 'enrollments');
 safeLoadRoute('/api/rescue', 'rescue');
 safeLoadRoute('/api/migration', 'migration');
 safeLoadRoute('/api/integrations', 'integrations');
+safeLoadRoute('/api/contracts', 'contracts');
+safeLoadRoute('/api/reports', 'reports');
+safeLoadRoute('/api/sync', 'sync');
+safeLoadRoute('/api/installers', 'installers');
 
 // GLOBAL 404 - Return JSON for API routes
 app.use('/api/*', (req, res) => {
@@ -154,7 +158,8 @@ require('./models/associations'); // Load Associations
 // ...
 
 // --- MOTOR WHATSAPP SDR IA (Brasília) ---
-const { startWhatsAppBot } = require('./services/whatsappBot');
+// --- MOTOR WHATSAPP SDR IA (Brasília) ---
+// const { startWhatsAppBot } = require('./services/whatsappBot'); // DISABLED FOR STABILITY
 
 // Lógica de Socket básica
 io.on('connection', (socket) => {
@@ -203,6 +208,7 @@ const startServer = async () => {
         await safeAddColumn('FinancialRecords', 'discount', { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 });
         await safeAddColumn('FinancialRecords', 'interest', { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 });
         await safeAddColumn('FinancialRecords', 'fine', { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 });
+        await safeAddColumn('FinancialRecords', 'enrollmentId', { type: DataTypes.INTEGER, allowNull: true });
 
         // 3. Dialect Specific Fixes
         if (dialect === 'postgres') {
@@ -266,7 +272,7 @@ const startServer = async () => {
         console.log(`DB & Sync Complete.`);
         const authPath = 'auth_info_baileys';
         // if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true }); // Disabled cleaning to prevent loop
-        startWhatsAppBot();
+        // startWhatsAppBot(); // TEMPORARIAMENTE DESABILITADO - Causando crash no ambiente local
     } catch (err) {
         console.error("Erro critico:", err);
     }

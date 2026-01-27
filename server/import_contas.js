@@ -46,8 +46,12 @@ async function importContas() {
 
         const records = [];
         const year = 2026;
+        const crypto = require('crypto');
 
         for (const expense of expenses) {
+            // Gerar um planId único para cada tipo de despesa recorrente
+            const planId = crypto.randomUUID();
+
             for (let month = 1; month <= 12; month++) {
                 // Use special amount for marketing items in Feb-Dec
                 let amount = expense.amount;
@@ -68,7 +72,10 @@ async function importContas() {
                     unitId: 1,
                     scope: 'business',
                     launchType: 'recorrente',
-                    periodicity: 'mensal'
+                    periodicity: 'mensal',
+                    planId: planId,  // ✅ Adicionar planId para conectar os registros
+                    installments: 12,
+                    currentInstallment: month
                 });
             }
         }

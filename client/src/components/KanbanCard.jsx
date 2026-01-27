@@ -1,9 +1,8 @@
 import React from 'react';
-import { Draggable } from '@hello-pangea/dnd';
 import { Clock, MessageCircle, AlertCircle, Phone, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const KanbanCard = ({ lead, index, onClick }) => {
+const KanbanCard = ({ lead, index, onClick, isHighlighted }) => {
     const { user } = useAuth();
 
     if (!lead || !lead.id) return null;
@@ -111,158 +110,146 @@ const KanbanCard = ({ lead, index, onClick }) => {
         cardBg = '#E2E8F0'; // Slate-200
     }
 
+    // Highlight Override
+    const borderStyle = isHighlighted ? '2px solid #FCD34D' : '1px solid #E5E5EA';
+    const bgStyle = isHighlighted ? '#FFFBEB' : cardBg;
+
     return (
-        <Draggable draggableId={String(lead.id)} index={index}>
-            {(provided, snapshot) => (
-                <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    onClick={() => onClick(lead)}
-                    style={{
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        background: cardBg,
-                        borderRadius: '6px',
-                        padding: '10px 12px',
-                        marginBottom: '1px',
-                        border: '1px solid #E5E5EA',
-                        display: 'flex',
-                        gap: '8px',
-                        alignItems: 'flex-start',
-
-                        // Apply RBD styles
-                        ...provided.draggableProps.style,
-
-                        // Overrides
-                        boxShadow: snapshot.isDragging
-                            ? '0 4px 12px rgba(0, 0, 0, 0.15)'
-                            : 'none',
-                        transition: snapshot.isDragging ? 'none' : 'box-shadow 0.2s ease',
-                        cursor: 'grab'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'}
-                    onMouseLeave={e => e.currentTarget.style.boxShadow = snapshot.isDragging ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none'}
-                >
-                    {/* CONTENT */}
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {/* Name */}
-                        <div style={{
-                            fontWeight: '600',
-                            fontSize: '14px',
-                            color: '#1C1C1E',
-                            lineHeight: '1.3',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }} title={lead.name}>
-                            {getFirstTwoNames(lead.name)}
-                        </div>
-
-                        {/* Lead ID */}
-                        <div style={{ fontSize: '12px', color: '#007AFF', fontWeight: '600' }}>
-                            Lead #{lead.origin_id_importado || lead.id}
-                        </div>
-
-                        {/* Responsible */}
-                        {showResponsible && (
-                            <div style={{
-                                fontSize: '11px',
-                                color: '#8E8E93',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                            }}>
-                                {responsible}
-                            </div>
-                        )}
-
-                        {/* Tags */}
-                        {tags.length > 0 && (
-                            <div style={{
-                                fontSize: '10px',
-                                color: '#8E8E93',
-                                background: '#F2F2F7',
-                                padding: '3px 6px',
-                                borderRadius: '4px',
-                                width: 'fit-content',
-                                maxWidth: '100%',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                            }}>
-                                {tags.slice(0, 2).join(', ')}
-                                {tags.length > 2 && ` +${tags.length - 2}`}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* RIGHT SIDE: Indicators Stacked */}
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: '4px',
-                        flexShrink: 0
-                    }}>
-                        {/* Date */}
-                        <span style={{ fontSize: '10px', color: '#8E8E93', whiteSpace: 'nowrap' }}>
-                            {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                            }) : ''}
-                        </span>
-
-                        {/* Task Status Circle */}
-                        <div
-                            title={taskStatus.tooltip}
-                            style={{
-                                width: '10px',
-                                height: '10px',
-                                borderRadius: '50%',
-                                background: taskStatus.color,
-                                border: '2px solid white',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                cursor: 'help',
-                                flexShrink: 0
-                            }}
-                        />
-
-                        {/* Temperature */}
-                        {(lead.temperature === 'hot' || lead.temperature === 'cold') && (
-                            <span style={{ fontSize: '12px', lineHeight: 1 }}>
-                                {lead.temperature === 'hot' ? '🔥' : '❄️'}
-                            </span>
-                        )}
-
-                        {/* Days Badge or Closing Date */}
-                        {!['won', 'closed_won', 'matriculado', 'closed', 'lost', 'closed_lost', 'archived', 'encerrado'].includes(s) ? (
-                            <div style={{
-                                background: ageInfo.color === '#34C759' ? '#34C759' : '#FF3B30',
-                                color: 'white',
-                                padding: '1px 5px',
-                                borderRadius: '8px',
-                                fontSize: '8px',
-                                fontWeight: '700',
-                                whiteSpace: 'nowrap',
-                                lineHeight: 1.2
-                            }}>
-                                {ageInfo.text}
-                            </div>
-                        ) : (
-                            <div style={{ fontSize: '9px', color: '#8E8E93', whiteSpace: 'nowrap', fontWeight: '800', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '2px' }}>
-                                F: {new Date(lead.updatedAt || lead.createdAt).toLocaleDateString('pt-BR', {
-                                    day: '2-digit',
-                                    month: '2-digit'
-                                })}
-                            </div>
-                        )}
-                    </div>
+        <div
+            onClick={() => onClick(lead)}
+            style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: bgStyle,
+                borderRadius: '6px',
+                padding: '10px 12px',
+                marginBottom: '1px',
+                border: borderStyle,
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'flex-start',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.2s ease, background 0.3s ease'
+            }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+        >
+            {/* CONTENT */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {/* Name */}
+                <div style={{
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    color: '#1C1C1E',
+                    lineHeight: '1.3',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                }} title={lead.name}>
+                    {getFirstTwoNames(lead.name)}
                 </div>
-            )
-            }
-        </Draggable >
+
+                {/* Lead ID */}
+                <div style={{ fontSize: '12px', color: '#007AFF', fontWeight: '600' }}>
+                    Lead #{lead.origin_id_importado || lead.id}
+                </div>
+
+                {/* Responsible */}
+                {showResponsible && (
+                    <div style={{
+                        fontSize: '11px',
+                        color: '#8E8E93',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }}>
+                        {responsible}
+                    </div>
+                )}
+
+                {/* Tags */}
+                {tags.length > 0 && (
+                    <div style={{
+                        fontSize: '10px',
+                        color: '#8E8E93',
+                        background: '#F2F2F7',
+                        padding: '3px 6px',
+                        borderRadius: '4px',
+                        width: 'fit-content',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }}>
+                        {tags.slice(0, 2).join(', ')}
+                        {tags.length > 2 && ` +${tags.length - 2}`}
+                    </div>
+                )}
+            </div>
+
+            {/* RIGHT SIDE: Indicators Stacked */}
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: '4px',
+                flexShrink: 0
+            }}>
+                {/* Date */}
+                <span style={{ fontSize: '10px', color: '#8E8E93', whiteSpace: 'nowrap' }}>
+                    {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }) : ''}
+                </span>
+
+                {/* Task Status Circle */}
+                <div
+                    title={taskStatus.tooltip}
+                    style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: taskStatus.color,
+                        border: '2px solid white',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        cursor: 'help',
+                        flexShrink: 0
+                    }}
+                />
+
+                {/* Temperature */}
+                {(lead.temperature === 'hot' || lead.temperature === 'cold') && (
+                    <span style={{ fontSize: '12px', lineHeight: 1 }}>
+                        {lead.temperature === 'hot' ? '🔥' : '❄️'}
+                    </span>
+                )}
+
+                {/* Days Badge or Closing Date */}
+                {!['won', 'closed_won', 'matriculado', 'closed', 'lost', 'closed_lost', 'archived', 'encerrado'].includes(s) ? (
+                    <div style={{
+                        background: ageInfo.color === '#34C759' ? '#34C759' : '#FF3B30',
+                        color: 'white',
+                        padding: '1px 5px',
+                        borderRadius: '8px',
+                        fontSize: '8px',
+                        fontWeight: '700',
+                        whiteSpace: 'nowrap',
+                        lineHeight: 1.2
+                    }}>
+                        {ageInfo.text}
+                    </div>
+                ) : (
+                    <div style={{ fontSize: '9px', color: '#8E8E93', whiteSpace: 'nowrap', fontWeight: '800', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '2px' }}>
+                        F: {new Date(lead.updatedAt || lead.createdAt).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: '2-digit'
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 

@@ -261,8 +261,11 @@ router.delete('/:id', auth, async (req, res) => {
         const isMaster = Number(requester.roleId) === ROLE_IDS.MASTER;
         if (!isMaster) {
             const isAuthorizedManager = [ROLE_IDS.FRANCHISEE, ROLE_IDS.MANAGER].includes(Number(requester.roleId));
-            if (userToDelete.unitId !== requester.unitId || !isAuthorizedManager) {
-                return res.status(403).json({ error: 'Sem permissão para deletar este usuário.' });
+            const requesterUnitId = requester.unitId ? Number(requester.unitId) : null;
+            const targetUnitId = userToDelete.unitId ? Number(userToDelete.unitId) : null;
+
+            if (targetUnitId !== requesterUnitId || !isAuthorizedManager) {
+                return res.status(403).json({ error: 'Sem permissão para deletar este usuário da unidade.' });
             }
         }
 

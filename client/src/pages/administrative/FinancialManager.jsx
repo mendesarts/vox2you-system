@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import NewPayableModal from './components/NewPayableModal';
 import SettlePayableModal from './components/SettlePayableModal';
 import DeleteConfirmModal from '../../components/DeleteConfirmModal';
+import RecurringActionModal from './components/RecurringActionModal';
 
 const formatCurrency = (value) => {
     return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -26,7 +27,7 @@ const FinancialManager = () => {
     const [activeFinancialTab, setActiveFinancialTab] = useState('receivables'); // 'receivables' | 'payables'
     const [filterStatus, setFilterStatus] = useState('all');
     const [selectedRecordId, setSelectedRecordId] = useState(null);
-    const [filterMonth, setFilterMonth] = useState('all');
+    const [filterMonth, setFilterMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
     const [favorecidoSearch, setFavorecidoSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const recordsPerPage = 15;
@@ -43,6 +44,11 @@ const FinancialManager = () => {
     const [selectedRecordsForAdvance, setSelectedRecordsForAdvance] = useState([]);
     const [showAdvanceModal, setShowAdvanceModal] = useState(false);
     const [advanceFee, setAdvanceFee] = useState('');
+
+    // Recurring/Installment Actions
+    const [showRecurringModal, setShowRecurringModal] = useState(false);
+    const [recurringAction, setRecurringAction] = useState(null); // 'edit' or 'delete'
+    const [recordForRecurringAction, setRecordForRecurringAction] = useState(null);
 
 
 
@@ -147,16 +153,25 @@ const FinancialManager = () => {
 
     // --- Actions ---
 
-    const handleCreateRecord = async () => {
+    const handleCreateRecord = async (updateScope = 'current') => {
         try {
             const token = localStorage.getItem('token');
             const isEdit = !!selectedRecordId;
-            let updatePlan = false;
+            let updatePlan = updateScope === 'all';
 
+            // Se está editando, verificar se é recorrente/parcelado
             if (isEdit) {
                 const record = financialRecords.find(r => r.id === selectedRecordId);
-                if (record && record.planId && parseFloat(newRecordData.amount) !== parseFloat(record.amount)) {
-                    updatePlan = window.confirm('Este lançamento faz parte de um plano. Deseja alterar o valor de TODOS os registros deste plano?');
+                const isRecurring = record?.launchType === 'recorrente';
+                const isInstallment = record?.installments > 1;
+
+                // Se for recorrente ou parcelado E não veio do modal de confirmação
+                if ((isRecurring || isInstallment) && updateScope === 'current' && !recordForRecurringAction) {
+                    // Mostrar modal para perguntar
+                    setRecordForRecurringAction(record);
+                    setRecurringAction('edit');
+                    setShowRecurringModal(true);
+                    return; // Parar aqui e esperar confirmação
                 }
             }
 
@@ -172,12 +187,13 @@ const FinancialManager = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ ...newRecordData, updatePlan })
+                body: JSON.stringify({ ...newRecordData, updatePlan, updateScope })
             });
             if (res.ok) {
                 fetchFinancialRecords();
                 setShowNewRecordModal(false);
                 setSelectedRecordId(null);
+                setRecordForRecurringAction(null);
                 // Reset form
                 setNewRecordData({
                     type: 'outros',
@@ -371,6 +387,30 @@ const FinancialManager = () => {
             const selectedIds = selectedRecordsForAdvance;
             if (selectedIds.length === 0) return alert('Selecione registros clicando nas linhas para excluir.');
 
+            // Se for apenas 1 registro, verificar se é recorrente/parcelado
+            if (selectedIds.length === 1) {
+                const record = financialRecords.find(r => r.id === selectedIds[0]);
+                const isRecurring = record?.launchType === 'recorrente';
+                const isInstallment = record?.installments > 1;
+
+                console.log('🔍 FinancialManager - Verificando exclusão:', {
+                    record,
+                    isRecurring,
+                    isInstallment,
+                    planId: record?.planId,
+                    shouldShowModal: isRecurring || isInstallment
+                });
+
+                if (isRecurring || isInstallment) {
+                    // Mostrar modal de escolha
+                    console.log('✅ FinancialManager - Mostrando RecurringModal');
+                    setRecordForRecurringAction(record);
+                    setRecurringAction('delete');
+                    setShowRecurringModal(true);
+                    return;
+                }
+            }
+
             // Preparar informações para o modal
             const recordsToDelete = financialRecords.filter(r => selectedIds.includes(r.id));
             const totalValue = recordsToDelete.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
@@ -388,7 +428,7 @@ const FinancialManager = () => {
         }
     };
 
-    const handleConfirmDelete = async () => {
+    const handleConfirmDelete = async (deleteScope = 'current') => {
         if (!recordToDelete) return;
 
         try {
@@ -396,7 +436,7 @@ const FinancialManager = () => {
             let successCount = 0;
 
             for (const id of recordToDelete.ids) {
-                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${id}`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${id}?deleteScope=${deleteScope}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -407,11 +447,57 @@ const FinancialManager = () => {
                 fetchFinancialRecords();
                 setSelectedRecordsForAdvance([]);
                 setRecordToDelete(null);
+                setShowDeleteModal(false);
+                setRecordForRecurringAction(null);
             }
         } catch (error) {
             console.error(error);
             alert('Erro ao excluir registros.');
         }
+    };
+
+    const handleRecurringActionConfirm = async (scope) => {
+        console.log('🎯 handleRecurringActionConfirm chamado:', { scope, recurringAction });
+        setShowRecurringModal(false);
+
+        if (recurringAction === 'edit') {
+            // Chamar handleCreateRecord com o escopo escolhido
+            handleCreateRecord(scope);
+        } else if (recurringAction === 'delete') {
+            // Executar exclusão diretamente sem depender do estado
+            const record = recordForRecurringAction;
+
+            console.log('🗑️ Executando exclusão:', { recordId: record.id, scope });
+
+            try {
+                const token = localStorage.getItem('token');
+                const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${record.id}?deleteScope=${scope}`;
+                console.log('📡 DELETE request:', url);
+
+                const res = await fetch(url, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                console.log('📥 DELETE response:', { ok: res.ok, status: res.status });
+
+                if (res.ok) {
+                    console.log('✅ Exclusão bem-sucedida, atualizando lista');
+                    fetchFinancialRecords();
+                    setSelectedRecordsForAdvance([]);
+                } else {
+                    const err = await res.json();
+                    console.error('❌ Erro na exclusão:', err);
+                    alert('Erro ao excluir: ' + (err.error || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('❌ Erro de conexão:', error);
+                alert('Erro ao excluir registros.');
+            }
+        }
+
+        setRecordForRecurringAction(null);
+        setRecurringAction(null);
     };
 
     return (
@@ -812,6 +898,22 @@ const FinancialManager = () => {
                             : recordToDelete?.records[0]?.description || "Registro financeiro"
                         }
                         warningText="Esta ação removerá permanentemente os registros do sistema e não poderá ser desfeita."
+                    />
+                )
+            }
+
+            {
+                showRecurringModal && recordForRecurringAction && (
+                    <RecurringActionModal
+                        isOpen={showRecurringModal}
+                        onClose={() => {
+                            setShowRecurringModal(false);
+                            setRecordForRecurringAction(null);
+                            setRecurringAction(null);
+                        }}
+                        onConfirm={handleRecurringActionConfirm}
+                        actionType={recurringAction}
+                        record={recordForRecurringAction}
                     />
                 )
             }

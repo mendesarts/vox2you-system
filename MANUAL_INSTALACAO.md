@@ -14,7 +14,13 @@ Antes de começar, verifique se você possui o ambiente preparado:
 
 ---
 
-## ⚙️ Passo 1: Instalação Automática
+## 🤖 Instalação do Robô WhatsApp (VoxBox)
+Para instalar apenas o motor de WhatsApp nas unidades (Franquias), consulte o guia específico:
+👉 **[GUIA_INSTALACAO_VOXBOX.md](./GUIA_INSTALACAO_VOXBOX.md)**
+
+---
+
+## ⚙️ Passo 1: Instalação Automática (Sistema Completo)
 
 O sistema é comporto por dois módulos: **Server** (Lógica e Banco) e **Client** (Telas).
 

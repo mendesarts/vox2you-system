@@ -464,8 +464,11 @@ router.get('/events', auth, async (req, res) => {
                     {
                         model: Class,
                         where: classIncludeWhere,
-                        attributes: ['name'],
-                        include: [{ model: Course, attributes: ['name'] }]
+                        attributes: ['name', 'professorId'],
+                        include: [
+                            { model: Course, attributes: ['name'] },
+                            { model: User, as: 'professor', attributes: ['name', 'roleId'] }
+                        ]
                     },
                     {
                         model: Module,
@@ -692,7 +695,9 @@ router.get('/events', auth, async (req, res) => {
                     moduleTitle: moduleTitle,
                     moduleOrder: cs.Module?.order,
                     classId: cs.classId,
-                    data: { ...cs.toJSON(), isClass: true }
+                    responsibleName: cs.Class?.professor?.name || null,
+                    responsibleRoleId: cs.Class?.professor?.roleId || null,
+                    data: { ...cs.toJSON(), isClass: true, lessonNumber: cs.sessionNumber }
                 });
             } catch (err) {
                 console.error(`Error processing session class_${cs.id}:`, err);

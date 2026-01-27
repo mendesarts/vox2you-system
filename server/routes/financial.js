@@ -41,7 +41,7 @@ router.use(auth);
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { description, amount, dueDate, category, status, type, direction, scope, paymentMethod, paymentDate, updatePlan, launchType, periodicity } = req.body;
+        const { description, amount, dueDate, category, status, type, direction, scope, paymentMethod, paymentDate, updateScope, launchType, periodicity } = req.body;
 
         const record = await FinancialRecord.findByPk(id);
         if (!record) return res.status(404).json({ error: 'Registro não encontrado' });
@@ -66,13 +66,13 @@ router.put('/:id', async (req, res) => {
 
         console.log('🔍 PUT /financial/:id DEBUG:', {
             id,
-            updatePlan,
+            updateScope,
             planId: record.planId,
             amount: updateData.amount,
             dueDate: record.dueDate
         });
 
-        if (updatePlan && record.planId) {
+        if (updateScope === 'all' && record.planId) {
             // Atualizar apenas este registro e os futuros (não os passados/pagos)
             const result = await FinancialRecord.update({
                 amount: updateData.amount,
@@ -562,6 +562,12 @@ router.post('/batch', async (req, res) => {
         const { id: userId, unitId } = req.user;
         const { enrollmentFee, courseFee, materialFee } = fees;
 
+        console.log('🚀 POST /financial/batch received:', {
+            studentId,
+            enrollmentId,
+            fees_keys: Object.keys(fees || {})
+        });
+
         // Check open register for any paid-up-front fees
         const openRegister = await CashRegister.findOne({
             where: { status: 'open', unitId: req.user.unitId }
@@ -572,13 +578,26 @@ router.post('/batch', async (req, res) => {
 
         // Helper to check if paid and process
         const processFee = (fee, type, category) => {
-            if (!fee || !fee.amount || parseFloat(fee.amount) <= 0) return;
+            // Validate Check
+            if (!fee || !fee.amount) return;
+            const amountVal = parseFloat(fee.amount);
+            if (isNaN(amountVal) || amountVal <= 0) return;
+
             if (fee.source === 'publisher') return; // Skip publisher material
 
-            const totalAmount = parseFloat(fee.amount);
+            const totalAmount = amountVal;
             const numInstallments = parseInt(fee.installments) || 1;
             const installmentValue = (totalAmount / numInstallments).toFixed(2);
-            const baseDate = new Date(fee.dueDate || new Date());
+
+            // Validate Date
+            let baseDate;
+            if (!fee.dueDate) {
+                baseDate = new Date();
+            } else {
+                baseDate = new Date(fee.dueDate);
+                // Fallback for invalid date
+                if (isNaN(baseDate.getTime())) baseDate = new Date();
+            }
 
             for (let i = 0; i < numInstallments; i++) {
                 const dueDate = new Date(baseDate);
@@ -607,7 +626,9 @@ router.post('/batch', async (req, res) => {
                     installmentNumber: i + 1,
                     unitId,
                     userId,
-                    description: `${category} (${i + 1}/${numInstallments})`
+                    description: `${category} (${i + 1}/${numInstallments})`,
+                    launchType: numInstallments > 1 ? 'parcelado' : 'unico',
+                    periodicity: 'mensal'
                 });
             }
         };
@@ -615,6 +636,8 @@ router.post('/batch', async (req, res) => {
         processFee(enrollmentFee, 'matricula', 'Matrícula');
         processFee(courseFee, 'curso', 'Curso');
         processFee(materialFee, 'material', 'Material Didático');
+
+        console.log(`📝 Prepared ${records.length} records for bulkCreate`);
 
         if (records.length > 0) {
             await FinancialRecord.bulkCreate(records);
@@ -628,7 +651,7 @@ router.post('/batch', async (req, res) => {
 
         res.status(201).json({ message: 'Financeiro gerado', count: records.length });
     } catch (error) {
-        console.error(error);
+        console.error('❌ Error in /financial/batch:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -779,17 +802,42 @@ router.post('/advance', auth, async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { deleteFutures } = req.query;
+        const { deleteScope } = req.query; // 'current' or 'all'
+
+        console.log('🔍 DELETE /financial/:id - Recebido:', { id, deleteScope });
 
         const record = await FinancialRecord.findByPk(id);
         if (!record) return res.status(404).json({ error: 'Registro não encontrado' });
+
+        console.log('📋 Registro encontrado:', {
+            id: record.id,
+            description: record.description,
+            planId: record.planId,
+            dueDate: record.dueDate,
+            launchType: record.launchType,
+            installments: record.installments
+        });
 
         if (!checkUnitIsolation(res, req.user, record.unitId)) return;
 
         let deletedCount = 1;
 
-        // Se deleteFutures=true e o registro tem planId, excluir este e todos os futuros
-        if (deleteFutures === 'true' && record.planId) {
+        // Se deleteScope=all e o registro tem planId, excluir este e todos os futuros
+        if (deleteScope === 'all' && record.planId) {
+            console.log('🗑️ Excluindo TODOS os futuros com planId:', record.planId);
+
+            // Primeiro, vamos ver quantos registros existem
+            const allRecordsInPlan = await FinancialRecord.findAll({
+                where: {
+                    planId: record.planId
+                },
+                attributes: ['id', 'dueDate', 'description'],
+                order: [['dueDate', 'ASC']]
+            });
+
+            console.log('📊 Total de registros no plano:', allRecordsInPlan.length);
+            console.log('📅 Registros no plano:', allRecordsInPlan.map(r => ({ id: r.id, dueDate: r.dueDate })));
+
             // Excluir este registro e todos com mesmo planId e dueDate >= atual
             const result = await FinancialRecord.destroy({
                 where: {
@@ -800,13 +848,16 @@ router.delete('/:id', async (req, res) => {
                 }
             });
             deletedCount = result;
+            console.log('✅ Registros excluídos:', deletedCount);
         } else {
+            console.log('🗑️ Excluindo apenas este registro');
             // Excluir apenas este registro
             await record.destroy();
         }
 
         res.json({ message: 'Registro(s) excluído(s) com sucesso', count: deletedCount });
     } catch (error) {
+        console.error('❌ Erro ao excluir:', error);
         res.status(500).json({ error: error.message });
     }
 });

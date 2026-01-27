@@ -15,13 +15,21 @@ const Attendance = sequelize.define('Attendance', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
-    classId: { // Optional if not linked to ClassSession
+    classId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    sessionId: {
         type: DataTypes.INTEGER,
         allowNull: true
     },
     present: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+    status: {
+        type: DataTypes.ENUM('present', 'absent', 'justified'),
+        defaultValue: 'present'
     },
     justification: {
         type: DataTypes.TEXT,

@@ -16,8 +16,10 @@ import AgendaPage from './pages/AgendaPage';
 import CommercialDashboard from './pages/CommercialDashboard';
 import CoursesSettings from './pages/CoursesSettings';
 import TasksPage from './pages/TasksPage';
-import ManualMapper from './pages/ManualMapper';
 import SystemHealth from './pages/admin/SystemHealth';
+import StudentsAtRiskPage from './pages/StudentsAtRiskPage';
+import FinancialReportsPage from './pages/FinancialReportsPage';
+import CalendarSettings from './pages/administrative/CalendarSettings';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
@@ -42,11 +44,13 @@ function App() {
                         <Route path="/pedagogical" element={<PedagogicalPage />} />
                         <Route path="/secretary" element={<Secretary />} />
                         <Route path="/calendar" element={<AgendaPage />} />
+                        <Route path="/administrative/calendar" element={<CalendarSettings />} />
                         <Route path="/commercial" element={<CommercialDashboard />} />
                         <Route path="/courses" element={<CoursesSettings />} />
                         <Route path="/tasks" element={<TasksPage />} />
-                        <Route path="/manual-mapper" element={<ManualMapper />} />
                         <Route path="/admin/health" element={<SystemHealth />} />
+                        <Route path="/reports/students-at-risk" element={<StudentsAtRiskPage />} />
+                        <Route path="/reports/financial" element={<FinancialReportsPage />} />
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     </Route>
                 </Routes>

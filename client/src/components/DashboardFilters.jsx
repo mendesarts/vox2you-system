@@ -5,13 +5,13 @@ import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, star
 const DashboardFilters = ({ onFilterChange, loading = false, user }) => {
     // Unit logic removed - handled globally
 
-    const [selectedPeriod, setSelectedPeriod] = useState('all');
+    const [selectedPeriod, setSelectedPeriod] = useState('month');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
     // Initialize filters on mount
     useEffect(() => {
-        applyPeriod('all');
+        applyPeriod('month');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run once on mount to kickstart the dashboard
 

@@ -13,7 +13,15 @@ const ClassSession = sequelize.define('ClassSession', {
     },
     moduleId: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: true
+    },
+    sessionNumber: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    topic: {
+        type: DataTypes.STRING,
+        allowNull: true
     },
     date: {
         type: DataTypes.DATEONLY,
@@ -21,11 +29,13 @@ const ClassSession = sequelize.define('ClassSession', {
     },
     startTime: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true,
+        defaultValue: '19:00'
     },
     endTime: {
         type: DataTypes.STRING,
-        allowNull: true
+        allowNull: true,
+        defaultValue: '21:00'
     },
     status: {
         type: DataTypes.ENUM('scheduled', 'completed', 'cancelled'),

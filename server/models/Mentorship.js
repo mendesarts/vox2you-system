@@ -8,8 +8,21 @@ const Mentorship = sequelize.define('Mentorship', {
         primaryKey: true
     },
     scheduledDate: {
-        type: DataTypes.DATE, // Data e hora
-        allowNull: false
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    date: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    topic: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    duration: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 60
     },
     status: {
         type: DataTypes.ENUM('scheduled', 'completed', 'cancelled', 'noshow'),
@@ -24,7 +37,15 @@ const Mentorship = sequelize.define('Mentorship', {
     },
     mentorId: {
         type: DataTypes.INTEGER,
-        allowNull: true // Can be assigned later or changed
+        allowNull: true
+    },
+    professorId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    classId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 });
 // Relações: Student, Professor (Mentor)

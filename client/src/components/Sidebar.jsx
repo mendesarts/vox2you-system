@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, PieChart, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, PieChart, DollarSign, BookOpen, ClipboardList, AlertTriangle, FileText, Briefcase } from 'lucide-react';
 
 const Sidebar = () => {
     const { logout } = useAuth();
@@ -49,6 +49,13 @@ const Sidebar = () => {
                 </NavLink>
                 <NavLink to="/users" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
                     <Users size={18} /> Equipe
+                </NavLink>
+                <div style={{ margin: '10px 0', borderTop: '1px solid #eee' }}></div>
+                <NavLink to="/pedagogical" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
+                    <BookOpen size={18} /> Pedagógico
+                </NavLink>
+                <NavLink to="/secretary" style={({ isActive }) => isActive ? activeStyle : linkStyle}>
+                    <ClipboardList size={18} /> Secretaria
                 </NavLink>
             </nav>
 

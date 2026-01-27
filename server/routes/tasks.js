@@ -394,4 +394,22 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
+// Gerar tarefas de engajamento de alunos para dias de aula
+router.post('/generate-engagement', auth, async (req, res) => {
+    try {
+        const { generateEngagementTasks } = require('../services/engagementTasks');
+
+        const result = await generateEngagementTasks();
+
+        res.json({
+            success: true,
+            message: `${result.tasksCreated} tarefas de engajamento criadas com sucesso!`,
+            ...result
+        });
+    } catch (error) {
+        console.error('Erro ao gerar tarefas de engajamento:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
