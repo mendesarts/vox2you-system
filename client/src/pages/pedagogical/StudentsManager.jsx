@@ -234,6 +234,10 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                                         <tr
                                             key={student.id}
                                             onClick={() => setSelectedStudentId(student.id)}
+                                            onDoubleClick={() => {
+                                                setEditingStudent(student);
+                                                setShowForm(true);
+                                            }}
                                             className={selectedStudentId === student.id ? 'selected-row' : ''}
                                             style={{ cursor: 'pointer' }}
                                         >
