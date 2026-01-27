@@ -149,46 +149,45 @@ router.get('/', auth, async (req, res) => {
             ]
         });
 
-        // --- SELF-HEALING & TERMINAL CLEANUP ---
+        // --- SELF-HEALING & TERMINAL CLEANUP (DISABLED TEMPORARILY FOR DEBUGGING) ---
         // 1. One active task per Lead (The most recent one in the future)
         // 2. No pending tasks for Won/Closed Leads
-        const activeLeadTasks = new Map();
-        const tasksToCloseIds = [];
-
-        tasks.forEach(t => {
-            if (t.leadId && t.status === 'pending') {
-                // Rule 2: No tasks for Won/Closed leads
-                // Rule 2: No tasks for Won/Closed leads
-                const isTerminal = t.Lead && ['won', 'closed'].includes(t.Lead.status);
-                const isEnrollmentTask = t.title?.startsWith('Matricular Aluno:');
-
-                if (isTerminal && !isEnrollmentTask) {
-                    tasksToCloseIds.push(t.id);
-                }
-                // Rule 1: Only one pending task per lead
-                else {
-                    if (activeLeadTasks.has(t.leadId)) {
-                        const existing = activeLeadTasks.get(t.leadId);
-                        // Keep the one with the latest dueDate
-                        if (new Date(t.dueDate) >= new Date(existing.dueDate)) {
-                            tasksToCloseIds.push(existing.id);
-                            activeLeadTasks.set(t.leadId, t);
-                        } else {
-                            tasksToCloseIds.push(t.id);
-                        }
-                    } else {
-                        activeLeadTasks.set(t.leadId, t);
-                    }
-                }
-            }
-        });
-
-        if (tasksToCloseIds.length > 0) {
-            console.log(`[Self-Healing] Closing ${tasksToCloseIds.length} redundant tasks:`, tasksToCloseIds);
-            await Task.update({ status: 'done' }, { where: { id: { [Op.in]: tasksToCloseIds } } });
-            // Filter out the ones we just closed from the response array
-            tasks = tasks.filter(t => !tasksToCloseIds.includes(t.id));
-        }
+        // const activeLeadTasks = new Map();
+        // const tasksToCloseIds = [];
+        //
+        // tasks.forEach(t => {
+        //     if (t.leadId && t.status === 'pending') {
+        //         // Rule 2: No tasks for Won/Closed leads
+        //         const isTerminal = t.Lead && ['won', 'closed'].includes(t.Lead.status);
+        //         const isEnrollmentTask = t.title?.startsWith('Matricular Aluno:');
+        //
+        //         if (isTerminal && !isEnrollmentTask) {
+        //             tasksToCloseIds.push(t.id);
+        //         }
+        //         // Rule 1: Only one pending task per lead
+        //         else {
+        //             if (activeLeadTasks.has(t.leadId)) {
+        //                 const existing = activeLeadTasks.get(t.leadId);
+        //                 // Keep the one with the latest dueDate
+        //                 if (new Date(t.dueDate) >= new Date(existing.dueDate)) {
+        //                     tasksToCloseIds.push(existing.id);
+        //                     activeLeadTasks.set(t.leadId, t);
+        //                 } else {
+        //                     tasksToCloseIds.push(t.id);
+        //                 }
+        //             } else {
+        //                 activeLeadTasks.set(t.leadId, t);
+        //             }
+        //         }
+        //     }
+        // });
+        //
+        // if (tasksToCloseIds.length > 0) {
+        //     console.log(`[Self-Healing] Closing ${tasksToCloseIds.length} redundant tasks:`, tasksToCloseIds);
+        //     // await Task.update({ status: 'done' }, { where: { id: { [Op.in]: tasksToCloseIds } } });
+        //     // Filter out the ones we just closed from the response array
+        //     // tasks = tasks.filter(t => !tasksToCloseIds.includes(t.id));
+        // }
 
         // --- Role-Based Filtering for Commercial (REMOVED: Use frontend filters) ---
         // if ([ROLE_IDS.LEADER_SALES, ROLE_IDS.CONSULTANT].includes(roleId)) {

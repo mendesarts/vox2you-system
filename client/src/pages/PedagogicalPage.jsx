@@ -189,10 +189,10 @@ const PedagogicalPage = () => {
                     </div>
                     <div style={{ fontSize: '9px', fontWeight: '800', opacity: 0.5, marginTop: '4px' }}>FREQUÊNCIA -75%</div>
                 </DataCard>
-                <DataCard title="Mentoria/Aluno" variant="black">
+                <DataCard title="Mentoria/Aluno" variant="white">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: '32px', fontWeight: '900', color: '#fff' }}>{statsData.mentorshipRate || '0.0'}</div>
-                        <TrendingUp size={24} color="#fff" opacity={0.3} />
+                        <div style={{ fontSize: '32px', fontWeight: '900', color: '#000000' }}>{statsData.mentorshipRate || '0.0'}</div>
+                        <TrendingUp size={24} color="#000000" opacity={0.3} />
                     </div>
                 </DataCard>
             </div>
