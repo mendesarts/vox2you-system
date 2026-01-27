@@ -16,6 +16,32 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
         course: { enabled: true, amount: 0, installments: 12, date: new Date().toISOString().split('T')[0], method: 'boleto' }
     });
 
+    // Helper for Currency Input
+    const CurrencyInput = ({ value, onChange, style }) => {
+        const [displayValue, setDisplayValue] = useState('');
+
+        useEffect(() => {
+            if (value !== undefined) {
+                setDisplayValue(new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value));
+            }
+        }, [value]);
+
+        const handleChange = (e) => {
+            const rawValue = e.target.value.replace(/\D/g, '');
+            const numberValue = Number(rawValue) / 100;
+            onChange(numberValue);
+        };
+
+        return (
+            <input
+                type="text"
+                value={displayValue}
+                onChange={handleChange}
+                style={style}
+            />
+        );
+    };
+
     useEffect(() => {
         if (isOpen && student) {
             loadFinancialData();
@@ -224,10 +250,9 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
                             <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor (R$)</label>
-                            <input
-                                type="number"
+                            <CurrencyInput
                                 value={form.enrollment.amount}
-                                onChange={e => setForm(p => ({ ...p, enrollment: { ...p.enrollment, amount: e.target.value } }))}
+                                onChange={val => setForm(p => ({ ...p, enrollment: { ...p.enrollment, amount: val } }))}
                                 style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
@@ -304,10 +329,9 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
                             <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor Total (R$)</label>
-                            <input
-                                type="number"
+                            <CurrencyInput
                                 value={form.material.amount}
-                                onChange={e => setForm(p => ({ ...p, material: { ...p.material, amount: e.target.value } }))}
+                                onChange={val => setForm(p => ({ ...p, material: { ...p.material, amount: val } }))}
                                 style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
@@ -378,10 +402,9 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
                             <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor Total (R$)</label>
-                            <input
-                                type="number"
+                            <CurrencyInput
                                 value={form.course.amount}
-                                onChange={e => setForm(p => ({ ...p, course: { ...p.course, amount: e.target.value } }))}
+                                onChange={val => setForm(p => ({ ...p, course: { ...p.course, amount: val } }))}
                                 style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
