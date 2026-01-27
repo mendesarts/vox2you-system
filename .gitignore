@@ -1,13 +1,62 @@
-node_modules
-dist
+# GITIGNORE PADRÃO PARA PROJETOS NODE.JS
+# Ignora dependências pesadas, logs e bancos de dados locais
+
+# Dependências
+node_modules/
+package-lock.json # Opcional: manter se quiser lockar versão, remover se der conflito entre OS
+
+# Build e Dist
+dist/
+build/
+out/
+.next/
+
+# Logs e Debug
+*.log
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+debug-*.log
+
+# Banco de Dados Local (NUNCA SUBIR)
+*.sqlite
+*.sqlite3
+*.db
+backups/
+dump.rdb
+
+# Arquivos de Sessão do WhatsApp (CRÍTICO: NÃO SUBIR)
+auth_info_baileys/
+wpp_session/
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Arquivos de Sistema e IDE
+.DS_Store
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+
+# Credenciais e Ambiente
 .env
 .env.local
-.DS_Store
-*.log
-*.sqlite
-wpp_session
-auth_info_baileys
-server/wpp_session
-server/auth_info_baileys
-client/dist
-server/backups
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos Temporários de Importação/Upload
+uploads/
+*.xls
+*.xlsx
+*.csv
+*.tmp
+temp/
+
+# Arquivos de Backup Gerados Manualmente
+*.bak
+*.bak2
+*.backup
+*.old
+*.orig
+crm.js.backup_*
