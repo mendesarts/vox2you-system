@@ -3,6 +3,32 @@ import { VoxModal } from '../../components/VoxUI';
 import { DollarSign, FileText, CheckCircle, AlertCircle, Calendar, CreditCard, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+// Helper for Currency Input
+const CurrencyInput = ({ value, onChange, style }) => {
+    const [displayValue, setDisplayValue] = useState('');
+
+    useEffect(() => {
+        if (value !== undefined) {
+            setDisplayValue(new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value));
+        }
+    }, [value]);
+
+    const handleChange = (e) => {
+        const rawValue = e.target.value.replace(/\D/g, '');
+        const numberValue = Number(rawValue) / 100;
+        onChange(numberValue);
+    };
+
+    return (
+        <input
+            type="text"
+            value={displayValue}
+            onChange={handleChange}
+            style={style}
+        />
+    );
+};
+
 const StudentFinancialModal = ({ isOpen, onClose, student }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -15,32 +41,6 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
         material: { enabled: true, amount: 0, installments: 1, date: new Date().toISOString().split('T')[0], isPaid: false, method: 'pix' },
         course: { enabled: true, amount: 0, installments: 12, date: new Date().toISOString().split('T')[0], method: 'boleto' }
     });
-
-    // Helper for Currency Input
-    const CurrencyInput = ({ value, onChange, style }) => {
-        const [displayValue, setDisplayValue] = useState('');
-
-        useEffect(() => {
-            if (value !== undefined) {
-                setDisplayValue(new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value));
-            }
-        }, [value]);
-
-        const handleChange = (e) => {
-            const rawValue = e.target.value.replace(/\D/g, '');
-            const numberValue = Number(rawValue) / 100;
-            onChange(numberValue);
-        };
-
-        return (
-            <input
-                type="text"
-                value={displayValue}
-                onChange={handleChange}
-                style={style}
-            />
-        );
-    };
 
     useEffect(() => {
         if (isOpen && student) {
@@ -302,30 +302,10 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                             onChange={e => setForm(p => ({ ...p, material: { ...p.material, enabled: e.target.checked } }))}
                             style={{ margin: 0, width: '16px', height: '16px' }}
                         />
-                        Material Didático
+                        Adquirir Material na Escola (Gerar Cobrança)
                     </label>
-                    {form.material.enabled && (
-                        <div style={{ display: 'flex', gap: '8px', fontSize: '0.75rem' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                <input
-                                    type="radio"
-                                    name="materialSource"
-                                    checked={!form.material.isExternalLink}
-                                    onChange={() => setForm(p => ({ ...p, material: { ...p.material, isExternalLink: false } }))}
-                                /> Estoque da Escola
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                <input
-                                    type="radio"
-                                    name="materialSource"
-                                    checked={form.material.isExternalLink}
-                                    onChange={() => setForm(p => ({ ...p, material: { ...p.material, isExternalLink: true } }))}
-                                /> Direto da Editora (Link)
-                            </label>
-                        </div>
-                    )}
                 </div>
-                {form.material.enabled && !form.material.isExternalLink && (
+                {form.material.enabled ? (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
                             <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor Total (R$)</label>
@@ -377,10 +357,9 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                             </label>
                         </div>
                     </div>
-                )}
-                {form.material.enabled && form.material.isExternalLink && (
+                ) : (
                     <div style={{ padding: '10px', background: '#fff3cd', borderRadius: '4px', fontSize: '0.8rem', color: '#856404' }}>
-                        O pagamento do material será tratado externamente direto com a editora. Nenhum lançamento financeiro será gerado no sistema.
+                        O aluno irá adquirir o material diretamente com a editora. Nenhum lançamento financeiro será gerado no sistema.
                     </div>
                 )}
             </div>
