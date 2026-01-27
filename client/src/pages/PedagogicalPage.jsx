@@ -289,7 +289,11 @@ const PedagogicalPage = () => {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
                                 <XAxis dataKey="name" style={{ fontSize: '11px', fontWeight: '800' }} />
                                 <YAxis style={{ fontSize: '11px', fontWeight: '800' }} />
-                                <Tooltip />
+                                <Tooltip
+                                    cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                                    formatter={(value) => [`${value} ${value === 1 ? 'Aluno' : 'Alunos'}`, 'Total']}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                />
                                 <Bar dataKey="value" fill="var(--ios-teal)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
