@@ -450,9 +450,12 @@ router.get('/dre', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const { unitId, roleId } = req.user;
-        const { scope, startDate, endDate } = req.query; // Filter by scope and date range
+        const { scope, startDate, endDate, studentId } = req.query; // Filter by scope and date range
 
         const where = {};
+        if (studentId) {
+            where.studentId = studentId;
+        }
         if (scope) {
             where.scope = scope;
         }
