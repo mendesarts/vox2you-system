@@ -198,9 +198,9 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
     };
 
     const renderCreate = () => (
-        <div style={{ padding: '20px', maxHeight: '600px', overflowY: 'auto' }}>
-            <div style={{ marginBottom: '20px', padding: '15px', background: '#e3f2fd', borderRadius: '8px', fontSize: '0.9rem', color: '#0d47a1', display: 'flex', gap: '10px' }}>
-                <AlertCircle size={20} />
+        <div style={{ padding: '16px', maxHeight: '600px', overflowY: 'auto' }}>
+            <div style={{ marginBottom: '16px', padding: '12px', background: '#e3f2fd', borderRadius: '8px', fontSize: '0.85rem', color: '#0d47a1', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <AlertCircle size={18} />
                 <div>
                     <strong>Gerar Contrato Financeiro</strong><br />
                     Confira os valores abaixo trazidos do cadastro do aluno/lead.
@@ -208,43 +208,57 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
             </div>
 
             {/* Matrícula */}
-            <div className="card-section" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div className="card-section" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                    <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
                         <input
                             type="checkbox"
                             checked={form.enrollment.enabled}
                             onChange={e => setForm(p => ({ ...p, enrollment: { ...p.enrollment, enabled: e.target.checked } }))}
+                            style={{ margin: 0, width: '16px', height: '16px' }}
                         />
                         Taxa de Matrícula
                     </label>
                 </div>
                 {form.enrollment.enabled && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>Valor (R$)</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor (R$)</label>
                             <input
                                 type="number"
                                 value={form.enrollment.amount}
                                 onChange={e => setForm(p => ({ ...p, enrollment: { ...p.enrollment, amount: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>Vencimento</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Vencimento</label>
                             <input
                                 type="date"
                                 value={form.enrollment.date}
                                 onChange={e => setForm(p => ({ ...p, enrollment: { ...p.enrollment, date: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
-                        <div style={{ gridColumn: 'span 2' }}>
-                            <label style={{ fontSize: '0.8rem', color: '#666', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <div>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Forma de Pagamento</label>
+                            <select
+                                value={form.enrollment.method}
+                                onChange={e => setForm(p => ({ ...p, enrollment: { ...p.enrollment, method: e.target.value } }))}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
+                            >
+                                {['crédito', 'débito', 'dinheiro', 'pix', 'cheque', 'boleto', 'permuta', 'nota de empenho'].map(m => (
+                                    <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ gridColumn: 'span 3', marginTop: '4px' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#666', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <input
                                     type="checkbox"
                                     checked={form.enrollment.isPaid}
                                     onChange={e => setForm(p => ({ ...p, enrollment: { ...p.enrollment, isPaid: e.target.checked } }))}
+                                    style={{ margin: 0, width: '14px', height: '14px' }}
                                 />
                                 Já foi pago? (Lançar no Caixa)
                             </label>
@@ -254,102 +268,154 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
             </div>
 
             {/* Material */}
-            <div className="card-section" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div className="card-section" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                    <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
                         <input
                             type="checkbox"
                             checked={form.material.enabled}
                             onChange={e => setForm(p => ({ ...p, material: { ...p.material, enabled: e.target.checked } }))}
+                            style={{ margin: 0, width: '16px', height: '16px' }}
                         />
                         Material Didático
                     </label>
+                    {form.material.enabled && (
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '0.75rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                <input
+                                    type="radio"
+                                    name="materialSource"
+                                    checked={!form.material.isExternalLink}
+                                    onChange={() => setForm(p => ({ ...p, material: { ...p.material, isExternalLink: false } }))}
+                                /> Estoque da Escola
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                <input
+                                    type="radio"
+                                    name="materialSource"
+                                    checked={form.material.isExternalLink}
+                                    onChange={() => setForm(p => ({ ...p, material: { ...p.material, isExternalLink: true } }))}
+                                /> Direto da Editora (Link)
+                            </label>
+                        </div>
+                    )}
                 </div>
-                {form.material.enabled && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                {form.material.enabled && !form.material.isExternalLink && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>Valor Total (R$)</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor Total (R$)</label>
                             <input
                                 type="number"
                                 value={form.material.amount}
                                 onChange={e => setForm(p => ({ ...p, material: { ...p.material, amount: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>Parcelas</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Parcelas</label>
                             <input
                                 type="number"
                                 value={form.material.installments}
                                 onChange={e => setForm(p => ({ ...p, material: { ...p.material, installments: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>1º Vencimento</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>1º Vencimento</label>
                             <input
                                 type="date"
                                 value={form.material.date}
                                 onChange={e => setForm(p => ({ ...p, material: { ...p.material, date: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
                         <div style={{ gridColumn: 'span 3' }}>
-                            <label style={{ fontSize: '0.8rem', color: '#666', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Forma de Pagamento (Entrada/Parc.)</label>
+                            <select
+                                value={form.material.method}
+                                onChange={e => setForm(p => ({ ...p, material: { ...p.material, method: e.target.value } }))}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
+                            >
+                                {['crédito', 'débito', 'dinheiro', 'pix', 'cheque', 'boleto', 'permuta', 'nota de empenho'].map(m => (
+                                    <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ gridColumn: 'span 3', marginTop: '4px' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#666', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <input
                                     type="checkbox"
                                     checked={form.material.isPaid}
                                     onChange={e => setForm(p => ({ ...p, material: { ...p.material, isPaid: e.target.checked } }))}
+                                    style={{ margin: 0, width: '14px', height: '14px' }}
                                 />
                                 Entrada/1ª Parc. já foi paga?
                             </label>
                         </div>
                     </div>
                 )}
+                {form.material.enabled && form.material.isExternalLink && (
+                    <div style={{ padding: '10px', background: '#fff3cd', borderRadius: '4px', fontSize: '0.8rem', color: '#856404' }}>
+                        O pagamento do material será tratado externamente direto com a editora. Nenhum lançamento financeiro será gerado no sistema.
+                    </div>
+                )}
             </div>
 
             {/* Curso */}
-            <div className="card-section" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div className="card-section" style={{ border: '1px solid #eee', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                    <label style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
                         <input
                             type="checkbox"
                             checked={form.course.enabled}
                             onChange={e => setForm(p => ({ ...p, course: { ...p.course, enabled: e.target.checked } }))}
+                            style={{ margin: 0, width: '16px', height: '16px' }}
                         />
                         Curso / Mensalidade
                     </label>
                 </div>
                 {form.course.enabled && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>Valor Total (R$)</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Valor Total (R$)</label>
                             <input
                                 type="number"
                                 value={form.course.amount}
                                 onChange={e => setForm(p => ({ ...p, course: { ...p.course, amount: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>Parcelas</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Parcelas</label>
                             <input
                                 type="number"
                                 value={form.course.installments}
                                 onChange={e => setForm(p => ({ ...p, course: { ...p.course, installments: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.8rem', color: '#666' }}>1º Vencimento</label>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>1º Vencimento</label>
                             <input
                                 type="date"
                                 value={form.course.date}
                                 onChange={e => setForm(p => ({ ...p, course: { ...p.course, date: e.target.value } }))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
                             />
                         </div>
-                        <div style={{ gridColumn: 'span 3', fontSize: '0.8rem', color: '#666', background: '#f8f9fa', padding: '5px', borderRadius: '4px' }}>
+                        <div style={{ gridColumn: 'span 3' }}>
+                            <label style={{ fontSize: '0.75rem', color: '#666', marginBottom: '4px', display: 'block' }}>Forma de Pagamento Preferencial</label>
+                            <select
+                                value={form.course.method}
+                                onChange={e => setForm(p => ({ ...p, course: { ...p.course, method: e.target.value } }))}
+                                style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
+                            >
+                                {['boleto', 'crédito', 'débito', 'dinheiro', 'pix', 'cheque', 'permuta', 'nota de empenho'].map(m => (
+                                    <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ gridColumn: 'span 3', fontSize: '0.75rem', color: '#666', background: '#f8f9fa', padding: '8px', borderRadius: '4px', marginTop: '4px' }}>
                             Mensalidade Estimada: <strong>{formatCurrency(form.course.amount / form.course.installments)}</strong> / mês
                         </div>
                     </div>
