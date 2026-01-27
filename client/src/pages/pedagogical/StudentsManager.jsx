@@ -405,12 +405,11 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                                 disabled={!selectedStudentId}
                                 onClick={() => {
                                     if (studentForActions) {
-                                        setEditingStudent(studentForActions);
-                                        setShowForm(true);
+                                        handleTransferClick(studentForActions);
                                     }
                                 }}
                             >
-                                🎓 Matricular
+                                🪑 Enturmar
                             </button>
                             <button
                                 className="action-btn"

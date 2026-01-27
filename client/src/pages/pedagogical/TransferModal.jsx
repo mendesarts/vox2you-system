@@ -41,11 +41,13 @@ const TransferModal = ({ isOpen, onClose, student, classes, onTransfer }) => {
         }
     };
 
+    const isTransfer = student?.classId;
+
     return (
         <VoxModal
             isOpen={isOpen}
             onClose={onClose}
-            title="Transferência de Turma"
+            title={isTransfer ? "Transferência de Turma" : "Enturmar Aluno"}
             width="500px"
         >
             <div className="p-4">
@@ -56,7 +58,7 @@ const TransferModal = ({ isOpen, onClose, student, classes, onTransfer }) => {
                     <div>
                         <div style={{ fontSize: '1rem', fontWeight: 600 }}>{student?.name}</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            De: {student?.Class?.name || 'N/A'}
+                            {isTransfer ? `De: ${student?.Class?.name}` : 'Sem turma definida'}
                         </div>
                     </div>
                 </div>
@@ -95,21 +97,23 @@ const TransferModal = ({ isOpen, onClose, student, classes, onTransfer }) => {
                 </div>
 
                 <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Motivo da Transferência</label>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Motivo (Opcional)</label>
                     <textarea
                         value={reason}
                         onChange={e => setReason(e.target.value)}
-                        placeholder="Ex: Mudança de horário, preferência de professor..."
+                        placeholder={isTransfer ? "Ex: Mudança de horário..." : "Enturmação inicial..."}
                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-app)', color: 'var(--text-main)', minHeight: '80px', resize: 'vertical' }}
                     />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', marginBottom: '20px' }}>
-                    <Info size={18} color="#3b82f6" style={{ marginTop: '2px', flexShrink: 0 }} />
-                    <p style={{ fontSize: '0.8rem', color: '#1e40af', lineHeight: '1.4' }}>
-                        <strong>Atenção:</strong> O histórico de aulas assistidas será mantido. Ao transferir, o sistema marcará automaticamente como "Presente" as aulas na nova turma que correspondem aos módulos que o aluno já assistiu.
-                    </p>
-                </div>
+                {isTransfer && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', marginBottom: '20px' }}>
+                        <Info size={18} color="#3b82f6" style={{ marginTop: '2px', flexShrink: 0 }} />
+                        <p style={{ fontSize: '0.8rem', color: '#1e40af', lineHeight: '1.4' }}>
+                            <strong>Atenção:</strong> O histórico de aulas assistidas será mantido na transferência.
+                        </p>
+                    </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                     <button onClick={onClose} className="btn-secondary">Cancelar</button>
@@ -118,7 +122,7 @@ const TransferModal = ({ isOpen, onClose, student, classes, onTransfer }) => {
                         onClick={handleTransfer}
                         disabled={loading || !toClassId}
                     >
-                        {loading ? 'Processando...' : 'Confirmar Transferência'}
+                        {loading ? 'Processando...' : (isTransfer ? 'Confirmar Transferência' : 'Confirmar Enturmação')}
                     </button>
                 </div>
             </div>
