@@ -190,15 +190,15 @@ router.get('/', auth, async (req, res) => {
             tasks = tasks.filter(t => !tasksToCloseIds.includes(t.id));
         }
 
-        // --- Role-Based Filtering for Commercial ---
-        if ([ROLE_IDS.LEADER_SALES, ROLE_IDS.CONSULTANT].includes(roleId)) {
-            // "Mostre as tarefas apenas dos leads ativos para o comercial."
-            tasks = tasks.filter(t => {
-                if (!t.leadId) return true; // Generic tasks? or pedagogical?
-                if (t.Lead && ['won', 'closed'].includes(t.Lead.status)) return false;
-                return true;
-            });
-        }
+        // --- Role-Based Filtering for Commercial (REMOVED: Use frontend filters) ---
+        // if ([ROLE_IDS.LEADER_SALES, ROLE_IDS.CONSULTANT].includes(roleId)) {
+        //     // "Mostre as tarefas apenas dos leads ativos para o comercial."
+        //     tasks = tasks.filter(t => {
+        //         if (!t.leadId) return true; // Generic tasks? or pedagogical?
+        //         if (t.Lead && ['won', 'closed'].includes(t.Lead.status)) return false;
+        //         return true;
+        //     });
+        // }
 
         // --- Virtual Tasks (Classes & Mentorships) ---
         // Fetch classes and mentorships matching the task date filters
