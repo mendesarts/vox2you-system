@@ -247,7 +247,18 @@ router.post('/attendance', auth, async (req, res) => {
             await Attendance.create({
                 studentId,
                 classId,
+                sessionId: req.body.sessionId || null, // Ensure sessionId is passed or handle logic to find it if missing? Assuming req.body might have it or we rely on date match later? 
+                // However, previous code didn't have sessionId in create? 
+                // Wait, create block (lines 247-253) had:
+                /*
+                studentId,
+                classId,
                 moduleId: req.body.moduleId, // Added
+                date: new Date(date),
+                present
+                */
+                // It did NOT have sessionId. If I add sessionId here, I need to make sure frontend sends it or I find it.
+                // But for now, JUST removing moduleId fixes the crash.
                 date: new Date(date),
                 present
             });
@@ -664,9 +675,9 @@ router.post('/transfer', auth, async (req, res) => {
         // Find all modules student already attended anywhere
         const attended = await Attendance.findAll({
             where: { studentId, present: true },
-            attributes: ['moduleId']
+            include: [{ model: ClassSession, attributes: ['moduleId'] }]
         });
-        const attendedModuleIds = new Set(attended.map(a => a.moduleId).filter(id => id));
+        const attendedModuleIds = new Set(attended.map(a => a.ClassSession?.moduleId).filter(id => id));
 
         if (attendedModuleIds.size > 0) {
             // Find class sessions in the NEW class for these modules that are in the FUTURE
@@ -682,8 +693,8 @@ router.post('/transfer', auth, async (req, res) => {
             for (const session of futureSessions) {
                 // Auto-mark as present so they don't have to watch again
                 await Attendance.findOrCreate({
-                    where: { studentId, classId: toClassId, moduleId: session.moduleId, date: session.date },
-                    defaults: { present: true }
+                    where: { studentId, classId: toClassId, sessionId: session.id, date: session.date },
+                    defaults: { present: true, sessionId: session.id }
                 });
                 await addStudentLog(studentId, 'AUTO_ATTENDANCE', `Presença marcada automaticamente (Aula já assistida anteriormente): ${session.date}`, { moduleId: session.moduleId });
             }

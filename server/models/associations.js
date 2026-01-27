@@ -69,6 +69,9 @@ function defineAssociations() {
     Attendance.belongsTo(Class, { foreignKey: 'classId' });
     Class.hasMany(Attendance, { foreignKey: 'classId' });
 
+    Attendance.belongsTo(ClassSession, { foreignKey: 'sessionId' });
+    ClassSession.hasMany(Attendance, { foreignKey: 'sessionId' });
+
     // Mentorship -> Student, User (as Mentor)
     Mentorship.belongsTo(Student, { foreignKey: 'studentId' });
     Student.hasMany(Mentorship, { foreignKey: 'studentId' });
