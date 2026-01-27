@@ -10,6 +10,7 @@ import StudentLogs from './StudentLogs';
 import { formatCPF, formatPhone } from '../../utils/validators';
 
 import StudentImportModal from './StudentImportModal';
+import StudentFinancialModal from './StudentFinancialModal';
 
 // Helper functions for display
 const formatPhoneDisplay = (phone) => {
@@ -48,6 +49,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
     const [isUnitTransferModalOpen, setIsUnitTransferModalOpen] = useState(false);
     const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isFinancialModalOpen, setIsFinancialModalOpen] = useState(false);
 
     // Selection States
     const [selectedStudent, setSelectedStudent] = useState(null); // Used for modals logic (internal)
@@ -416,8 +418,8 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                                 disabled={!selectedStudentId}
                                 onClick={() => {
                                     if (studentForActions) {
-                                        // TODO: Implement Financial Modal
-                                        alert(`Plano Financeiro: Aluno ${studentForActions.name} (CPF: ${studentForActions.cpf})\n\n[Sistema Preparado para Carregar Financeiro]`);
+                                        setSelectedStudent(studentForActions);
+                                        setIsFinancialModalOpen(true);
                                     }
                                 }}
                                 style={{ borderColor: '#28a745', color: '#28a745' }}
@@ -583,6 +585,12 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImportComplete={handleImportSuccess}
+            />
+
+            <StudentFinancialModal
+                isOpen={isFinancialModalOpen}
+                onClose={() => setIsFinancialModalOpen(false)}
+                student={selectedStudent}
             />
         </div>
     );
