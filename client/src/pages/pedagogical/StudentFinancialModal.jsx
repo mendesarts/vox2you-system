@@ -404,7 +404,7 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                     </label>
                 </div>
                 {form.course.enabled && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', alignItems: 'end' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 80px 140px 1fr', gap: '8px', alignItems: 'end' }}>
                         <div>
                             <label style={{ fontSize: '0.7rem', color: '#666', marginBottom: '2px', display: 'block' }}>Valor Total (R$)</label>
                             <CurrencyInput
@@ -431,8 +431,8 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                                 style={{ width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem' }}
                             />
                         </div>
-                        <div style={{ gridColumn: 'span 3' }}>
-                            <label style={{ fontSize: '0.7rem', color: '#666', marginBottom: '2px', display: 'block' }}>Forma de Pagamento Preferencial</label>
+                        <div>
+                            <label style={{ fontSize: '0.7rem', color: '#666', marginBottom: '2px', display: 'block' }}>Forma Pagamento</label>
                             <select
                                 value={form.course.method}
                                 onChange={e => setForm(p => ({ ...p, course: { ...p.course, method: e.target.value } }))}
@@ -443,7 +443,7 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
                                 ))}
                             </select>
                         </div>
-                        <div style={{ gridColumn: 'span 3', fontSize: '0.75rem', color: '#666', background: '#f8f9fa', padding: '6px', borderRadius: '4px', marginTop: '2px' }}>
+                        <div style={{ gridColumn: 'span 4', fontSize: '0.75rem', color: '#666', background: '#f8f9fa', padding: '6px', borderRadius: '4px', marginTop: '2px' }}>
                             Mensalidade Estimada: <strong>{formatCurrency(form.course.amount / form.course.installments)}</strong> / mês
                         </div>
                     </div>
@@ -453,7 +453,7 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
                 <button onClick={onClose} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Cancelar</button>
                 <button onClick={handleGenerate} className="btn-primary" disabled={loading} style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
-                    {loading ? 'Processando...' : 'Gerar Contrato'}
+                    {loading ? 'Processando...' : 'Salvar'}
                 </button>
             </div>
         </div>

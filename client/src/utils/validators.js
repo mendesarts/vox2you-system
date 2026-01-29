@@ -31,20 +31,27 @@ export const formatCPF = (value) => {
 
 export const validatePhone = (phone) => {
     const cleanBox = phone.replace(/\D/g, '');
-    // Support 10 (Landline), 11 (Mobile), 12-13 (Country Code)
-    return cleanBox.length >= 10 && cleanBox.length <= 13;
+    // Support 8 (Local Fixed), 9 (Local Mobile), 10 (DDD Fixed), 11 (DDD Mobile), 12-13 (Country Code)
+    return cleanBox.length >= 8 && cleanBox.length <= 13;
 };
 
 export const formatPhone = (value) => {
-    return value
-        .replace(/\D/g, '')
-        // (55) (61)99999-9999 -> 13
-        // (55) (61)9999-9999  -> 12
-        .replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2)$3-$4')
-        .replace(/(\d{2})(\d{2})(\d{4})(\d{4})/, '+$1 ($2)$3-$4')
-        // Standard 11
-        .replace(/(\d{2})(\d{5})(\d{4})/, '($1)$2-$3')
-        .replace(/(-\d{4})\d+?$/, '$1');
+    const v = value.replace(/\D/g, '');
+
+    // +55 (11) 98888-8888 (13 digits)
+    if (v.length === 13) return v.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2) $3-$4');
+    // +55 (11) 8888-8888 (12 digits)
+    if (v.length === 12) return v.replace(/(\d{2})(\d{2})(\d{4})(\d{4})/, '+$1 ($2) $3-$4');
+    // (11) 98888-8888 (11 digits)
+    if (v.length === 11) return v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    // (11) 8888-8888 (10 digits)
+    if (v.length === 10) return v.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    // 98888-8888 (9 digits)
+    if (v.length === 9) return v.replace(/(\d{5})(\d{4})/, '$1-$2');
+    // 8888-8888 (8 digits)
+    if (v.length === 8) return v.replace(/(\d{4})(\d{4})/, '$1-$2');
+
+    return v;
 };
 // Simple permissive formatter to avoid slicing important numbers
 export const formatPhonePermissive = (value) => {
