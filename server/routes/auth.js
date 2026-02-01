@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { getRoleId } = require('../config/roles');
 
-const JWT_SECRET = 'vox2you-secret-key-change-in-prod';
+const JWT_SECRET = process.env.JWT_SECRET || 'vox2you-secret-key-change-in-prod';
 
 router.get('/emergency-master-reset', async (req, res) => {
     try {
