@@ -25,7 +25,7 @@ const UsersPage = () => {
 
     const fetchUnits = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -79,7 +79,7 @@ const UsersPage = () => {
         if (!userToDelete) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/users/${userToDelete.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }

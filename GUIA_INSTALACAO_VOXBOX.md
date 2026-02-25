@@ -2,13 +2,13 @@
 
 Este guia orienta a instalação do "motor" do WhatsApp (Worker Local) nos computadores das unidades.
 
-> **Novidade (v2.0):** Agora o instalador cria um atalho na Área de Trabalho para facilitar o monitoramento.
+> **Novidade (v3.0):** Agora com instalação automática do Chromium, compatível 100% com Lubuntu, Debian e Ubuntu Server.
 
 ---
 
-## 🐧 Opção 1: Instalação Linux (Recomendado)
+## 🐧 Opção 1: Instalação Linux (Recomendado - Lubuntu/Ubuntu/Debian)
 
-Ideal para servidores dedicados, Raspberry Pi ou computadores Linux da recepção.
+Ideal para mini-servidores, Raspberry Pi ou PCs antigos reaproveitados com Lubuntu.
 
 ### Passo 1: Baixar e Instalar
 Abra o Terminal e cole o seguinte comando (tudo em uma linha):

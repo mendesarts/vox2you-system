@@ -35,7 +35,7 @@ const Secretary = () => {
         setLoading(true);
         try {
             const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const headers = { 'Authorization': `Bearer ${token}` };
 
             const targetUnit = unitId || (unitId === 0 ? 0 : 'all');

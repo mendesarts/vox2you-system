@@ -16,7 +16,7 @@ const DREReport = () => {
     const fetchYearlyData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const startDate = `${year}-01-01`;
             const endDate = `${year}-12-31`;
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial?startDate=${startDate}&endDate=${endDate}&limit=10000`, {

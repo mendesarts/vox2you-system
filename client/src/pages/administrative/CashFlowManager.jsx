@@ -24,7 +24,7 @@ const CashFlowManager = () => {
 
     const fetchStatus = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/cash-register/status`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -49,7 +49,7 @@ const CashFlowManager = () => {
         if (openingBalance === '' || openingBalance === undefined) return alert('Informe o saldo inicial');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/cash-register/open`, {
                 method: 'POST',
                 headers: {
@@ -81,7 +81,7 @@ const CashFlowManager = () => {
         if (closingBalance === '' || closingBalance === undefined) return alert('Informe o saldo final');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/cash-register/close`, {
                 method: 'POST',
                 headers: {
@@ -110,7 +110,7 @@ const CashFlowManager = () => {
     const handleTransaction = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/transaction`, {
                 method: 'POST',
                 headers: {

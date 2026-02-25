@@ -10,8 +10,18 @@ const { ROLE_IDS } = require('../config/roles');
 router.get('/', auth, async (req, res) => {
     try {
         const isGlobalUser = [1, 10].includes(Number(req.user.roleId));
-        if (!isGlobalUser) return res.status(403).json({ error: 'Acesso negado' });
-        const units = await Unit.findAll({ where: { active: true }, order: [['name', 'ASC']] });
+        let units;
+        if (isGlobalUser) {
+            // Global users see all active units
+            units = await Unit.findAll({ where: { active: true }, order: [['name', 'ASC']] });
+        } else {
+            // Non-global users see only their own unit
+            if (req.user.unitId) {
+                units = await Unit.findAll({ where: { id: req.user.unitId, active: true } });
+            } else {
+                units = [];
+            }
+        }
         res.json(units);
     } catch (error) {
         res.status(500).json({ error: error.message });

@@ -32,14 +32,20 @@ const AttendanceManager = () => {
     useEffect(() => {
         if (selectedClassId) {
             fetchStudents(selectedClassId);
-            // Fetch modules independently to be more robust
             fetchClassModules(selectedClassId);
+            // Auto-select the course if classId came from state and courseId is not set
+            if (!selectedCourseId && classes.length > 0) {
+                const cls = classes.find(c => String(c.id) === String(selectedClassId));
+                if (cls?.Course?.id) {
+                    setSelectedCourseId(String(cls.Course.id));
+                }
+            }
         }
-    }, [selectedClassId]);
+    }, [selectedClassId, classes]);
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -52,7 +58,7 @@ const AttendanceManager = () => {
 
     const fetchClassModules = async (classId) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             // First get class details to find courseId
             const resCls = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes/${classId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -76,7 +82,7 @@ const AttendanceManager = () => {
 
     const fetchStudents = async (classId) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes/${classId}/students`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -96,7 +102,7 @@ const AttendanceManager = () => {
     };
 
     const handleSave = async () => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const promises = students.map(s => {
             const payload = {
                 studentId: s.id,

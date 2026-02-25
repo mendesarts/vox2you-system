@@ -15,7 +15,7 @@ const AIAdvisorModal = ({ onClose }) => {
     const fetchAnalysis = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/ai-advisor/analyze`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

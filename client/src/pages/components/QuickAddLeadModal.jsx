@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Phone, Mail, Building, DollarSign, Save } from 'lucide-react';
+import { X, User, Phone, Mail, Building, DollarSign, Save, Radio } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,6 +9,7 @@ const QuickAddLeadModal = ({ isOpen, onClose, onSave, columnId = 'new' }) => {
     const [formData, setFormData] = useState({
         name: '',
         value: '',
+        channel: '',
         mobile: '',
         email: '',
         companyName: '',
@@ -42,6 +43,7 @@ const QuickAddLeadModal = ({ isOpen, onClose, onSave, columnId = 'new' }) => {
                 phone: formData.mobile, // Map mobile to phone
                 company: formData.companyName,
                 address: formData.companyAddress,
+                source: formData.channel || 'Orgânico',
                 status: columnId,
                 unitId: user?.unitId,
                 responsibleId: user?.id,
@@ -56,6 +58,7 @@ const QuickAddLeadModal = ({ isOpen, onClose, onSave, columnId = 'new' }) => {
             setFormData({
                 name: '',
                 value: '',
+                channel: '',
                 mobile: '',
                 email: '',
                 companyName: '',
@@ -114,6 +117,34 @@ const QuickAddLeadModal = ({ isOpen, onClose, onSave, columnId = 'new' }) => {
                             onChange={handleChange}
                             style={{ width: '100%', padding: '10px 12px 10px 32px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px' }}
                         />
+                    </div>
+
+                    {/* Canal */}
+                    <div style={{ marginBottom: '16px', position: 'relative' }}>
+                        <Radio size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+                        <select
+                            name="channel"
+                            value={formData.channel}
+                            onChange={handleChange}
+                            style={{
+                                width: '100%', padding: '10px 12px 10px 32px', borderRadius: '6px',
+                                border: '1px solid #e5e7eb', fontSize: '14px', appearance: 'none',
+                                background: 'white url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 fill=%27%239ca3af%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z%27/%3E%3C/svg%3E") no-repeat right 12px center',
+                                color: formData.channel ? '#1f2937' : '#9ca3af'
+                            }}
+                        >
+                            <option value="" disabled>Canal do Lead</option>
+                            <option value="Orgânico">Orgânico</option>
+                            <option value="Indicação">Indicação</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Facebook">Facebook</option>
+                            <option value="Google">Google Ads</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="Telefone">Telefone</option>
+                            <option value="Site">Site</option>
+                            <option value="Evento">Evento</option>
+                            <option value="Outro">Outro</option>
+                        </select>
                     </div>
 
                     <div style={{ border: '1px solid #f3f4f6', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>

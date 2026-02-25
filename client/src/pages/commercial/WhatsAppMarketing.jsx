@@ -46,7 +46,7 @@ const WhatsAppMarketing = () => {
         setIsLoadingCRM(true);
         addLog('Buscando leads no CRM...');
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

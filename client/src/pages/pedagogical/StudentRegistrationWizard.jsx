@@ -215,7 +215,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [], initialData 
                 contractStatus: financialData.contractSigned ? 'signed' : 'pending',
                 unit: user?.unit
             };
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const url = isEdit
                 ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students/${initialData.id}`
                 : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students`;
@@ -764,7 +764,7 @@ const StudentRegistrationWizard = ({ onClose, onSave, classes = [], initialData 
                                                         responsibleCPF: studentData.responsibleCPF // Assuming this field exists or needs to be added to state if mapped
                                                     };
 
-                                                    const token = localStorage.getItem('token');
+                                                    const token = sessionStorage.getItem('token');
                                                     const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/contracts/generate`, {
                                                         method: 'POST',
                                                         headers: {

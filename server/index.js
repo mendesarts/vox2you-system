@@ -159,7 +159,7 @@ require('./models/associations'); // Load Associations
 
 // --- MOTOR WHATSAPP SDR IA (Brasília) ---
 // --- MOTOR WHATSAPP SDR IA (Brasília) ---
-// const { startWhatsAppBot } = require('./services/whatsappBot'); // DISABLED FOR STABILITY
+const { startWhatsAppBot } = require('./services/whatsappBot');
 
 // Lógica de Socket básica
 io.on('connection', (socket) => {
@@ -220,7 +220,12 @@ const startServer = async () => {
                     await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS '${role}'`).catch(() => { });
                 }
                 // Update Lead Status Enums
-                const leadStatuses = ['social_comment', 'social_direct', 'social_prospect', 'internal_other', 'internal_team'];
+                const leadStatuses = [
+                    'social_comment', 'social_direct', 'social_prospect', 'internal_students', 'internal_other', 'internal_team',
+                    'connecting_2', 'connecting_3', 'up_cell', 'down_cell',
+                    'warming_day_1', 'warming_day_2', 'warming_day_3', 'warming_day_4', 'warming_day_5',
+                    'warming_day_6', 'warming_day_7', 'warming_day_8', 'warming_day_9', 'warming_day_10'
+                ];
                 for (const s of leadStatuses) {
                     await sequelize.query(`ALTER TYPE "enum_Leads_status" ADD VALUE IF NOT EXISTS '${s}'`).catch(() => { });
                 }
@@ -272,7 +277,16 @@ const startServer = async () => {
         console.log(`DB & Sync Complete.`);
         const authPath = 'auth_info_baileys';
         // if (fs.existsSync(authPath)) fs.rmSync(authPath, { recursive: true, force: true }); // Disabled cleaning to prevent loop
-        // startWhatsAppBot(); // TEMPORARIAMENTE DESABILITADO - Causando crash no ambiente local
+
+        // --- SAFE START WHATSAPP ---
+        try {
+            console.log('🔄 Tentando iniciar serviço do WhatsApp... (DESATIVADO TEMPORARIAMENTE PARA DEBUG)');
+            // startWhatsAppBot().catch(err => {
+            //     console.error('⚠️ Falha ao iniciar WhatsApp Bot (Run-time):', err.message);
+            // });
+        } catch (err) {
+            console.error('⚠️ Falha ao iniciar WhatsApp Bot (Sync):', err.message);
+        }
     } catch (err) {
         console.error("Erro critico:", err);
     }

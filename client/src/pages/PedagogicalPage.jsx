@@ -63,7 +63,7 @@ const PedagogicalPage = () => {
 
     const fetchStats = async (unitId = '', startDate = '', endDate = '') => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const targetUnit = unitId || (unitId === 0 ? 0 : 'all');
             let query = `?unitId=${targetUnit}`;
             if (startDate) query += `&startDate=${startDate}`;
@@ -82,7 +82,7 @@ const PedagogicalPage = () => {
     const fetchChartsData = async (unitId = '', startDate = '', endDate = '') => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const targetUnit = unitId || (unitId === 0 ? 0 : 'all');
             let query = `?unitId=${targetUnit}`;
             if (startDate) query += `&startDate=${startDate}`;
@@ -115,7 +115,7 @@ const PedagogicalPage = () => {
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

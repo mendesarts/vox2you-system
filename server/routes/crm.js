@@ -5,6 +5,7 @@ const Lead = require('../models/Lead');
 const User = require('../models/User');
 const Unit = require('../models/Unit');
 const Task = require('../models/Task');
+const Student = require('../models/Student');
 const CadenceLog = require('../models/CadenceLog');
 const ContactAttempt = require('../models/ContactAttempt');
 const auth = require('../middleware/auth');
@@ -122,23 +123,9 @@ const createEnrollmentTask = async (lead, requester, transaction = null) => {
             transaction
         });
 
-        // 2. Find Assignee (Admin -> Manager -> Franchisee)
-        const rolesToSearch = [ROLE_IDS.ADMIN_FINANCIAL, ROLE_IDS.MANAGER, ROLE_IDS.FRANCHISEE];
-        let assigneeId = null;
-
-        for (const roleId of rolesToSearch) {
-            const user = await User.findOne({
-                where: { unitId: lead.unitId, roleId },
-                transaction
-            });
-            if (user) {
-                assigneeId = user.id;
-                break;
-            }
-        }
-
-        // Fallback to requester
-        if (!assigneeId) assigneeId = requester.id;
+        // 2. Assign to the Consultant (Seller) so they can proceed with enrollment form
+        // Admins/Managers will also see this task due to role hierarchy
+        assigneeId = lead.consultant_id || requester.id;
 
         // 3. Create Task
         await Task.create({
@@ -249,7 +236,7 @@ router.get('/leads', auth, async (req, res) => {
 
         const leads = await Lead.findAll({
             where,
-            attributes: { exclude: ['history', 'tracking', 'metadata', 'attempts', 'notes', 'contactSummary', 'painPoint'] },
+            attributes: { exclude: ['history', 'tracking', 'metadata', 'notes', 'contactSummary', 'painPoint'] },
             include: [
                 { model: Unit, attributes: ['name'] },
                 { model: User, as: 'consultant', attributes: ['name', 'roleId'] },
@@ -259,6 +246,12 @@ router.get('/leads', auth, async (req, res) => {
                     required: false,
                     where: { status: 'pending' },
                     attributes: ['dueDate', 'status']
+                },
+                {
+                    model: Student,
+                    as: 'student',
+                    required: false,
+                    attributes: ['id', 'name', 'leadId']
                 }
             ],
             order: [['updatedAt', 'DESC']]
@@ -584,6 +577,8 @@ router.put('/leads/:id', auth, async (req, res) => {
         history.push({
             date: new Date().toISOString(),
             actor: 'HUMAN',
+            actorName: req.user.name || 'Usuário',
+            actorId: req.user.id,
             action: 'update',
             content: 'Atualização Manual de Dados'
         });
@@ -716,7 +711,6 @@ router.put('/leads/:id', auth, async (req, res) => {
 // PUT /api/crm/leads/:id/move - Move card in Kanban
 router.put('/leads/:id/move', auth, async (req, res) => {
     try {
-        const { status, funnel, notes, proposedValue, appointmentDate, nextTaskDate, nextTaskType } = req.body;
         const lead = await Lead.findByPk(req.params.id);
 
         if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -729,31 +723,51 @@ router.put('/leads/:id/move', auth, async (req, res) => {
 
         const STATUS_LABELS = {
             'new': 'Novo Lead',
-            'connecting': 'Tentativa de Contato',
+            'connecting': 'Tentativa de Contato', // Legacy
+            'connecting_2': 'Conexão 2',
+            'connecting_3': 'Conexão 3',
             'connected': 'Conectado',
             'scheduled': 'Agendado',
             'negotiation': 'Negociação',
             'won': 'Venda Realizada',
             'lost': 'Perdido',
             'no_show': 'Não Compareceu',
-            'closed': 'Arquivado'
+            'closed': 'Arquivado',
+            'warming_day_1': 'Aquecimento Dia 1',
+            'warming_day_2': 'Aquecimento Dia 2',
+            'warming_day_3': 'Aquecimento Dia 3',
+            'warming_day_4': 'Aquecimento Dia 4',
+            'warming_day_5': 'Aquecimento Dia 5',
+            'warming_day_6': 'Aquecimento Dia 6',
+            'warming_day_7': 'Aquecimento Dia 7',
+            'warming_day_8': 'Aquecimento Dia 8',
+            'warming_day_9': 'Aquecimento Dia 9',
+            'warming_day_10': 'Aquecimento Dia 10',
+            'up_cell': 'Up Cell',
+            'down_cell': 'Down Cell'
         };
+
+        const { status, funnel, notes, proposedValue, appointmentDate, nextTaskDate, nextTaskType, quantity, courseInterest } = req.body;
 
         let updates = { status };
         if (funnel) updates.funnel = funnel;
 
         // Handle Extra Data
+        if (quantity) updates.quantity = Number(quantity);
+        if (courseInterest) updates.courseInterest = courseInterest;
         if (notes) updates.notes = notes;
         if (appointmentDate) updates.appointmentDate = new Date(appointmentDate);
         if (nextTaskDate) updates.nextTaskDate = new Date(nextTaskDate);
         if (nextTaskType) updates.nextTaskType = nextTaskType;
-        if (proposedValue) updates.value = Number(String(proposedValue).replace(/[^0-9.-]/g, ''));
+        if (proposedValue) {
+            updates.value = Number(String(proposedValue).replace(/[^0-9.-]/g, ''));
+            updates.sales_value = Number(String(proposedValue).replace(/[^0-9.-]/g, ''));
+        }
 
         if (req.body.incrementAttempts) {
             let currentAttempts = [];
             try {
                 currentAttempts = lead.attempts ? JSON.parse(lead.attempts) : [];
-                // Handle case where it might be just a string or number in legacy data
                 if (!Array.isArray(currentAttempts)) currentAttempts = [];
             } catch (e) {
                 currentAttempts = [];
@@ -799,6 +813,8 @@ router.put('/leads/:id/move', auth, async (req, res) => {
         history.push({
             date: now.toISOString(),
             actor: 'HUMAN',
+            actorName: req.user.name || 'Usuário',
+            actorId: req.user.id,
             action: 'move_stage',
             content: logContent
         });
@@ -806,7 +822,7 @@ router.put('/leads/:id/move', auth, async (req, res) => {
         updates.history = JSON.stringify(history);
 
         // Logic: Switch AI/Human based on column
-        if (['new', 'connecting', 'no_show'].includes(status)) {
+        if (['new', 'connecting', 'connecting_2', 'connecting_3', 'no_show'].includes(status)) {
             updates.handledBy = 'AI';
             updates.aiStatus = 'active'; // Always active in these stages
         } else if (['connected', 'scheduled', 'negotiation'].includes(status)) {
@@ -828,7 +844,6 @@ router.put('/leads/:id/move', auth, async (req, res) => {
         const Task = require('../models/Task'); // Lazy load
 
         // New Logic: Complete ALL previous pending tasks for this lead if move to new stage or terminal state.
-        // This ensures only the LATEST task is active OR no tasks are active for Won/Closed leads.
         if (appointmentDate || nextTaskDate || ['won', 'closed'].includes(status)) {
             await Task.update(
                 { status: 'done' },
@@ -840,6 +855,7 @@ router.put('/leads/:id/move', auth, async (req, res) => {
                 }
             );
         }
+
         // Auto-Task Logic based on Status Change
         try {
             // SKIP INTERNAL FUNNEL
@@ -857,12 +873,12 @@ router.put('/leads/:id/move', auth, async (req, res) => {
                         leadId: lead.id,
                         userId: lead.consultant_id || updates.consultant_id || req.user.id,
                         unitId: lead.unitId || req.user.unitId,
-                        category: 'commercial' // Commercial Task
+                        category: 'commercial'
                     });
                 }
 
                 // 2. If moving to Connecting with Failure (Automated Retry) or No-Show
-                if ((status === 'connecting' || status === 'no_show') && nextTaskDate) {
+                if ((status === 'connecting' || status === 'connecting_2' || status === 'connecting_3' || status === 'no_show' || status === 'warming_day_1') && nextTaskDate) {
                     await Task.create({
                         title: status === 'no_show' ? `No Show: ${lead.name}` : `Retentativa: ${lead.name}`,
                         description: logContent, // Use the real log info
@@ -893,14 +909,11 @@ router.put('/leads/:id/move', auth, async (req, res) => {
             }
         } catch (taskError) {
             console.error('Error creating auto-task:', taskError);
-            // Don't block the main update response, but log it.
         }
 
-        // 4. If moving to WON -> Create Enrollment Task for Administrative & Send Conversion Signal
+        // 4. If moving to WON -> Create Enrollment Task & Send Signal
         if (status === 'won' && currentStatus !== 'won') {
             await createEnrollmentTask(lead, req.user);
-
-            // TRIGGERS OFFLINE CONVERSION SIGNAL
             try {
                 const { sendConversionSignal } = require('../services/conversionService');
                 const saleValue = updates.value || lead.value || 0;
@@ -910,12 +923,9 @@ router.put('/leads/:id/move', auth, async (req, res) => {
             }
         }
 
-
-
-        // Logic: Reset attempts if moving to No-Show to start reactivation cadence
+        // Logic: Reset attempts if moving to No-Show
         if (status === 'no_show' && currentStatus !== 'no_show') {
             updates.attemptCount = 0;
-            // Immediate Trigger if executeAIAction exists
             try {
                 const { executeAIAction } = require('../services/aiService');
                 await executeAIAction(lead, 'reactivation');
@@ -1114,6 +1124,8 @@ router.post('/leads/:id/takeover', auth, async (req, res) => {
         history.push({
             date: new Date().toISOString(),
             actor: 'HUMAN',
+            actorName: req.user.name || 'Usuário',
+            actorId: req.user.id,
             action: 'takeover',
             content: 'Atendimento humano assumido.'
         });
@@ -1141,26 +1153,41 @@ router.post('/leads/:id/interaction', auth, async (req, res) => {
 
         history.push({
             date: now.toISOString(),
-            actor: 'HUMAN', // or 'AI' if passed
+            actor: 'HUMAN',
+            actorName: req.user.name || 'Usuário',
+            actorId: req.user.id,
             action: type,
             content: content || 'Interação registrada manualmente.'
         });
 
+        // Update Attempts Array
+        const attempts = typeof lead.attempts === 'string' ? JSON.parse(lead.attempts || '[]') : [];
+        attempts.push({
+            date: now.toISOString(),
+            type: type, // 'call', 'whatsapp', 'email'
+            content: content || 'Tentativa registrada',
+            outcome: 'pending'
+        });
+
         const updates = {
             history: JSON.stringify(history),
+            attempts: JSON.stringify(attempts),
             lastContactAt: now,
-            attemptCount: lead.attemptCount + 1 // Increment attempts? Or maybe reset if successful contact?
+            attemptCount: attempts.length
         };
 
-        // AUTOMATION: If Lead is NEW and we interacted, move to Connecting
-        if (lead.status === 'new') {
-            updates.status = 'connecting';
-            updates.handledBy = 'HUMAN'; // Assuming human logged the interaction usually
-        }
-
-        // AUTOMATION: If Lead was No-Show and we contacted, move to Connecting
-        if (lead.status === 'no_show') {
-            updates.status = 'connecting';
+        // AUTOMATION: Status Progression based on Interaction
+        // Only if status was NOT updated manually in the request (although this endpoint usually just logs interaction, not full move)
+        if (!req.body.status) {
+            if (lead.status === 'new') {
+                updates.status = 'connecting_2';
+            } else if (lead.status === 'connecting_2') {
+                updates.status = 'connecting_3';
+            } else if (lead.status === 'connecting_3') {
+                updates.status = 'lost';
+                updates.funnel = 'crm';
+                updates.nextTaskType = 'Recuperação';
+            }
         }
 
         await lead.update(updates);

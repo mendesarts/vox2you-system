@@ -12,7 +12,7 @@ const EnrollmentModal = ({ isOpen, onClose, lead, onSuccess }) => {
     const [error, setError] = useState('');
 
     const API_URL = 'http://localhost:3000/api';
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
 
     // Fetch courses on mount
     useEffect(() => {

@@ -29,7 +29,7 @@ const CoursesSettings = () => {
 
     const fetchCourses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -41,7 +41,7 @@ const CoursesSettings = () => {
     const handleCreateCourse = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -59,7 +59,7 @@ const CoursesSettings = () => {
     const handleDeleteCourse = async (courseId) => {
         if (!window.confirm('Excluir este curso e todos os seus módulos?')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${courseId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -74,7 +74,7 @@ const CoursesSettings = () => {
     const handleAddModule = async (e, courseId) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${courseId}/modules`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

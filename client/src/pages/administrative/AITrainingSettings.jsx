@@ -55,7 +55,7 @@ const AITrainingSettings = () => {
 
     const fetchConfig = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/ai-config`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -85,7 +85,7 @@ const AITrainingSettings = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/ai-config`, {
                 method: 'PUT',
                 headers: {

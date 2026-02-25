@@ -35,7 +35,7 @@ const ClassesManager = ({ onNavigateToStudents }) => {
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -67,7 +67,7 @@ const ClassesManager = ({ onNavigateToStudents }) => {
 
     const loadCourses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -106,7 +106,7 @@ const ClassesManager = ({ onNavigateToStudents }) => {
 
     const fetchHolidays = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/holidays`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -163,7 +163,7 @@ const ClassesManager = ({ onNavigateToStudents }) => {
     const confirmDelete = async () => {
         if (!classToDelete) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes/${classToDelete.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -220,7 +220,7 @@ const ClassesManager = ({ onNavigateToStudents }) => {
                 unit: user?.unit
             };
 
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(url, {
                 method: method,
                 headers: {
@@ -271,7 +271,7 @@ const ClassesManager = ({ onNavigateToStudents }) => {
     const handleGenerateSchedule = async (classId) => {
         if (!window.confirm('Isso irá gerar/regenerar o cronograma de aulas baseando-se nos feriados cadastrados. Continuar?')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes/${classId}/generate-schedule`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }

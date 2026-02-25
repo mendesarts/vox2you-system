@@ -15,7 +15,7 @@ const StudentLogs = ({ isOpen, onClose, studentId, studentName }) => {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/student/${studentId}/logs`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

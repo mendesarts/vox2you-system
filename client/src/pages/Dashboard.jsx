@@ -53,7 +53,7 @@ const Dashboard = () => {
 
     const fetchStats = async (unitId = '', startDate = '', endDate = '') => {
         setLoading(true);
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
 
         // unitId comes from selectedUnit (context), which is Number or null (for all)
         let query = unitId ? `unitId=${unitId}` : '';

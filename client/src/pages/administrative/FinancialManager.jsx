@@ -71,7 +71,7 @@ const FinancialManager = () => {
     const fetchFinancialRecords = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             // If selectedUnit is null/undefined (Global All), skip unitId or pass 'all' if backend supports it.
             // Usually backend defaults to user unit if not provided.
             // For separate unit view, we must pass it.
@@ -94,7 +94,7 @@ const FinancialManager = () => {
     // Data Tools
     const handleExport = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/export/csv`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -123,7 +123,7 @@ const FinancialManager = () => {
         reader.onload = async (evt) => {
             const csvContent = evt.target.result;
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/import/csv`, {
                     method: 'POST',
                     headers: {
@@ -155,7 +155,7 @@ const FinancialManager = () => {
 
     const handleCreateRecord = async (updateScope = 'current') => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const isEdit = !!selectedRecordId;
             let updatePlan = updateScope === 'all';
 
@@ -226,7 +226,7 @@ const FinancialManager = () => {
     const confirmAdvance = async () => {
         if (!selectedRecordsForAdvance.length) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/advance`, {
                 method: 'POST',
                 headers: {
@@ -432,7 +432,7 @@ const FinancialManager = () => {
         if (!recordToDelete) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             let successCount = 0;
 
             for (const id of recordToDelete.ids) {
@@ -470,7 +470,7 @@ const FinancialManager = () => {
             console.log('🗑️ Executando exclusão:', { recordId: record.id, scope });
 
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${record.id}?deleteScope=${scope}`;
                 console.log('📡 DELETE request:', url);
 

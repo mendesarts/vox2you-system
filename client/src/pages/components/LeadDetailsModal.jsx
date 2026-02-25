@@ -10,7 +10,37 @@ import {
 import api from '../../services/api';
 import ChatTab from '../../components/LeadModal/ChatTab';
 
+// Comprehensive set of all date/datetime fields for consistent formatting
+const ALL_DATE_FIELDS = new Set([
+    // Core system dates
+    'birthDate', 'createdAt', 'nextTaskDate', 'appointmentDate', 'connection_date',
+    // Importado dates
+    'data_de_nascimento__contato_', 'data_vencimento', 'fechada_em', 'data_encaminhado',
+    'data_e_hora_da_negociacao', 'data_de_nascimento___responsavel_financeiro',
+    'consultancyDate', 'enrollmentDate', 'lastScheduleDate',
+    // Entrevistas dates
+    'data_e_hora_da_entrevista___1', 'data_e_hora_da_entrevista___2',
+    'data_e_hora_da_entrevista___3', 'data_e_hora_da_entrevista___4',
+    'data_e_hora_da_entrevista_realizada', 'data_e_hora_da_visita',
+    'agendamento_aula_experimental',
+    '1_agendamento_de_entrevista', '2_agendamento_de_entrevista',
+    '3_agendamento_de_entrevista', '4_agendamento_de_entrevista',
+    // Follow-ups (Nível 1)
+    'follow_up_1', 'follow_up_2', 'follow_up_3', 'follow_up_4', 'follow_up_5',
+    'follow_up_6', 'follow_up_7',
+    // Follow-ups (Nível 2)
+    'follow_up_1_2', 'follow_up_2_2', 'follow_up_3_2', 'follow_up_4_2', 'follow_up_5_2',
+    // Follow-ups (Nível 3)
+    'follow_up_1_3', 'follow_up_2_3', 'follow_up_3_3', 'follow_up_4_3', 'follow_up_5_3',
+    // Negociação
+    'negociacao_1', 'negociacao_2', 'negociacao_3', 'negociacao_4', 'negociacao_5',
+    // Tentativas de Contato
+    'resultado_1__tentativa', 'resultado_2__tentativa', 'resultado_3__tentativa',
+    'resultado_4__tentativa', 'resultado_5__tentativa',
+]);
+
 const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, initialTab = 'principal', user, consultants = [], units = [], columns = {} }) => {
+    if (!isOpen || !lead) return null;
     const navigate = useNavigate();
     const chatEndRef = useRef(null);
 
@@ -18,14 +48,10 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
     const [activeSection, setActiveSection] = useState('contato');
 
     const SECTIONS = [
-        { id: 'contato', label: 'Identificação e Contato', icon: Phone },
-        { id: 'essencial', label: 'Essencial e Comercial', icon: BarChart },
-        { id: 'financeiro', label: 'Financeiro e Venda', icon: DollarSign },
-        { id: 'localizacao', label: 'Localização', icon: MapPin },
-        { id: 'historico_importado', label: 'Histórico & Follow-ups', icon: FileText },
-        { id: 'fluxo', label: 'Fluxo de Atendimento', icon: Rocket },
-        { id: 'chat', label: 'WhatsApp', icon: MessageCircle },
-        { id: 'tracking', label: 'Tracking & Web', icon: Globe }
+        { id: 'contato', label: 'Contato', icon: Phone },
+        { id: 'essencial', label: 'Negociação', icon: DollarSign },
+        { id: 'financeiro', label: 'Financeiro', icon: FileText },
+        { id: 'chat', label: 'WhatsApp', icon: MessageCircle }
     ];
 
     const [leftTab, setLeftTab] = useState(initialTab || 'principal');
@@ -34,12 +60,29 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
 
     const FUNNELS = {
         crm: {
-            label: 'Comercial',
+            label: 'Comercial (CRM)',
             stages: [
-                { id: 'new', label: 'Novo Lead' }, { id: 'connecting', label: 'Conectando' }, { id: 'connected', label: 'Conexão' },
-                { id: 'scheduled', label: 'Agendamento' }, { id: 'no_show', label: 'No-Show' }, { id: 'negotiation', label: 'Negociação' },
-                { id: 'won', label: 'Matriculados' }, { id: 'closed_won', label: 'Closed - won' }, { id: 'closed_lost', label: 'Closed - lost' }, { id: 'closed', label: 'Encerrado' }, { id: 'nurturing', label: 'Nutrição' }
+                { id: 'new', label: 'Novo Lead' },
+                { id: 'connecting_2', label: 'Conexão 2' },
+                { id: 'connecting_3', label: 'Conexão 3' },
+                { id: 'scheduled', label: 'Agendado' },
+                { id: 'no_show', label: 'No-Show' },
+                { id: 'negotiation', label: 'Negociação' },
+                { id: 'won', label: 'Ganho / Matriculado' },
+                { id: 'lost', label: 'Perdido' }
             ]
+        },
+        warming: {
+            label: 'Aquecimento',
+            stages: Array.from({ length: 10 }, (_, i) => ({ id: `warming_day_${i + 1}`, label: `Dia ${i + 1}` }))
+        },
+        up_cell: {
+            label: 'Up Cell',
+            stages: [{ id: 'up_cell', label: 'Up Cell' }]
+        },
+        down_cell: {
+            label: 'Down Cell',
+            stages: [{ id: 'down_cell', label: 'Down Cell' }]
         },
         social: {
             label: 'Redes Sociais',
@@ -189,16 +232,20 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
         if (['phone', 'whatsapp', 'secondary_phone', 'mobile', 'celular__contato_', 'telefone_comercial__contato_', 'telefone_residencial__contato_', 'outro_telefone__contato_', 'tel__direto_com___contato_', 'telefone___responsavel_financeiro'].includes(field)) v = formatPhone(v);
         if (['cpf', 'cpf__contato_', 'rg', 'rg__contato_', 'cpf___responsavel_financeiro', 'rg___responsavel_financeiro', 'cnpj'].includes(field)) v = v.replace(/[^\d.\-/]/g, '');
 
-        if (['sales_value', 'enrollment_value', 'material_value', 'venda', 'valor_material_didatico'].includes(field)) v = formatCurrency(v);
+        // if (['sales_value', 'enrollment_value', 'material_value', 'venda', 'valor_material_didatico', 'value'].includes(field)) v = formatCurrency(v);
 
-        // Date Fields
-        if (['birthDate', 'data_de_nascimento__contato_', 'data_vencimento',
-            'createdAt', 'fechada_em', 'data_encaminhado', 'data_e_hora_da_negociacao',
-            'consultancyDate', 'enrollmentDate', 'lastScheduleDate', 'data_de_nascimento___responsavel_financeiro',
-            'connection_date', 'data_e_hora_da_entrevista___1', 'data_e_hora_da_entrevista___2',
-            'data_e_hora_da_entrevista___3', 'data_e_hora_da_entrevista___4',
-            'data_e_hora_da_entrevista_realizada', 'data_e_hora_da_visita', 'agendamento_aula_experimental'].includes(field)) {
+        // Date Fields - comprehensive check
+        if (ALL_DATE_FIELDS.has(field)) {
             v = formatDate(v);
+        }
+
+        // Funnel Change Logic - Reset status to first stage
+        if (field === 'funnel') {
+            const newStages = FUNNELS[v]?.stages || [];
+            if (newStages.length > 0) {
+                setFormData(prev => ({ ...prev, [field]: v, status: newStages[0].id }));
+                return;
+            }
         }
 
         setFormData(prev => ({ ...prev, [field]: v }));
@@ -223,14 +270,7 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
             if (payload.cnpj) payload.cnpj = cleanNumber(payload.cnpj);
             if (payload.cpf___responsavel_financeiro) payload.cpf___responsavel_financeiro = cleanNumber(payload.cpf___responsavel_financeiro);
 
-            const dateFields = [
-                'birthDate', 'data_de_nascimento__contato_', 'data_vencimento',
-                'createdAt', 'fechada_em', 'data_encaminhado', 'data_e_hora_da_negociacao',
-                'consultancyDate', 'enrollmentDate', 'lastScheduleDate', 'data_de_nascimento___responsavel_financeiro',
-                'connection_date', 'data_e_hora_da_entrevista___1', 'data_e_hora_da_entrevista___2',
-                'data_e_hora_da_entrevista___3', 'data_e_hora_da_entrevista___4',
-                'data_e_hora_da_entrevista_realizada', 'data_e_hora_da_visita', 'agendamento_aula_experimental'
-            ];
+            const dateFields = [...ALL_DATE_FIELDS];
             dateFields.forEach(f => {
                 if (payload[f]) payload[f] = parseDate(payload[f]);
             });
@@ -239,6 +279,10 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
             if (payload.venda) payload.venda = parseCurrency(payload.venda);
             if (payload.enrollment_value) payload.enrollment_value = parseCurrency(payload.enrollment_value);
             if (payload.valor_material_didatico) payload.valor_material_didatico = parseCurrency(payload.valor_material_didatico);
+            if (payload.value && typeof payload.value === 'string') payload.value = parseCurrency(payload.value);
+
+            // Map notes to observation for backend compatibility
+            if (payload.notes) payload.observation = payload.notes;
 
             // Map consultant_id to responsibleId for backend
             if (payload.consultant_id) payload.responsibleId = payload.consultant_id;
@@ -316,13 +360,16 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
     const renderInput = (label, field, type = "text", options = null) => {
         let val = formData[field] || '';
 
-        // Ensure manual mask formatting for display if it's a date field treated as text
-        // (Note: The `handleChange` handles the masking logic, so we just pass the value)
-        // If the backend sends ISO, we might want to format it for initial display
-        if (field === 'createdAt' || field === 'fechada_em' || field.includes('data_') || field.includes('Date')) {
+        // Ensure manual mask formatting for display if it's a date field
+        if (ALL_DATE_FIELDS.has(field)) {
             if (val && val.includes('T')) {
                 val = formatDate(val); // Ensure DD/MM/YYYY HH:mm format for text input visualization
             }
+        }
+
+        // Format value field as currency for display
+        if (field === 'value' && val && typeof val === 'number') {
+            val = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
         return (
@@ -447,7 +494,9 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                 if (!window.handleQuickActionFromModal) return;
 
                                 if (lead.status === 'scheduled') {
-                                    window.handleQuickActionFromModal(lead.id, 'success', 'negotiation'); // Use ID for consistency
+                                    window.handleQuickActionFromModal(lead.id, 'success', 'negotiation');
+                                } else if (lead.status === 'negotiation') {
+                                    window.handleQuickActionFromModal(lead.id, 'success', 'negotiation');
                                 } else if (['new', 'connecting', 'no_show'].includes(lead.status)) {
                                     window.handleQuickActionFromModal(lead.id, 'success', 'connecting');
                                 } else {
@@ -545,6 +594,7 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                         <BarChart size={18} /> Essencial e Comercial
                                     </div>
                                     <div style={styles.grid2}>
+                                        {renderInput("Funil", "funnel", "select", Object.entries(FUNNELS).map(([k, val]) => ({ id: k, label: val.label })))}
                                         {renderInput("Status/Etapa", "status", "select", (FUNNELS[formData.funnel || 'crm'] || FUNNELS.crm).stages)}
                                         {renderInput("Temperatura", "temperature", "select", [
                                             { id: 'hot', label: '🔥 Quente' },
@@ -557,12 +607,43 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                         {renderInput("Responsável", "consultant_id", "select", consultants)}
                                     </div>
                                     <div style={styles.grid2}>
-                                        {renderInput("SDR", "sdr_id", "select", consultants)}
+                                        {renderInput("Tags / Etiquetas", "tags")}
                                         {renderInput("Quantidade", "quantity", "number")}
                                     </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Funil", "funnel", "select", Object.keys(FUNNELS).map(k => ({ id: k, label: FUNNELS[k].label })))}
-                                        {renderInput("Tags / Etiquetas", "tags")}
+
+                                    {/* Negociação & Agendamento */}
+                                    <div style={{ marginTop: '16px', borderTop: '2px solid #e2e8f0', paddingTop: '16px' }}>
+                                        <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 'bold', fontSize: '13px' }}>
+                                            <DollarSign size={16} /> Proposta & Agendamento
+                                        </div>
+                                        <div style={styles.grid2}>
+                                            {renderInput("Valor Proposto (R$)", "value")}
+                                            {renderInput("Origem", "source")}
+                                        </div>
+                                        <div style={styles.grid2}>
+                                            {renderInput("Campanha", "campaign")}
+                                            {renderInput("Tipo de Consultoria", "consultancyType", "select", [
+                                                { id: 'presencial', label: 'Presencial' },
+                                                { id: 'online', label: 'Online' }
+                                            ])}
+                                        </div>
+                                        <div style={styles.grid2}>
+                                            {renderInput("Data do Agendamento", "appointmentDate", "datetime-local")}
+                                            {renderInput("Data da Consultoria", "consultancyDate", "datetime-local")}
+                                        </div>
+                                        <div style={styles.grid2}>
+                                            {renderInput("Próxima Tarefa", "nextTaskDate", "datetime-local")}
+                                            {renderInput("Tipo da Tarefa", "nextTaskType")}
+                                        </div>
+                                        <div style={styles.inputWrapper}>
+                                            <label style={styles.label}>Observações / Notas</label>
+                                            <textarea
+                                                value={formData.notes || ''}
+                                                onChange={e => handleChange('notes', e.target.value)}
+                                                style={{ ...styles.input, minHeight: '80px', resize: 'vertical' }}
+                                                placeholder="Observações sobre a negociação..."
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -575,40 +656,12 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                     </div>
                                     {renderInput("Nome Completo", "name")}
                                     <div style={styles.grid2}>
-                                        {renderInput("WhatsApp Principal", "phone")}
+                                        {renderInput("WhatsApp / Celular", "phone")}
                                         {renderInput("E-mail", "email")}
                                     </div>
                                     <div style={styles.grid2}>
-                                        {renderInput("Empresa", "company")}
-                                        {renderInput("CNPJ", "cnpj")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("ID da Organização", "organization_id")}
-                                        {renderInput("Cargo / Posição", "posicao__contato_")}
-                                    </div>
-                                    <div style={styles.grid2}>
                                         {renderInput("Profissão", "profession")}
-                                        {renderInput("CPF", "cpf__contato_")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("RG", "rg__contato_")}
-                                        {renderInput("Telefone Comercial", "telefone_comercial__contato_")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Celular (contato)", "celular__contato_")}
-                                        {renderInput("Fone Residencial", "telefone_residencial__contato_")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("E-mail Comercial", "email_comercial__contato_")}
-                                        {renderInput("Email Pessoal", "email_pessoal__contato_")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Outro Email", "outro_email__contato_")}
-                                        {renderInput("Tel. Direto", "tel__direto_com___contato_")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Outro Telefone", "outro_telefone__contato_")}
-                                        {renderInput("Faz (Contato)", "faz__contato_")}
+                                        {renderInput("Empresa", "company")}
                                     </div>
                                 </div>
                             )}
@@ -662,132 +715,7 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                 </div>
                             )}
 
-                            {/* 4. LOCALIZAÇÃO */}
-                            {activeSection === 'localizacao' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#d97706', fontWeight: 'bold' }}>
-                                        <MapPin size={18} /> Localização
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Bairro", "neighborhood")}
-                                        {renderInput("Cidade", "city")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Estado (UF)", "state")}
-                                        {renderInput("CEP", "cep")}
-                                    </div>
-                                    {renderInput("Logradouro (Planilha)", "endereco__contato_")}
-                                    {renderInput("Endereço Real", "real_address")}
-                                    {renderInput("Endereço Completo", "address")}
-                                </div>
-                            )}
 
-                            {/* 5. HISTÓRICO IMPORTADO & FOLLOW-UPS */}
-                            {activeSection === 'historico_importado' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#4b5563', fontWeight: 'bold' }}>
-                                        <FileText size={18} /> Histórico Importado e Follow-Ups
-                                    </div>
-                                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                        {[1, 2, 3, 4, 5].map(n => (
-                                            <div key={n} style={{ marginBottom: '12px' }}>
-                                                <label style={styles.label}>Nota {n}</label>
-                                                <div style={{ padding: '8px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', color: '#334155' }}>
-                                                    {formData[`nota_${n}`] || '--'}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                                            <label style={{ ...styles.label, color: '#2563eb' }}>Cadeia de Follow-Ups e Negociação</label>
-
-                                            <div style={{ marginBottom: '12px', padding: '8px', background: '#e0f2fe', borderRadius: '6px' }}>
-                                                {renderInput("Cadência Bolo", "cadencia_bolo")}
-                                            </div>
-
-                                            <div style={styles.grid2}>
-                                                {renderInput("Follow Up 1", "follow_up_1")}
-                                                {renderInput("Follow Up 2", "follow_up_2")}
-                                            </div>
-                                            <div style={styles.grid2}>
-                                                {renderInput("Follow Up 3", "follow_up_3")}
-                                                {renderInput("Follow Up 4", "follow_up_4")}
-                                            </div>
-                                            {renderInput("Follow Up 5", "follow_up_5")}
-                                            <div style={{ marginTop: '12px', padding: '8px', background: '#dcfce7', borderRadius: '6px' }}>
-                                                <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#166534', marginBottom: '8px', textTransform: 'uppercase' }}>Fase de Negociação</div>
-                                                {renderInput("Cadência Negociação", "cadencia_negociacao")}
-                                                {renderInput("Registros de Negociação", "registros_de_negociacao")}
-
-                                                <div style={styles.grid2}>
-                                                    {renderInput("Follow Up 6", "follow_up_6")}
-                                                    {renderInput("Follow Up 7", "follow_up_7")}
-                                                </div>
-
-                                                <div style={{ marginTop: '8px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '8px' }}>
-                                                    <div style={styles.grid2}>
-                                                        {renderInput("Negociação 1", "negociacao_1")}
-                                                        {renderInput("Negociação 2", "negociacao_2")}
-                                                    </div>
-                                                    <div style={styles.grid2}>
-                                                        {renderInput("Negociação 3", "negociacao_3")}
-                                                        {renderInput("Negociação 4", "negociacao_4")}
-                                                    </div>
-                                                    {renderInput("Negociação 5", "negociacao_5")}
-                                                </div>
-
-                                                <div style={{ marginTop: '8px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '8px' }}>
-                                                    <div style={styles.grid2}>
-                                                        {renderInput("Follow Up 1 (N2)", "follow_up_1_2")}
-                                                        {renderInput("Follow Up 2 (N2)", "follow_up_2_2")}
-                                                    </div>
-                                                    <div style={styles.grid2}>
-                                                        {renderInput("Follow Up 3 (N2)", "follow_up_3_2")}
-                                                        {renderInput("Follow Up 4 (N2)", "follow_up_4_2")}
-                                                    </div>
-                                                    {renderInput("Follow Up 5 (N2)", "follow_up_5_2")}
-                                                </div>
-
-                                                <div style={{ marginTop: '8px', borderTop: '1px solid rgba(22, 101, 52, 0.1)', paddingTop: '8px' }}>
-                                                    <div style={styles.grid2}>
-                                                        {renderInput("Follow Up 1 (N3)", "follow_up_1_3")}
-                                                        {renderInput("Follow Up 2 (N3)", "follow_up_2_3")}
-                                                    </div>
-                                                    <div style={styles.grid2}>
-                                                        {renderInput("Follow Up 3 (N3)", "follow_up_3_3")}
-                                                        {renderInput("Follow Up 4 (N3)", "follow_up_4_3")}
-                                                    </div>
-                                                    {renderInput("Follow Up 5 (N3)", "follow_up_5_3")}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                                            <label style={{ ...styles.label, color: '#d97706' }}>Tentativas de Contato</label>
-                                            {renderInput("Log de Tentativas", "tentativas_de_contato")}
-                                            <div style={styles.grid2}>
-                                                {renderInput("Resultado 1", "resultado_1__tentativa")}
-                                                {renderInput("Resultado 2", "resultado_2__tentativa")}
-                                            </div>
-                                            <div style={styles.grid2}>
-                                                {renderInput("Resultado 3", "resultado_3__tentativa")}
-                                                {renderInput("Resultado 4", "resultado_4__tentativa")}
-                                            </div>
-                                            {renderInput("Resultado 5", "resultado_5__tentativa")}
-                                        </div>
-                                    </div>
-                                    <div style={{ marginTop: '16px', padding: '12px', background: '#f1f5f9', borderRadius: '8px' }}>
-                                        <label style={styles.label}>Metadados do Sistema</label>
-                                        <div style={styles.grid2}>
-                                            {renderInput("Criado Por", "criado_por")}
-                                            {renderInput("Modificado Por", "modificado_por")}
-                                        </div>
-                                        <div style={styles.grid2}>
-                                            {renderInput("Data de Criação", "createdAt", "datetime-local")}
-                                            {renderInput("Fechada em", "fechada_em", "datetime-local")}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* 6. WHATSAPP CHAT */}
                             {activeSection === 'chat' && (
@@ -799,141 +727,10 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                 </div>
                             )}
 
-                            {/* 6. FLUXO DE ATENDIMENTO */}
-                            {activeSection === 'fluxo' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 'bold' }}>
-                                        <Rocket size={18} /> Fluxo de Atendimento
-                                    </div>
-                                    <div style={{ borderLeft: '2px solid #7c3aed', paddingLeft: '16px' }}>
-                                        {renderInput("ID Original (Importado)", "origin_id_importado")}
-                                        {renderInput("Sobre o Lead", "sobre_o_lead")}
-                                        <div style={styles.grid2}>
-                                            {renderInput("Curso de Interesse", "courseInterest")}
-                                            {renderInput("Mídia", "media")}
-                                        </div>
-                                        <div style={styles.grid2}>
-                                            {renderInput("Motivo Insucesso", "lossReason")}
-                                            {renderInput("Insucesso (Extra)", "insucesso")}
-                                        </div>
-                                        <div style={styles.grid2}>
-                                            {renderInput("Conexão Realizada?", "connection_done", "select", ["Não", "Sim"])}
-                                            {renderInput("Canal da Conexão", "connection_channel")}
-                                        </div>
-                                        {renderInput("Data da Conexão", "connection_date", "datetime-local")}
+                        </div> {/* Closes CONTENT AREA */}
+                    </div> {/* Closes LEFT: FORM DATA */}
 
-                                        {renderInput("Motivo Interesse Lead", "motivo___interesse_do_lead")}
 
-                                        <div style={styles.grid2}>
-                                            {renderInput("Data da Consultoria", "consultancyDate")}
-                                            {renderInput("Data da Matrícula", "enrollmentDate")}
-                                        </div>
-                                        {renderInput("Data Último Agendamento", "lastScheduleDate")}
-
-                                        <label style={{ ...styles.label, marginTop: '12px' }}>Entrevistas e Agendamentos</label>
-                                        {[1, 2, 3, 4].map(n => (
-                                            <div key={n} style={{ marginBottom: '8px', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
-                                                <div style={styles.grid2}>
-                                                    {renderInput(`Agendamento ${n}`, `${n}_agendamento_de_entrevista`)}
-                                                    {renderInput(`Data/Hora ${n}`, `data_e_hora_da_entrevista___${n}`)}
-                                                </div>
-                                                {renderInput(`Resultado ${n}`, `resultado_entrevista___${n}`)}
-                                            </div>
-                                        ))}
-
-                                        <div style={styles.grid2}>
-                                            {renderInput("Tipo Entrevista", "tipo_de_entrevista")}
-                                            {renderInput("Entrevista Realizada?", "entrevista_realizada")}
-                                        </div>
-                                        {renderInput("Data/Hora Realizada", "data_e_hora_da_entrevista_realizada")}
-
-                                        <div style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                                            <div style={styles.grid2}>
-                                                {renderInput("Visita Unidade?", "visitou_a_unidade_")}
-                                                {renderInput("Data da Visita", "data_e_hora_da_visita")}
-                                            </div>
-                                            {renderInput("Visita (Extra)", "visita")}
-                                        </div>
-
-                                        <div style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                                            <div style={styles.grid2}>
-                                                {renderInput("Aula Exp. Assistida?", "assistiu_a_aula_experimental_")}
-                                                {renderInput("Facilitador Aula", "facilitador_da_aula_experimental")}
-                                            </div>
-                                            {renderInput("Agendamento Aula", "agendamento_aula_experimental")}
-                                            {renderInput("Aula Exp (Extra)", "aula_experimental")}
-                                        </div>
-
-                                        <div style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                                            {renderInput("Encaminhado para Vendedor", "encaminhado_para_vendedor")}
-                                            {renderInput("Data Encaminhado", "data_encaminhado", "datetime-local")}
-                                            {renderInput("Data/Hora Negociação", "data_e_hora_da_negociacao", "datetime-local")}
-                                            <div style={styles.grid2}>
-                                                {renderInput("Criado Por", "criado_por")}
-                                                {renderInput("Modificado Por", "modificado_por")}
-                                            </div>
-                                            {renderInput("SDR Especial", "__sdr")}
-                                            {renderInput("Comercial (Extra)", "comercial")}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 7. TRACKING & WEB */}
-                            {activeSection === 'tracking' && (
-                                <div className="animate-fade-in">
-                                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#0891b2', fontWeight: 'bold' }}>
-                                        <Globe size={18} /> Tracking e Web (UTMs)
-                                    </div>
-                                    <div style={{ marginBottom: '16px', background: '#f0f9ff', padding: '12px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: '#0369a1', fontWeight: 'bold', fontSize: '13px' }}>
-                                            <Rocket size={16} /> Dados de Anúncio (Conversion Tracking)
-                                        </div>
-                                        <div style={styles.grid2}>
-                                            {renderAdDataInput("Origem do Anúncio", "source")}
-                                            {renderAdDataInput("ID da Campanha", "campaignId")}
-                                        </div>
-                                        <div style={styles.grid2}>
-                                            {renderAdDataInput("ID do Conjunto", "adGroupId")}
-                                            {renderAdDataInput("ID do Criativo", "adId")}
-                                        </div>
-                                        <div style={styles.grid2}>
-                                            {renderAdDataInput("Google Click ID (GCLID)", "gclid")}
-                                            {renderAdDataInput("Facebook Click ID (FBCLID)", "fbclid")}
-                                        </div>
-                                    </div>
-
-                                    <div style={styles.grid2}>
-                                        {renderInput("UTM Source", "utm_source")}
-                                        {renderInput("UTM Medium", "utm_medium")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("UTM Campaign", "utm_campaign")}
-                                        {renderInput("UTM Content", "utm_content")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("UTM Term", "utm_term")}
-                                        {renderInput("UTM Referrer", "utm_referrer")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Gclid (Legacy)", "gclid")}
-                                        {renderInput("GclientId", "gclientid")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Fbclid (Legacy)", "fbclid")}
-                                        {renderInput("*Marketing_2*", "Marketing_2")}
-                                    </div>
-                                    <div style={styles.grid2}>
-                                        {renderInput("Referrer", "referrer")}
-                                    </div>
-                                    {renderInput("Tipo de Lead", "tipo_de_lead")}
-                                    {renderInput("Lead veio de Ads?", "lead_veio_de_ads")}
-                                    {renderInput("Marketing (Extra)", "marketing")}
-                                </div>
-                            )}
-
-                        </div>
-                    </div>
 
                     {/* RIGHT: ACTIVITY FEED */}
                     <div style={styles.rightPanel}>
@@ -975,7 +772,13 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                     }
                                     // Conexão
                                     else if (content.includes('"conexão"') || content.includes('"connecting"')) {
-                                        activityType = 'Conexão';
+                                        if (content.includes('connecting_2') || content.includes('"conexão 2"')) {
+                                            activityType = 'Conexão 2';
+                                        } else if (content.includes('connecting_3') || content.includes('"conexão 3"')) {
+                                            activityType = 'Conexão 3';
+                                        } else {
+                                            activityType = 'Conexão';
+                                        }
                                         headerColor = '#3b82f6';
                                     }
                                     // Connected
@@ -998,27 +801,21 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                         activityType = 'Mudança de Status';
                                         headerColor = '#6366f1';
                                     }
-                                }
-                                else if (item.type === 'attempt' || content.includes('tentativa') || content.includes('contato')) {
+                                } else if (item.type === 'attempt' || content.includes('tentativa') || content.includes('contato')) {
                                     activityType = 'Tentativa de Contato';
                                     headerColor = '#ec4899';
-                                }
-                                else if (item.type === 'note' || content.includes('nota') || content.includes('observação')) {
+                                } else if (item.type === 'note' || content.includes('nota') || content.includes('observação')) {
                                     activityType = 'Nota';
                                     headerColor = '#f59e0b';
-                                }
-                                else if (content.includes('atualização manual') || content.includes('manual')) {
+                                } else if (content.includes('atualização manual') || content.includes('manual')) {
                                     activityType = 'Atualização Manual';
                                     headerColor = '#8b5cf6';
-                                }
-                                else if (content.includes('criado') || content.includes('created')) {
+                                } else if (content.includes('criado') || content.includes('created')) {
                                     activityType = 'Lead Criado';
                                     headerColor = '#10b981';
-                                }
-                                // Mudança de Titularidade
-                                else if (content.includes('titularidade') || content.includes('responsável alterado') || content.includes('transferido para')) {
+                                } else if (content.includes('titularidade') || content.includes('responsável alterado') || content.includes('transferido para')) {
                                     activityType = 'Mudança de Titularidade';
-                                    headerColor = '#a855f7'; // Purple variant
+                                    headerColor = '#a855f7';
                                 }
 
                                 // Extract responsible user - Priority: item.userId > content extraction > item.user
@@ -1047,9 +844,16 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                     headerText = activityType;
                                 }
 
-                                // if (headerText === 'Sistema' || headerText === 'Sistema (Import)' || headerText === 'Sistema (Importado)') {
-                                //     // Remove override to preserve history context
-                                // }
+                                // Extract actor name (first + last name) from history entry
+                                let actorDisplay = '';
+                                if (item.actorName) {
+                                    const nameParts = item.actorName.trim().split(/\s+/);
+                                    actorDisplay = nameParts.slice(0, 2).join(' ');
+                                } else if (item.actor === 'AI') {
+                                    actorDisplay = 'IA Automática';
+                                } else if (item.actor === 'SYSTEM') {
+                                    actorDisplay = 'Sistema';
+                                }
 
                                 return (
                                     <div key={idx} style={{
@@ -1061,8 +865,13 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                         borderLeft: `4px solid ${headerColor}` // Add color strip
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: headerColor }}>{headerText}</span>
-                                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>{new Date(item.timestamp || item.date).toLocaleString('pt-BR')}</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '11px', fontWeight: 'bold', color: headerColor }}>{headerText}</span>
+                                                {actorDisplay && (
+                                                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>por {actorDisplay}</span>
+                                                )}
+                                            </div>
+                                            <span style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{new Date(item.timestamp || item.date).toLocaleString('pt-BR')}</span>
                                         </div>
                                         <p style={{ fontSize: '13px', margin: 0, color: '#334155' }}>{item.content || item.comment || item.result}</p>
                                     </div>
@@ -1084,12 +893,11 @@ const LeadDetailsModal = ({ isOpen, onClose, lead, onSave, isReadOnly = false, i
                                 <Send size={18} />
                             </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div >,
-        document.body
-    );
+                    </div> {/* Closes RIGHT PANEL */}
+                </div> {/* Closes CONTENT AREA */}
+            </div> {/* Closes MODAL CONTENT */}
+        </div>
+        , document.body);
 };
 
 export default LeadDetailsModal;

@@ -19,7 +19,7 @@ const UnitTransferModal = ({ isOpen, onClose, onTransfer }) => {
 
     const fetchInitialData = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const [resStudents, resUnits] = await Promise.all([
                 fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -41,7 +41,7 @@ const UnitTransferModal = ({ isOpen, onClose, onTransfer }) => {
 
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/transfer-unit`, {
                 method: 'POST',
                 headers: {

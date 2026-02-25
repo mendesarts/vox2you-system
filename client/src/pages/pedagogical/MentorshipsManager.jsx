@@ -28,7 +28,7 @@ const MentorshipsManager = () => {
 
     const fetchMentors = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/mentors`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -43,7 +43,7 @@ const MentorshipsManager = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/students-mentorships`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -118,7 +118,7 @@ const MentorshipsManager = () => {
         };
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             let url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/mentorship`;
             let method = 'POST';
 
@@ -162,7 +162,7 @@ const MentorshipsManager = () => {
     const handleDeleteMentorship = async (mentorshipId) => {
         if (!window.confirm('Tem certeza que deseja excluir esta mentoria permanentemente?')) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/mentorship/${mentorshipId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -179,7 +179,7 @@ const MentorshipsManager = () => {
 
     const handleUpdateStatus = async (mentorshipId, action) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/mentorship/${mentorshipId}`, {
                 method: 'PUT',
                 headers: {

@@ -51,7 +51,7 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
     const loadFinancialData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
 
             // 1. Fetch Existing Records
             const resRecords = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial?studentId=${student.id}&scope=business`, {
@@ -127,7 +127,7 @@ const StudentFinancialModal = ({ isOpen, onClose, student }) => {
     const handleGenerate = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const payload = {
                 studentId: student.id,
                 fees: {

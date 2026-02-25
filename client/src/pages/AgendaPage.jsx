@@ -267,7 +267,7 @@ const EventModal = ({ isOpen, onClose, event, onSave, onDelete, onUpdate, isOwne
                         <button
                             onClick={async () => {
                                 const id = event.id.toString().split('_')[1];
-                                const token = localStorage.getItem('token');
+                                const token = sessionStorage.getItem('token');
                                 await fetch(`${API_URL}/tasks/${id}`, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -713,7 +713,7 @@ const SettingsView = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const holidaysRes = await fetch(`${API_URL}/calendar/holidays`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -785,7 +785,7 @@ const SettingsView = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const url = itemToEdit
                 ? `${API_URL}/calendar/holidays/${itemToEdit.id}`
                 : `${API_URL}/calendar/holidays`;
@@ -863,7 +863,7 @@ const SettingsView = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -1134,7 +1134,7 @@ const AgendaPage = () => {
 
     const fetchUnitsAndUsers = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             // Fetch Units (Only for Master/Director)
             if ([1, 10].includes(Number(user.roleId))) {
                 const uRes = await fetch(`${API_URL}/units`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -1208,7 +1208,7 @@ const AgendaPage = () => {
         if (activeTab !== 'calendar') return;
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const year = currentDate.getFullYear();
 
             // Limit range to current year +/- 1 to avoid excessive data and potential timeouts
@@ -1253,7 +1253,7 @@ const AgendaPage = () => {
         const endDateTime = new Date(`${newBlock.date}T${newBlock.endTime}`);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}/calendar/blocks`, {
                 method: 'POST',
                 headers: {
@@ -1295,7 +1295,7 @@ const AgendaPage = () => {
         const endDateTime = new Date(`${formData.date}T${formData.endTime}`);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}/calendar/blocks/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -1356,7 +1356,7 @@ const AgendaPage = () => {
         // So yes, we split.
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const id = eventToDeleteId.includes('_') ? eventToDeleteId.split('_')[1] : eventToDeleteId;
             const endpoint = isBlock ? `/calendar/blocks/${id}` : `/calendar/holidays/${id}`;
             const res = await fetch(`${API_URL}${endpoint}`, {
@@ -1379,7 +1379,7 @@ const AgendaPage = () => {
 
     const fetchHolidays = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}/calendar/holidays`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

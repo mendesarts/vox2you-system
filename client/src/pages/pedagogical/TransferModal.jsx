@@ -12,7 +12,7 @@ const TransferModal = ({ isOpen, onClose, student, classes, onTransfer }) => {
         if (!toClassId) return alert('Selecione a turma de destino');
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/transfer`, {
                 method: 'POST',
                 headers: {

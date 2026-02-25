@@ -15,7 +15,7 @@ const FinancialCategories = () => {
 
     const fetchRecords = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             let query = '?limit=10000';
 
             const today = new Date();

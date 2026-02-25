@@ -16,6 +16,7 @@ const Mentorship = require('../models/Mentorship');
 const Student = require('../models/Student');
 const Class = require('../models/Class');
 const Course = require('../models/Course');
+const Module = require('../models/Module');
 const Lead = require('../models/Lead');
 
 // Listar todas as tarefas (Com filtros e regras de visualização)
@@ -117,7 +118,7 @@ router.get('/', auth, async (req, res) => {
                 ...(where.userId ? { userId: where.userId } : {})
             },
             group: ['leadId'],
-            having: sequelize.literal('count > 1')
+            having: sequelize.literal('COUNT("id") > 1')
         });
 
         for (const pc of pendingCounts) {
@@ -144,9 +145,22 @@ router.get('/', auth, async (req, res) => {
                 },
                 {
                     model: Lead,
-                    attributes: ['id', 'status', 'name', 'source']
+                    attributes: ['id', 'status', 'name', 'source', 'deletedAt'],
+                    required: false
                 }
             ]
+        });
+
+        // FILTER: Remove tasks from deleted leads
+        tasks = tasks.filter(t => {
+            // Keep tasks without lead
+            if (!t.leadId) return true;
+            // Remove tasks where lead was found but is soft-deleted
+            if (t.Lead && t.Lead.deletedAt) return false;
+            // Remove tasks where leadId exists but Lead is null (Hard deleted / Orphan)
+            if (!t.Lead) return false;
+
+            return true;
         });
 
         // --- SELF-HEALING & TERMINAL CLEANUP (DISABLED TEMPORARILY FOR DEBUGGING) ---
@@ -200,26 +214,22 @@ router.get('/', auth, async (req, res) => {
         // }
 
         // --- Virtual Tasks (Classes & Mentorships) ---
-        // Fetch classes and mentorships matching the task date filters
+        // Fetch classes and mentorships - ONLY current + next session per class
 
-        // 1. Classes
+        // 1. Classes - Show Backlog & Today (pending), Hide Future
+        const today = new Date().toISOString().split('T')[0];
         const classWhere = {
-            status: 'scheduled'
+            [Op.or]: [
+                {
+                    status: 'scheduled',
+                    date: { [Op.lte]: today } // Show only if date is today or past
+                },
+                {
+                    status: 'completed',
+                    date: { [Op.gte]: today } // Show recently completed (today+)
+                }
+            ]
         };
-
-        // Apply Date Filter to Classes
-        if (start && end) {
-            classWhere.date = { [Op.between]: [start, end] };
-        } else if (start) {
-            classWhere.date = { [Op.gte]: start };
-        } else {
-            // Default to today onwards if no filter? Or just today?
-            // Existing logic was 'today' if no filter. Let's keep 'today' default if strict no filter.
-            // But usually 'tasks' page might want all pending?
-            // Let's stick to: if no start/end, show TODAY (matching previous default behavior but keeping it flexible)
-            const today = new Date().toISOString().split('T')[0];
-            classWhere.date = today;
-        }
 
         if (isGlobalUser) {
             if (queryUnitId) classWhere['$Class.unitId$'] = queryUnitId;
@@ -230,30 +240,60 @@ router.get('/', auth, async (req, res) => {
         if (roleId === ROLE_IDS.INSTRUCTOR) classWhere['$Class.professorId$'] = id;
 
         // CONSULTANTS should NOT see Classes or Mentorships
-        // Reuse numericRoleId from earlier scope or cast again without const
         const isConsultantRef = Number(roleId) === ROLE_IDS.CONSULTANT;
 
         if (!isConsultantRef) {
             const sessions = await ClassSession.findAll({
                 where: classWhere,
-                include: [{
-                    model: Class,
-                    include: [Course, { model: User, as: 'professor' }]
-                }]
+                order: [['date', 'ASC'], ['startTime', 'ASC']],
+                include: [
+                    {
+                        model: Class,
+                        include: [Course, { model: User, as: 'professor' }]
+                    },
+                    {
+                        model: Module,
+                        attributes: ['id', 'title', 'order']
+                    }
+                ]
             });
 
+            // Group by classId
+            // Logic: All returned sessions are now relevant (past/today pending), so show all.
+            const sessionsByClass = {};
             sessions.forEach(s => {
                 if (!s.Class || !s.Class.Course) return; // Skip orphans
+                const cid = s.classId;
+                if (!sessionsByClass[cid]) sessionsByClass[cid] = [];
+                sessionsByClass[cid].push(s);
+            });
+
+            // Flatten & build virtual tasks
+            Object.values(sessionsByClass).flat().forEach(s => {
+                // Build a valid dueDate string
+                const sessionDate = s.date || today;
+                const rawTime = s.startTime || '09:00';
+                // Normalize time to HH:mm:ss (some entries are HH:mm, others HH:mm:ss)
+                const sessionTime = rawTime.split(':').length >= 3 ? rawTime : `${rawTime}:00`;
+                const dueDate = `${sessionDate}T${sessionTime}`;
+
+                // Build description from Module data (lesson number + name)
+                const moduleOrder = s.Module?.order || s.sessionNumber;
+                const moduleName = s.Module?.title || s.topic;
+                const aulaLabel = moduleOrder ? `Aula ${moduleOrder}` : 'Aula';
+                const namePart = moduleName ? `: ${moduleName}` : '';
+                const profPart = `Prof: ${s.Class?.professor?.name || 'Não definido'}`;
+
                 tasks.push({
                     id: `session-${s.id}`,
                     title: `Aula: ${s.Class?.Course?.name || 'Curso'} - ${s.Class?.name || 'Turma'}`,
-                    description: `Professor: ${s.Class?.professor?.name || 'Não definido'}`,
-                    dueDate: `${s.date}T${s.startTime}:00`,
-                    status: 'pending',
+                    description: `${aulaLabel}${namePart} | ${profPart}`,
+                    dueDate,
+                    status: s.status === 'completed' ? 'done' : 'pending',
                     priority: 'high',
                     category: 'pedagogical',
-                    link: '/pedagogical/attendance',
-                    state: { classId: s.classId, date: s.date },
+                    link: '/pedagogical',
+                    state: { subTab: 'attendance', classId: s.classId, date: s.date },
                     unitId: s.Class?.unitId,
                     User: {
                         name: s.Class?.professor?.name || 'Professor',

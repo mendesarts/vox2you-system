@@ -197,7 +197,7 @@ const StudentImportModal = ({ isOpen, onClose, onImportComplete }) => {
                     }
 
                     // Send to backend
-                    const token = localStorage.getItem('token');
+                    const token = sessionStorage.getItem('token');
                     const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students/import/bulk`, {
                         method: 'POST',
                         headers: {

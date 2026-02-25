@@ -25,7 +25,7 @@ const SidebarSlim = () => {
                 const s = start.toISOString().split('T')[0];
                 const e = end.toISOString().split('T')[0];
 
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 if (!token) return;
 
                 let url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tasks?summary=true&start=${s}&end=${e}`;
@@ -46,7 +46,7 @@ const SidebarSlim = () => {
         const fetchAtRiskCount = async () => {
             if (!user) return;
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 if (!token) return;
 
                 const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reports/students-at-risk`;

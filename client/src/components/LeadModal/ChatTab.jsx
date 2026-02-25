@@ -6,39 +6,68 @@ export default function ChatTab({ leadId }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
+    const [loading, setLoading] = useState(false);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
+    // Auto-scroll only when messages increase
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        if (messages.length > 0) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+        }
+    }, [messages.length]);
 
-    // Polling simples para atualizar chat a cada 3s (Simulando tempo real)
+    // Polling Otimizado
     useEffect(() => {
+        let isMounted = true;
+
         const fetchChat = async () => {
             try {
                 const res = await api.get(`/leads/${leadId}/chat`);
-                setMessages(res.data);
+                const newData = Array.isArray(res.data) ? res.data : [];
+
+                if (!isMounted) return;
+
+                setMessages(prev => {
+                    const safePrev = Array.isArray(prev) ? prev : [];
+                    // Simple optimization: check length and last message ID to avoid unnecessary re-renders
+                    if (safePrev.length === newData.length) {
+                        const lastPrev = safePrev[safePrev.length - 1];
+                        const lastNew = newData[newData.length - 1];
+                        if (lastPrev?.id === lastNew?.id && lastPrev?.status === lastNew?.status) {
+                            return safePrev; // No change, skip render
+                        }
+                    }
+                    return newData;
+                });
             } catch (err) {
                 console.error("Error fetching chat:", err);
             }
         };
+
         if (leadId) fetchChat();
+
         const interval = setInterval(() => {
             if (leadId) fetchChat();
-        }, 3000);
-        return () => clearInterval(interval);
+        }, 5000); // 5 seconds polling
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, [leadId]);
 
     const handleSend = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() || loading) return;
+        setLoading(true);
         try {
             await api.post(`/leads/${leadId}/chat`, { content: input });
             setInput('');
+            // Optional: force fetch
+            const res = await api.get(`/leads/${leadId}/chat`);
+            if (Array.isArray(res.data)) setMessages(res.data);
         } catch (err) {
             console.error("Error sending message:", err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -47,7 +76,7 @@ export default function ChatTab({ leadId }) {
             {/* Área de Mensagens */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#e5ddd5', borderRadius: '8px 8px 0 0' }}>
                 {messages.map(msg => (
-                    <div key={msg.id} style={{
+                    <div key={msg.id || Math.random()} style={{
                         display: 'flex',
                         justifyContent: msg.direction === 'OUT' ? 'flex-end' : 'flex-start',
                         marginBottom: '10px'
@@ -63,7 +92,12 @@ export default function ChatTab({ leadId }) {
                         }}>
                             {msg.content}
                             <div style={{ fontSize: '10px', textAlign: 'right', color: '#999', marginTop: '4px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
-                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {(() => {
+                                    try {
+                                        const d = new Date(msg.createdAt);
+                                        return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    } catch (e) { return '--:--' }
+                                })()}
                                 {msg.direction === 'OUT' && (
                                     <span>
                                         {msg.status === 'PENDING_SEND' ? <Clock size={10} /> : <Check size={10} />}
@@ -91,7 +125,16 @@ export default function ChatTab({ leadId }) {
                     placeholder="Digite uma mensagem manual..."
                     style={{ flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' }}
                 />
-                <button onClick={handleSend} style={{ background: '#00a884', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button
+                    disabled={loading}
+                    onClick={handleSend}
+                    style={{
+                        background: loading ? '#94a3b8' : '#00a884',
+                        color: 'white', border: 'none', borderRadius: '50%',
+                        width: '40px', height: '40px', cursor: loading ? 'not-allowed' : 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                >
                     <Send size={18} />
                 </button>
             </div>

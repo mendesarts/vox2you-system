@@ -153,6 +153,10 @@ function defineAssociations() {
 
     Lead.hasMany(Message, { foreignKey: 'leadId', as: 'messages' });
     Message.belongsTo(Lead, { foreignKey: 'leadId' });
+
+    // Lead -> Student
+    Lead.hasOne(Student, { foreignKey: 'leadId', as: 'student' });
+    Student.belongsTo(Lead, { foreignKey: 'leadId' });
 }
 
 module.exports = defineAssociations;

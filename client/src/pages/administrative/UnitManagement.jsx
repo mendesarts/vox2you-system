@@ -44,7 +44,7 @@ const UnitManagement = () => {
     const fetchUnitData = async () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units/${user.unitId}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('token')}` }
             });
             if (res.ok) {
                 const data = await res.json();
@@ -106,7 +106,7 @@ const UnitManagement = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units/${user.unitId}`, {
                 method: 'PUT',
                 headers: {

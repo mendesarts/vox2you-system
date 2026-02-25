@@ -2,7 +2,7 @@
 Killing ports...
 Installing Client Deps...
 
-up to date, audited 153 packages in 9s
+up to date, audited 153 packages in 10s
 
 8 packages are looking for funding
   run `npm fund` for details
@@ -21,10 +21,10 @@ a different dependency.
 Run `npm audit` for details.
 Starting Backend...
 /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server
-Backend PID: 2126
+Backend PID: 11426
 Starting Frontend...
 /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client
-Client PID: 2127
+Client PID: 11427
 DONE.
 
 
@@ -35,20 +35,19 @@ DONE.
 > vox2you-system-client@0.1.0 dev
 > vite --host
 
-Database Storage Path: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/server/voxflow.sqlite
 ✅ Rota carregada: /api/tasks
 ✅ Rota carregada: /api/auth
 ✅ Rota carregada: /api/users
+
+  VITE v5.4.21  ready in 1946 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.135:5173/
 ✅ Rota carregada: /api/students
 ✅ Rota carregada: /api/courses
 ✅ Rota carregada: /api/classes
 ✅ Rota carregada: /api/financial
 ✅ Rota carregada: /api/dashboard
-
-  VITE v5.4.21  ready in 1818 ms
-
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: http://192.168.0.159:5173/
 ✅ Rota carregada: /api/ai-config
 ✅ Rota carregada: /api/crm
 ✅ Rota carregada: /api/leads
@@ -63,668 +62,43 @@ Database Storage Path: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-sys
 ✅ Rota carregada: /api/integrations
 ✅ Rota carregada: /api/contracts
 ✅ Rota carregada: /api/reports
+✅ Rota carregada: /api/sync
+✅ Rota carregada: /api/installers
 Connecting to DB...
 🚀 Server UP on 3000 (Optimistic Start)
 DB Connected.
-🛠️ INICIANDO CORREÇÃO DO BANCO (Dialect: sqlite)...
-💾 Ambiente SQLite detectado. Pulando ajustes de ENUM/Type do Postgres.
+🛠️ INICIANDO CORREÇÃO DO BANCO (Dialect: postgres)...
+🐘 Executando correções específicas para PostgreSQL...
+✅ Correções Postgres concluídas.
 ✅ Tabela 'StudentLogs' verificada.
 Executando Sync (Safe Mode)...
-⚠️ Aviso: Erro no sync (Auto-Healing), mas tentando continuar: Validation error
+Schema sincronizado!
 DB & Sync Complete.
-[LOGIN DEBUG] Attempting login for: mendes.silva@vox2you.com.br
-[LOGIN DEBUG] Found user: 2
-[LOGIN DEBUG] Stored Password (first 10 chars): $2b$10$DYl...
-[LOGIN DEBUG] Verifying Bcrypt Hash...
-[LOGIN DEBUG] Bcrypt Result: true
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-12:16:12 AM [vite] hmr update /src/pages/administrative/CalendarSettings.jsx
-12:16:12 AM [vite] Internal server error: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx: Unexpected token, expected "," (180:16)
-
-  178 |
-  179 |     return (
-> 180 |         { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      |                 ^
-  181 |
-  182 | {/* Header Master */ }
-  183 | <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-  Plugin: vite:react-babel
-  File: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx:180:16
-  178|  
-  179|      return (
-  180|          { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-     |                  ^
-  181|  
-  182|  {/* Header Master */ }
-      at constructor (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:367:19)
-      at JSXParserMixin.raise (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6624:19)
-      at JSXParserMixin.unexpected (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6644:16)
-      at JSXParserMixin.expect (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6924:12)
-      at JSXParserMixin.parseObjectLike (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11894:14)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11403:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10895:21)
-      at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10864:39
-      at JSXParserMixin.allowInAnd (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12500:12)
-      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10864:17)
-      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12567:17)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11747:28)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11395:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10895:21)
-      at JSXParserMixin.parseExpressionBase (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10848:23)
-      at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10844:39
-      at JSXParserMixin.allowInAnd (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12495:16)
-      at JSXParserMixin.parseExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10844:17)
-      at JSXParserMixin.parseReturnStatement (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13218:28)
-      at JSXParserMixin.parseStatementContent (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12874:21)
-      at JSXParserMixin.parseStatementLike (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12843:17)
-      at JSXParserMixin.parseStatementListItem (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12823:17)
-      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13392:61)
-      at JSXParserMixin.parseBlockBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13385:10)
-      at JSXParserMixin.parseBlock (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13373:10)
-      at JSXParserMixin.parseFunctionBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12174:24)
-      at JSXParserMixin.parseArrowExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12149:10)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11759:12)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11395:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-12:16:30 AM [vite] hmr update /src/pages/administrative/CalendarSettings.jsx
-12:16:30 AM [vite] Internal server error: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx: Unexpected token, expected "," (181:16)
-
-  179 |
-  180 |     return (
-> 181 |         { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      |                 ^
-  182 |
-  183 | {/* Header Master */ }
-  184 | <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-  Plugin: vite:react-babel
-  File: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx:181:16
-  179|  
-  180|      return (
-  181|          { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-     |                  ^
-  182|  
-  183|  {/* Header Master */ }
-      at constructor (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:367:19)
-      at JSXParserMixin.raise (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6624:19)
-      at JSXParserMixin.unexpected (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6644:16)
-      at JSXParserMixin.expect (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6924:12)
-      at JSXParserMixin.parseObjectLike (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11894:14)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11403:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10895:21)
-      at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10864:39
-      at JSXParserMixin.allowInAnd (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12500:12)
-      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10864:17)
-      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12567:17)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11747:28)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11395:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10895:21)
-      at JSXParserMixin.parseExpressionBase (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10848:23)
-      at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10844:39
-      at JSXParserMixin.allowInAnd (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12495:16)
-      at JSXParserMixin.parseExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10844:17)
-      at JSXParserMixin.parseReturnStatement (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13218:28)
-      at JSXParserMixin.parseStatementContent (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12874:21)
-      at JSXParserMixin.parseStatementLike (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12843:17)
-      at JSXParserMixin.parseStatementListItem (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12823:17)
-      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13392:61)
-      at JSXParserMixin.parseBlockBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13385:10)
-      at JSXParserMixin.parseBlock (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13373:10)
-      at JSXParserMixin.parseFunctionBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12174:24)
-      at JSXParserMixin.parseArrowExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12149:10)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11759:12)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11395:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-12:17:55 AM [vite] Pre-transform error: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx: Unexpected token, expected "," (181:16)
-
-  179 |
-  180 |     return (
-> 181 |         { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      |                 ^
-  182 |
-  183 | {/* Header Master */ }
-  184 | <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-12:17:55 AM [vite] Internal server error: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx: Unexpected token, expected "," (181:16)
-
-  179 |
-  180 |     return (
-> 181 |         { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      |                 ^
-  182 |
-  183 | {/* Header Master */ }
-  184 | <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-  Plugin: vite:react-babel
-  File: /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/src/pages/administrative/CalendarSettings.jsx:181:16
-  179|  
-  180|      return (
-  181|          { toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-     |                  ^
-  182|  
-  183|  {/* Header Master */ }
-      at constructor (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:367:19)
-      at JSXParserMixin.raise (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6624:19)
-      at JSXParserMixin.unexpected (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6644:16)
-      at JSXParserMixin.expect (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:6924:12)
-      at JSXParserMixin.parseObjectLike (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11894:14)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11403:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10895:21)
-      at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10864:39
-      at JSXParserMixin.allowInAnd (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12500:12)
-      at JSXParserMixin.parseMaybeAssignAllowIn (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10864:17)
-      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12567:17)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11747:28)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11395:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-      at JSXParserMixin.parseMaybeAssign (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10895:21)
-      at JSXParserMixin.parseExpressionBase (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10848:23)
-      at /Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10844:39
-      at JSXParserMixin.allowInAnd (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12495:16)
-      at JSXParserMixin.parseExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10844:17)
-      at JSXParserMixin.parseReturnStatement (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13218:28)
-      at JSXParserMixin.parseStatementContent (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12874:21)
-      at JSXParserMixin.parseStatementLike (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12843:17)
-      at JSXParserMixin.parseStatementListItem (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12823:17)
-      at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13392:61)
-      at JSXParserMixin.parseBlockBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13385:10)
-      at JSXParserMixin.parseBlock (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:13373:10)
-      at JSXParserMixin.parseFunctionBody (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12174:24)
-      at JSXParserMixin.parseArrowExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:12149:10)
-      at JSXParserMixin.parseParenAndDistinguishExpression (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11759:12)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11395:23)
-      at JSXParserMixin.parseExprAtom (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:4793:20)
-      at JSXParserMixin.parseExprSubscripts (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11145:23)
-      at JSXParserMixin.parseUpdate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11130:21)
-      at JSXParserMixin.parseMaybeUnary (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:11110:23)
-      at JSXParserMixin.parseMaybeUnaryOrPrivate (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10963:61)
-      at JSXParserMixin.parseExprOps (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10968:23)
-      at JSXParserMixin.parseMaybeConditional (/Users/mendesarts/.gemini/antigravity/scratch/vox2you-system/client/node_modules/@babel/parser/lib/index.js:10945:23)
-12:18:24 AM [vite] hmr update /src/pages/administrative/CalendarSettings.jsx
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-12:22:26 AM [vite] hmr update /src/App.jsx
-12:22:34 AM [vite] hmr update /src/App.jsx
-12:22:35 AM [vite] hmr update /src/App.jsx
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-12:22:44 AM [vite] hmr update /src/pages/AgendaPage.jsx
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-12:24:02 AM [vite] hmr update /src/pages/AgendaPage.jsx
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-8:43:22 AM [vite] hmr update /src/components/Layout.jsx
-8:43:39 AM [vite] hmr update /src/pages/administrative/CalendarSettings.jsx
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-8:46:15 AM [vite] hmr update /src/pages/administrative/CalendarSettings.jsx
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 560 holidays
-Rescheduling 3 classes for unit 2...
-[ScheduleGen] Found 561 holiday/recess signals to block for class 1
-[ScheduleGen] Skipping blocked date: 2026-02-13 for class 1
-[ScheduleGen] Skipping blocked date: 2026-02-14 for class 1
-[ScheduleGen] Skipping blocked date: 2026-02-15 for class 1
-[ScheduleGen] Skipping blocked date: 2026-02-16 for class 1
-[ScheduleGen] Skipping blocked date: 2026-02-17 for class 1
-[ScheduleGen] Skipping blocked date: 2026-02-18 for class 1
-[ScheduleGen] Skipping blocked date: 2026-03-30 for class 1
-[ScheduleGen] Skipping blocked date: 2026-03-31 for class 1
-[ScheduleGen] Skipping blocked date: 2026-04-01 for class 1
-[ScheduleGen] Skipping blocked date: 2026-04-02 for class 1
-[ScheduleGen] Skipping blocked date: 2026-04-03 for class 1
-[ScheduleGen] Skipping blocked date: 2026-04-04 for class 1
-[ScheduleGen] Skipping blocked date: 2026-04-05 for class 1
-[ScheduleGen] Found 561 holiday/recess signals to block for class 2
-[ScheduleGen] Skipping blocked date: 2026-03-30 for class 2
-[ScheduleGen] Skipping blocked date: 2026-03-31 for class 2
-[ScheduleGen] Skipping blocked date: 2026-04-01 for class 2
-[ScheduleGen] Skipping blocked date: 2026-04-02 for class 2
-[ScheduleGen] Skipping blocked date: 2026-04-03 for class 2
-[ScheduleGen] Skipping blocked date: 2026-04-04 for class 2
-[ScheduleGen] Skipping blocked date: 2026-04-05 for class 2
-[ScheduleGen] Skipping blocked date: 2026-04-21 for class 2
-[ScheduleGen] Skipping blocked date: 2026-05-01 for class 2
-[ScheduleGen] Skipping blocked date: 2026-05-10 for class 2
-[ScheduleGen] Found 561 holiday/recess signals to block for class 3
-[ScheduleGen] Skipping blocked date: 2026-02-13 for class 3
-[ScheduleGen] Skipping blocked date: 2026-02-14 for class 3
-[ScheduleGen] Skipping blocked date: 2026-02-15 for class 3
-[ScheduleGen] Skipping blocked date: 2026-02-16 for class 3
-[ScheduleGen] Skipping blocked date: 2026-02-17 for class 3
-[ScheduleGen] Skipping blocked date: 2026-02-18 for class 3
-[ScheduleGen] Skipping blocked date: 2026-03-30 for class 3
-[ScheduleGen] Skipping blocked date: 2026-03-31 for class 3
-[ScheduleGen] Skipping blocked date: 2026-04-01 for class 3
-[ScheduleGen] Skipping blocked date: 2026-04-02 for class 3
-[ScheduleGen] Skipping blocked date: 2026-04-03 for class 3
-[ScheduleGen] Skipping blocked date: 2026-04-04 for class 3
-[ScheduleGen] Skipping blocked date: 2026-04-05 for class 3
-[ScheduleGen] Skipping blocked date: 2026-04-21 for class 3
-[ScheduleGen] Skipping blocked date: 2026-05-01 for class 3
-GET /holidays Request User: { unitId: 2, numericUnitId: 2, roleId: 20 }
-GET /holidays Where Clause: { Symbol(or): [ { unitId: 2 }, { unitId: null } ] }
-Found 561 holidays
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-8:52:03 AM [vite] hmr update /src/pages/AgendaPage.jsx
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-8:54:55 AM [vite] hmr update /src/pages/AgendaPage.jsx
-DEBUG classSessionWhere: {
-  "date": {},
-  "status": "scheduled"
-}
-DEBUG classIncludeWhere: {
-  "unitId": 2
-}
-12:57:50 PM [vite] hmr update /src/pages/components/LeadDetailsModal.jsx
-12:57:53 PM [vite] hmr update /src/pages/components/LeadDetailsModal.jsx
-12:57:54 PM [vite] hmr update /src/pages/components/LeadDetailsModal.jsx
+🔄 Tentando iniciar serviço do WhatsApp... (DESATIVADO TEMPORARIAMENTE PARA DEBUG)
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: Client network socket disconnected before secure TLS connection was established
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech
+⚠️ Auto-Cleanup Error: getaddrinfo ENOTFOUND ep-withered-mountain-ahhvk6ww-pooler.c-3.us-east-1.aws.neon.tech

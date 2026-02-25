@@ -30,7 +30,7 @@ const UnitRulesManager = () => {
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units/config`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -49,7 +49,7 @@ const UnitRulesManager = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units/config`, {
                 method: 'POST',
                 headers: {

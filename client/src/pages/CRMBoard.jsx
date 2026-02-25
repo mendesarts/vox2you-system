@@ -1,8 +1,9 @@
 // ⚠️ ATTENTION: Read ARCHITECTURE_GUIDELINES.md in the root directory before modifying logic related to roles, units, or permissions. Always use numeric roleId [1, 10, etc.] and unitId.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical, X, Check, MapPin, FileText, Upload, Download, Mail, Building, Tag, Trash2, User, MessageSquare, ChevronLeft, Thermometer, Brain, ArrowRight, PhoneOff, Settings, LayoutList, LayoutGrid, ArrowLeftRight, GraduationCap } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Calendar, DollarSign, Clock, MoreVertical, X, Check, MapPin, FileText, Upload, Download, Mail, Building, Tag, Trash2, User, MessageSquare, ChevronLeft, Thermometer, Brain, ArrowRight, ArrowLeft, PhoneOff, Settings, LayoutList, LayoutGrid, ArrowLeftRight, GraduationCap, Flame } from 'lucide-react';
 import KanbanCard from '../components/KanbanCard';
 import FilterModal from './components/FilterModal';
 import LeadDetailsModal from './components/LeadDetailsModal';
@@ -11,6 +12,7 @@ import EnrollmentModal from '../components/EnrollmentModal';
 import QuickAddLeadModal from './components/QuickAddLeadModal';
 import { useAuth } from '../context/AuthContext';
 import { VoxModal } from '../components/VoxUI';
+import StudentFinancialModal from './pedagogical/StudentFinancialModal';
 import * as XLSX from 'xlsx';
 
 import api from '../services/api';
@@ -136,7 +138,10 @@ const CRMBoard = () => {
             }
         });
 
-        const totalValue = leads.reduce((acc, l) => acc + (l.value || l.sales_value || 0), 0);
+        const totalValue = leads.reduce((acc, l) => {
+            const val = Number(l.sales_value) || Number(l.value) || 0;
+            return acc + val;
+        }, 0);
 
         return { todayCount, noTaskCount, overdueCount, newTodayCount, totalValue, totalLeads: leads.length };
     }, [leads]);
@@ -197,19 +202,42 @@ const CRMBoard = () => {
 
     // Kanban Columns Configuration
     const columns = {
+        // CRM Funnel
         'new': { id: 'new', title: 'Novo Lead', color: '#3b82f6', icon: Plus },
-        'connecting': { id: 'connecting', title: 'Conectando', color: '#8b5cf6', icon: Phone },
-        'connected': { id: 'connected', title: 'Conexão', color: '#6366f1', icon: Check },
-        'scheduled': { id: 'scheduled', title: 'Agendamento', color: '#f59e0b', icon: Calendar },
-        'no_show': { id: 'no_show', title: 'Bolo', color: '#ef4444', icon: Clock },
-        'negotiation': { id: 'negotiation', title: 'Negociação', color: '#10b981', icon: DollarSign },
-        'won': { id: 'won', title: 'Matricular', color: '#059669', icon: Check },
-        'closed': { id: 'closed', title: 'Encerrado', color: '#6b7280', icon: X },
+        'connecting_2': { id: 'connecting_2', title: 'Conexão 2', color: '#8b5cf6', icon: Phone },
+        'connecting_3': { id: 'connecting_3', title: 'Conexão 3', color: '#6366f1', icon: Phone },
+        'scheduled': { id: 'scheduled', title: 'Agendado', color: '#f59e0b', icon: Calendar },
+        'no_show': { id: 'no_show', title: 'No Show', color: '#ef4444', icon: Clock },
+        'negotiation': { id: 'negotiation', title: 'Negociando', color: '#10b981', icon: DollarSign },
+        'won': { id: 'won', title: 'Ganho', color: '#059669', icon: Check },
+        'lost': { id: 'lost', title: 'Perdido', color: '#6b7280', icon: X },
+
+        // Warming Funnel
+        'warming_day_1': { id: 'warming_day_1', title: 'Dia 1', color: '#fcd34d', icon: Flame },
+        'warming_day_2': { id: 'warming_day_2', title: 'Dia 2', color: '#fcd34d', icon: Flame },
+        'warming_day_3': { id: 'warming_day_3', title: 'Dia 3', color: '#fcd34d', icon: Flame },
+        'warming_day_4': { id: 'warming_day_4', title: 'Dia 4', color: '#fcd34d', icon: Flame },
+        'warming_day_5': { id: 'warming_day_5', title: 'Dia 5', color: '#fcd34d', icon: Flame },
+        'warming_day_6': { id: 'warming_day_6', title: 'Dia 6', color: '#fbbf24', icon: Flame },
+        'warming_day_7': { id: 'warming_day_7', title: 'Dia 7', color: '#fbbf24', icon: Flame },
+        'warming_day_8': { id: 'warming_day_8', title: 'Dia 8', color: '#fbbf24', icon: Flame },
+        'warming_day_9': { id: 'warming_day_9', title: 'Dia 9', color: '#f59e0b', icon: Flame },
+        'warming_day_10': { id: 'warming_day_10', title: 'Dia 10', color: '#f59e0b', icon: Flame },
+
+        // Up/Down Cell
+        'up_cell': { id: 'up_cell', title: 'Up Cell', color: '#8b5cf6', icon: ArrowRight },
+        'down_cell': { id: 'down_cell', title: 'Down Cell', color: '#ef4444', icon: ArrowLeft },
     };
 
-    const crmOrder = ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed'];
+    const crmOrder = ['new', 'connecting_2', 'connecting_3', 'scheduled', 'no_show', 'negotiation', 'won', 'lost'];
+    const warmingOrder = ['warming_day_1', 'warming_day_2', 'warming_day_3', 'warming_day_4', 'warming_day_5', 'warming_day_6', 'warming_day_7', 'warming_day_8', 'warming_day_9', 'warming_day_10'];
+    const upCellOrder = ['up_cell'];
+    const downCellOrder = ['down_cell'];
 
     const getColumnOrder = () => {
+        if (activeTab === 'warming') return warmingOrder;
+        if (activeTab === 'up_cell') return upCellOrder;
+        if (activeTab === 'down_cell') return downCellOrder;
         return crmOrder;
     };
 
@@ -237,7 +265,7 @@ const CRMBoard = () => {
             date: localISOTime,
             channel: 'WhatsApp',
             result: initialResult,
-            scheduleDate: localNextAttempt, // Default suggestion if needed
+            scheduleDate: localNextAttempt,
             nextAttemptDate: localNextAttempt
         });
     };
@@ -262,21 +290,37 @@ const CRMBoard = () => {
             updates.nextTaskType = 'Reunião Agendada';
             resultLabel = 'Sucesso com Agendamento';
 
-        } else if (interactionData.result === 'success_no_schedule') {
-            updates.status = 'connected';
-            updates.nextTaskDate = interactionData.nextAttemptDate;
-            updates.nextTaskType = 'Nova Tentativa';
-            resultLabel = 'Sucesso sem Agendamento';
+        } else if (interactionData.result === 'success_no_schedule' || interactionData.result === 'failure') {
+            // New Flow Logic: Progression based on current status
+            const currentStatus = interactionModal.lead.status;
 
-        } else if (interactionData.result === 'failure') {
-            if (interactionModal.lead.status === 'new') {
-                updates.status = 'connecting';
+            if (currentStatus === 'new') {
+                updates.status = 'connecting_2';
+                updates.nextTaskType = 'Conexão 2';
+            } else if (currentStatus === 'connecting' || currentStatus === 'connecting_2') {
+                updates.status = 'connecting_3';
+                updates.nextTaskType = 'Conexão 3';
+            } else if (currentStatus === 'connecting_3') {
+                updates.status = 'warming_day_1';
+                updates.funnel = 'warming';
+                updates.lossReason = 'Tentativas Esgotadas (Movido para Aquecimento)';
+            } else if (currentStatus === 'no_show') {
+                // From No Show -> try again -> if fail, maybe move back to connecting or handled manually?
+                // User said "Do no show deve tentar um novo agendamento". Assuming if fail, stays or goes to connecting logic?
+                // Let's keep it in no_show or move to connecting_3 based on logic "tries again"?
+                // For now, if failed at No Show, maybe we go to a specific stage or lost?
+                // Simple logic based on "try again": if failed, it failed to schedule.
+                // Let's keep status but set next task.
+                updates.status = 'no_show';
             } else {
-                updates.status = interactionModal.lead.status; // Keep status
+                // Default fallback
+                updates.status = currentStatus;
             }
+
             updates.nextTaskDate = interactionData.nextAttemptDate;
-            updates.nextTaskType = 'Nova Tentativa';
-            resultLabel = 'Insucesso';
+            if (!updates.nextTaskType) updates.nextTaskType = 'Nova Tentativa';
+
+            resultLabel = interactionData.result === 'failure' ? 'Insucesso' : 'Contato sem Agendamento';
         }
 
         // Construct Note for History
@@ -308,10 +352,26 @@ const CRMBoard = () => {
         let list = [...leads];
         const isRestrictedColumn = (status === 'won' || status === 'closed');
 
-        // 1. Funnel Filter (Tab based)
+        // 0. Active Tab Filter (Funnel Split)
+        if (activeTab === 'warming') {
+            list = list.filter(l => l.status && l.status.startsWith('warming_day_'));
+        } else if (activeTab === 'up_cell') {
+            list = list.filter(l => l.status === 'up_cell');
+        } else if (activeTab === 'down_cell') {
+            list = list.filter(l => l.status === 'down_cell');
+        } else {
+            // CRM View (Excludes Warming, Up Cell, Down Cell)
+            list = list.filter(l => {
+                const s = l.status || '';
+                return !s.startsWith('warming_day_') && s !== 'up_cell' && s !== 'down_cell';
+            });
+        }
+
+        // 1. Funnel Filter (Tab based) - Legacy check but good to keep
         list = list.filter(l => {
             const f = l.funnel || 'crm';
-            return f === 'crm' || f === '';
+            // allow all newly created funnels
+            return f === 'crm' || f === '' || f === 'warming' || f === 'up_cell' || f === 'down_cell';
         });
 
         // 2. Multi-Filter Logic
@@ -427,7 +487,7 @@ const CRMBoard = () => {
 
     const fetchUnits = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(API_URL + '/units', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -442,7 +502,7 @@ const CRMBoard = () => {
 
     const fetchConsultants = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(API_URL + '/users', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -493,7 +553,7 @@ const CRMBoard = () => {
 
     const fetchCourses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(API_URL + '/courses', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -506,7 +566,7 @@ const CRMBoard = () => {
 
     const fetchLeads = async (filtersOverride = {}) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const filters = { ...activeFilters, ...filtersOverride };
 
             // Build Query
@@ -543,6 +603,9 @@ const CRMBoard = () => {
         }
     };
 
+    const [wonActionModal, setWonActionModal] = useState({ isOpen: false, lead: null });
+    const [studentFinancialModal, setStudentFinancialModal] = useState({ isOpen: false, student: null });
+
     const [moveModal, setMoveModal] = useState({ isOpen: false, leadId: null, destinationId: null, sourceId: null, data: {}, step: 'details' });
     const [moveData, setMoveData] = useState({
         notes: '',
@@ -550,7 +613,9 @@ const CRMBoard = () => {
         appointmentDate: '',
         appointmentType: 'Presencial',
         outcome: 'success',
-        scheduledMeeting: 'no'
+        scheduledMeeting: 'no',
+        courseInterest: '',
+        quantity: '1'
     });
 
     // Enrollment Modal State
@@ -665,7 +730,7 @@ const CRMBoard = () => {
         // Optimistic Update can cause 'freeze' if not handled well with React 18 concurrency
         // We will move state update to AFTER modal is set to avoid re-render race conditions in slow environments
 
-        if (['connecting', 'connected', 'scheduled', 'negotiation', 'closed'].includes(destId)) {
+        if (['connecting', 'connecting_2', 'connecting_3', 'connected', 'scheduled', 'negotiation', 'closed'].includes(destId)) {
             // Calculate Next Attempt properly using Business Logic
             const nextAttempt = calculateNextAttempt(new Date());
 
@@ -712,12 +777,22 @@ const CRMBoard = () => {
         const leadData = typeof leadOrId === 'object' ? leadOrId : leads.find(l => l.id === leadOrId);
         const sourceStatus = leadData?.status || 'new';
 
-        // Custom Flow for Scheduled/Negotiation Leads confirmation
-        // If coming from 'scheduled', we always want to verify attendance
-        const isAttendanceCheck = sourceStatus === 'scheduled' || (sourceStatus === 'negotiation' && destinationStage === 'negotiation');
+        // Custom Flow for Scheduled Leads - verify attendance first
+        // Only scheduled leads should see the attendance_check modal
+        const isAttendanceCheck = sourceStatus === 'scheduled';
+
+        // FIX: Determine correct destination to avoid legacy 'connecting' status (which is hidden)
+        let finalDestination = destinationStage;
+        if (finalDestination === 'connecting') {
+            if (sourceStatus === 'new' || sourceStatus === 'connecting') finalDestination = 'connecting_2';
+            else if (sourceStatus === 'connecting_2') finalDestination = 'connecting_3';
+            else if (sourceStatus === 'connecting_3') finalDestination = 'connecting_3';
+            else if ((sourceStatus || '').startsWith('warming')) finalDestination = 'connecting_2';
+            else finalDestination = 'connecting_2'; // Fallback
+        }
 
         // Determine destination based on check, or default
-        const initialDestination = isAttendanceCheck ? (sourceStatus === 'scheduled' ? 'negotiation' : destinationStage) : destinationStage;
+        const initialDestination = isAttendanceCheck ? 'negotiation' : finalDestination;
 
         setMoveModal({
             isOpen: true,
@@ -725,7 +800,7 @@ const CRMBoard = () => {
             destinationId: initialDestination,
             sourceId: sourceStatus,
             data: leadData || {},
-            step: isAttendanceCheck ? 'attendance_check' : 'details' // New Step
+            step: isAttendanceCheck ? 'attendance_check' : 'details'
         });
 
         const nextAttempt = calculateNextAttempt(new Date());
@@ -761,7 +836,7 @@ const CRMBoard = () => {
 
         setIsSaving(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             // Parallelize requests or use bulk endpoint if available. For safety, parallel requests.
             const promises = selectedLeads.map(id =>
                 fetch(API_URL + '/crm/leads/' + id, { // Note: Transfer logic usually uses PUT, verify endpoint
@@ -831,7 +906,7 @@ const CRMBoard = () => {
         setIsDeleteModalOpen(false); // Close confirmation if open
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(API_URL + '/crm/leads/bulk-delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -874,7 +949,7 @@ const CRMBoard = () => {
 
         setIsSaving(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(API_URL + '/crm/leads/undo-delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -910,7 +985,7 @@ const CRMBoard = () => {
         setLeads(updatedLeads);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(API_URL + '/crm/leads/' + leadId + '/move', {
                 method: 'PUT',
                 headers: {
@@ -939,7 +1014,7 @@ const CRMBoard = () => {
         }
     };
 
-    const confirmMove = () => {
+    const confirmMove = async () => {
         const { destinationId, leadId } = moveModal;
         let finalStatus = destinationId;
         let finalData = { ...moveData };
@@ -947,12 +1022,13 @@ const CRMBoard = () => {
 
 
         // SMART FLOW LOGIC
-        if (destinationId === 'connecting') {
+        if (destinationId === 'connecting' || destinationId === 'connecting_2' || destinationId === 'connecting_3') {
+            finalStatus = destinationId; // Respect the exact destination ID
+
             if (moveData.outcome === 'failure') {
                 // Return to 'new' stage or keep in 'connecting'? 
                 // Context asks for a task for 4h later. 
-                // We'll keep it in 'connecting' with the task.
-                finalStatus = 'connecting';
+                // We'll keep it in the current stage with the task.
 
                 // User must provide date
                 if (!moveData.nextTaskDate) {
@@ -986,6 +1062,25 @@ const CRMBoard = () => {
                     // Clear next task
                     finalData.nextTaskDate = null;
                     finalData.nextTaskType = null;
+                } else if (destinationId === 'connecting_3') {
+                    // SPECIAL LOGIC FOR CONNECTING 3
+                    // Only move to Warming if we are ALREADY in Connecting 3 (retrying within stage)
+                    if (moveModal.sourceId === 'connecting_3') {
+                        finalStatus = 'warming_day_1';
+                        finalData.funnel = 'warming';
+                        finalData.notes = `Falha na Conexão 3 (${failCount}/5). Movido para Aquecimento (Dia 1). ${moveData.notes || ''}`.trim();
+                        finalData.incrementAttempts = true;
+                        finalData.nextTaskDate = nextTaskDateToUse.toISOString();
+                        finalData.nextTaskType = 'Início Aquecimento';
+                    } else {
+                        // If coming from Connecting 2, we are explicitly moving TO Connecting 3.
+                        // So we should land there, even on failure (representing the failed attempt that justified the move).
+                        finalStatus = 'connecting_3';
+                        finalData.nextTaskDate = nextTaskDateToUse.toISOString();
+                        finalData.nextTaskType = 'Nova Tentativa';
+                        finalData.notes = 'Falha no contato. Avançando para Conexão 3. ' + (moveData.notes || 'Sem observação');
+                        finalData.incrementAttempts = true;
+                    }
                 } else {
                     finalData.nextTaskDate = nextTaskDateToUse.toISOString();
                     finalData.nextTaskType = 'Nova Tentativa';
@@ -1000,7 +1095,34 @@ const CRMBoard = () => {
                     if (!moveData.appointmentDate) return alert('Selecione a data/hora do agendamento.');
                     finalStatus = 'scheduled';
                 } else {
-                    finalStatus = 'connected';
+                    // Logic: If in Connecting 2 -> Success -> Move to Connecting 3?
+                    // Or implies successful CONTACT (answered)?
+                    // Usually "Success" in Connecting means they answered.
+                    // If they answered but didn't schedule -> Maybe move to next stage?
+                    // OR stay in current stage?
+
+                    // Default logic: If just "Connected" (outcome=success), move to next stage?
+                    if (destinationId === 'connecting_2') {
+                        finalStatus = 'connecting_3';
+                    } else if (destinationId === 'connecting_3') {
+                        // Connecting 3 Success -> Maybe Negotiation if not scheduled? Or stay?
+                        // If scheduledMeeting is NO, where do they go?
+                        // Maybe keep in Connecting 3 for more attempts?
+                        // Or if "Connected" means spoke to them, maybe 'negotiation'?
+                        // For now, let's explicitely set status to 'connected' (legacy) mapped to 'connecting_3' or ...?
+                        // No, let's keep in `connecting_3` but maybe mark as contacted?
+                        // Wait, user says "passo para conexão 3".
+                        // If dragged TO `connecting_3`, they are IN `connecting_3`.
+                    } else {
+                        // Fallback for legacy 'connecting' or unknown
+                        finalStatus = 'connecting_2'; // Progess forward
+                    }
+
+                    // Override if destination was explicit drag?
+                    // If I dragged TO connecting_3, and outcome is success...
+                    // It means I am confirming the move TO connecting_3.
+                    finalStatus = destinationId;
+
                     // If user set a next task date manually (optional)
                     if (moveData.nextTaskDate) {
                         finalData.nextTaskDate = new Date(moveData.nextTaskDate).toISOString();
@@ -1014,12 +1136,15 @@ const CRMBoard = () => {
         if (destinationId === 'negotiation') {
             if (moveData.outcome === 'success') {
                 if (moveData.scheduledMeeting === 'yes') {
-                    if (!moveData.appointmentDate) {
-                        alert('Por favor, informe a data da matrícula.');
-                        return;
-                    }
+                    if (!moveData.appointmentDate) return alert('Por favor, informe a data da matrícula.');
+                    if (!moveData.courseInterest) return alert('Por favor, selecione o Curso.');
+                    if (!moveData.quantity) return alert('Por favor, informe a Quantidade.');
+                    if (!moveData.proposedValue) return alert('Por favor, informe o Valor da Venda.');
+
                     finalStatus = 'won';
                     finalData.notes = `Matrícula realizada! ${moveData.notes || ''}`.trim();
+                    finalData.quantity = moveData.quantity;
+                    finalData.courseInterest = moveData.courseInterest;
                 } else {
                     finalStatus = 'negotiation';
                     if (moveData.nextTaskDate) {
@@ -1035,9 +1160,9 @@ const CRMBoard = () => {
                 const leadsList = leads || [];
                 const leadRef = leadsList.find(l => l.id.toString() === leadId.toString());
                 let negotiationAttempts = [];
-                if (leadRef && leadRef.negotiationAttempts) {
+                if (leadRef && leadRef.attempts) {
                     try {
-                        negotiationAttempts = typeof leadRef.negotiationAttempts === 'string' ? JSON.parse(leadRef.negotiationAttempts) : leadRef.negotiationAttempts;
+                        negotiationAttempts = typeof leadRef.attempts === 'string' ? JSON.parse(leadRef.attempts) : leadRef.attempts;
                     } catch (e) { negotiationAttempts = []; }
                 }
                 const validAttempts = Array.isArray(negotiationAttempts) ? negotiationAttempts.filter(a => a.date && a.date !== '') : [];
@@ -1055,7 +1180,7 @@ const CRMBoard = () => {
                     finalData.nextTaskType = 'Retentativa Negociação';
                     const formattedDate = nextTaskDateToUse.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
                     finalData.notes = `Tentativa de negociação (${attemptCount}/5). Próxima tentativa: ${formattedDate}. ${moveData.notes || ''}`.trim();
-                    finalData.incrementNegotiationAttempts = true;
+                    finalData.incrementAttempts = true;
                 }
             }
         }
@@ -1077,8 +1202,16 @@ const CRMBoard = () => {
         // Ensure notes has fallback if empty
         if (!finalData.notes) finalData.notes = 'Sem observação';
 
-        executeMove(leadId, finalStatus, finalData);
+        await executeMove(leadId, finalStatus, finalData);
         setMoveModal({ ...moveModal, isOpen: false });
+
+        // Trigger Enrollment Modal if Won
+        if (finalStatus === 'won') {
+            const currentLead = leads.find(l => l.id.toString() === leadId.toString());
+            if (currentLead) {
+                setEnrollmentModal({ isOpen: true, lead: currentLead });
+            }
+        }
     };
 
     const handleOpenNewLead = () => {
@@ -1096,8 +1229,7 @@ const CRMBoard = () => {
         setShowNewLeadModal(true);
     };
 
-    const handleOpenEditLead = (lead) => {
-        setHighlightedLeadId(null); // Clear highlight on interaction
+    const openLeadEditDirectly = (lead) => {
         setSelectedLead(lead);
         setNewLead({
             title: lead.title || '',
@@ -1124,6 +1256,42 @@ const CRMBoard = () => {
         });
         setFormStep(1);
         setShowNewLeadModal(true);
+    };
+
+    const handleOpenEditLead = (lead) => {
+        setHighlightedLeadId(null); // Clear highlight on interaction
+
+        // New Logic: If Won, show Action Modal
+        if (lead.status === 'won') {
+            setWonActionModal({ isOpen: true, lead });
+            return;
+        }
+
+        // If lead is in 'scheduled' status, open the appointment result modal first
+        if (lead.status === 'scheduled') {
+            const nextAttempt = calculateNextAttempt(new Date());
+            setMoveModal({
+                isOpen: true,
+                leadId: lead.id,
+                destinationId: 'negotiation',
+                sourceId: 'scheduled',
+                data: lead,
+                step: 'attendance_check',
+                attendanceConfirmed: false,
+            });
+            setMoveData({
+                notes: '',
+                proposedValue: '',
+                appointmentDate: '',
+                appointmentType: 'Presencial',
+                outcome: 'success',
+                scheduledMeeting: 'no',
+                nextTaskDate: new Date(nextAttempt.date.getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+            });
+            return;
+        }
+
+        openLeadEditDirectly(lead);
     };
 
     const handleDeleteLead = async () => {
@@ -1274,7 +1442,7 @@ const CRMBoard = () => {
 
         setIsSaving(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const url = selectedLead
                 ? (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/crm/leads/' + (selectedLead.id)
                 : (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/crm/leads';
@@ -1352,7 +1520,7 @@ const CRMBoard = () => {
         if (user && GLOBAL_VIEW_ROLES.includes(Number(user.roleId))) {
             const fetchUnits = async () => {
                 try {
-                    const res = await fetch(`${API_URL}/units`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+                    const res = await fetch(`${API_URL}/units`, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } });
                     if (res.ok) setUnits(await res.json());
                 } catch (e) { console.error(e); }
             };
@@ -1381,13 +1549,7 @@ const CRMBoard = () => {
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                    {/* Tab Navigation */}
-                    <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px', width: 'fit-content' }}>
-                        <button onClick={() => setActiveTab('crm')} style={{ padding: '8px 16px', borderRadius: '10px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer', background: activeTab === 'crm' ? '#fff' : 'transparent', color: activeTab === 'crm' ? '#000' : '#666', boxShadow: activeTab === 'crm' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>
-                            Comercial
-                        </button>
 
-                    </div>
                 </div>
 
                 {/* Search Bar (Importado Style) */}
@@ -1508,8 +1670,88 @@ const CRMBoard = () => {
 
             {/* Dashboard Filters Integration */}
 
+            {/* Filter Tabs */}
+            <div style={{ padding: '0 24px 16px', display: 'flex', gap: '24px', borderBottom: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                <button
+                    onClick={() => setActiveTab('crm')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: activeTab === 'crm' ? '2px solid #3b82f6' : '2px solid transparent',
+                        padding: '0 0 8px 0',
+                        fontSize: '14px',
+                        fontWeight: activeTab === 'crm' ? '600' : '500',
+                        color: activeTab === 'crm' ? '#3b82f6' : '#64748b',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    CRM
+                </button>
+                <button
+                    onClick={() => setActiveTab('warming')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: activeTab === 'warming' ? '2px solid #f59e0b' : '2px solid transparent',
+                        padding: '0 0 8px 0',
+                        fontSize: '14px',
+                        fontWeight: activeTab === 'warming' ? '600' : '500',
+                        color: activeTab === 'warming' ? '#f59e0b' : '#64748b', // Amber for Warming
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}
+                >
+                    <Flame size={16} />
+                    Aquecimento
+                </button>
+                <button
+                    onClick={() => setActiveTab('up_cell')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: activeTab === 'up_cell' ? '2px solid #8b5cf6' : '2px solid transparent',
+                        padding: '0 0 8px 0',
+                        fontSize: '14px',
+                        fontWeight: activeTab === 'up_cell' ? '600' : '500',
+                        color: activeTab === 'up_cell' ? '#8b5cf6' : '#64748b',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}
+                >
+                    <ArrowRight size={16} />
+                    Up Cell
+                </button>
+                <button
+                    onClick={() => setActiveTab('down_cell')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: activeTab === 'down_cell' ? '2px solid #ef4444' : '2px solid transparent',
+                        padding: '0 0 8px 0',
+                        fontSize: '14px',
+                        fontWeight: activeTab === 'down_cell' ? '600' : '500',
+                        color: activeTab === 'down_cell' ? '#ef4444' : '#64748b',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}
+                >
+                    <ArrowLeft size={16} />
+                    Down Cell
+                </button>
+            </div>
+
             {/* Importado Top Stats */}
-            {activeTab === 'crm' && (
+            {(activeTab === 'crm' || activeTab === 'warming' || activeTab === 'up_cell' || activeTab === 'down_cell') && (
                 <div style={{ padding: '0 24px 10px', display: 'flex', justifyContent: 'space-between', color: '#687b8c', fontSize: '11px', fontWeight: '500' }}>
                     <div style={{ display: 'flex', gap: '40px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1540,12 +1782,16 @@ const CRMBoard = () => {
 
             {/* CRM Content */}
             {
-                (activeTab === 'crm') && (
+                (activeTab === 'crm' || activeTab === 'warming' || activeTab === 'up_cell' || activeTab === 'down_cell') && (
                     viewMode === 'list' ? (
                         <div style={{ flex: 1, padding: '20px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                 <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>Todos os Leads</h3>
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>
+                                        {activeTab === 'warming' ? 'Aquecimento de Leads' :
+                                            activeTab === 'up_cell' ? 'Up Cell' :
+                                                activeTab === 'down_cell' ? 'Down Cell' : 'Todos os Leads'}
+                                    </h3>
                                     {selectedLeads.length > 0 && (
                                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#F0F9FF', padding: '8px 16px', borderRadius: '8px', color: '#0369A1' }}>
                                             <span style={{ fontWeight: '700', fontSize: '13px' }}>{selectedLeads.length} selecionados</span>
@@ -1657,92 +1903,121 @@ const CRMBoard = () => {
                         </div>
                     ) : (
                         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
-                            <div style={{
-                                display: 'flex', gap: '1px', overflowX: 'auto', paddingBottom: '16px',
-                                flex: 1, paddingRight: '20px'
-                            }}>
-                                {columnOrder.map((colId, index) => {
-                                    const column = columns[colId];
-                                    const colLeads = getLeadsByStatus(colId);
+                            <DragDropContext onDragEnd={handleDragEnd}>
+                                <div style={{
+                                    display: 'flex', gap: '1px', overflowX: 'auto', paddingBottom: '16px',
+                                    flex: 1, paddingRight: '20px'
+                                }}>
+                                    {columnOrder.map((colId, index) => {
+                                        const column = columns[colId];
+                                        const colLeads = getLeadsByStatus(colId);
 
-                                    return (
-                                        <div key={colId} style={{
-                                            minWidth: '260px',
-                                            maxWidth: '260px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            height: 'calc(100vh - 280px)',
-                                            maxHeight: '100%',
-                                            background: 'transparent',
-                                            marginLeft: '1px',
-                                        }}>
-                                            {/* Importado Header Style */}
-                                            <div style={{
-                                                background: 'white',
-                                                padding: '12px 14px',
-                                                borderBottom: `3px solid ${column.color}`,
-                                                borderRadius: '4px 4px 0 0',
+                                        return (
+                                            <div key={colId} style={{
+                                                minWidth: '260px',
+                                                maxWidth: '260px',
                                                 display: 'flex',
                                                 flexDirection: 'column',
-                                                gap: '4px',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                                marginBottom: '8px'
+                                                height: 'calc(100vh - 280px)',
+                                                maxHeight: '100%',
+                                                background: 'transparent',
+                                                marginLeft: '1px',
                                             }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <span style={{ fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#404040' }}>
-                                                        {column.title}
-                                                    </span>
-                                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: column.color }} />
-                                                </div>
-                                                <span style={{ fontSize: '11px', color: '#888', fontWeight: '500' }}>
-                                                    {colLeads.length} leads: <span style={{ color: '#333', fontWeight: '600' }}>{colLeads.reduce((sum, l) => sum + (Number(l.sales_value) || Number(l.value) || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                                                </span>
-                                            </div>
-
-                                            {/* Quick Add Button in First Column */}
-                                            {index === 0 && (
-                                                <button
-                                                    onClick={() => setShowQuickAddModal(true)}
-                                                    style={{
-                                                        width: '100%', padding: '10px', background: '#F9FAFB', border: '1px dashed #D1D5DB',
-                                                        borderRadius: '4px', textAlign: 'center', fontSize: '12px', color: '#6B7280', marginBottom: '8px', cursor: 'pointer',
-                                                        fontWeight: '600'
-                                                    }}
-                                                    className="hover:bg-gray-100 transition-colors"
-                                                >
-                                                    + Adição rápida
-                                                </button>
-                                            )}
-
-
-                                            <div
-                                                className="custom-scrollbar"
-                                                style={{
-                                                    flex: 1,
-                                                    minHeight: '150px',
-                                                    overflowY: 'auto',
-                                                    padding: '8px 0',
+                                                {/* Importado Header Style */}
+                                                <div style={{
+                                                    background: 'white',
+                                                    padding: '12px 14px',
+                                                    borderBottom: `3px solid ${column.color}`,
+                                                    borderRadius: '4px 4px 0 0',
                                                     display: 'flex',
                                                     flexDirection: 'column',
-                                                    gap: '1px'
-                                                }}
-                                            >
-                                                {colLeads.map((lead, index) => (
-                                                    <KanbanCard
-                                                        key={lead.id}
-                                                        lead={lead}
-                                                        index={index}
-                                                        statusColor={column.color}
-                                                        onClick={() => handleOpenEditLead(lead)}
-                                                        onQuickAction={handleQuickAction}
-                                                        isHighlighted={lead.id === highlightedLeadId}
-                                                    />
-                                                ))}
+                                                    gap: '4px',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                    marginBottom: '8px'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontWeight: '800', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#404040' }}>
+                                                            {column.title}
+                                                        </span>
+                                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: column.color }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '11px', color: '#888', fontWeight: '500' }}>
+                                                        {colLeads.length} leads: <span style={{ color: '#333', fontWeight: '600' }}>{colLeads.reduce((sum, l) => sum + (Number(l.sales_value) || Number(l.value) || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                                    </span>
+                                                </div>
+
+                                                {/* Quick Add Button in First Column */}
+                                                {index === 0 && (
+                                                    <button
+                                                        onClick={() => setShowQuickAddModal(true)}
+                                                        style={{
+                                                            width: '100%', padding: '10px', background: '#F9FAFB', border: '1px dashed #D1D5DB',
+                                                            borderRadius: '4px', textAlign: 'center', fontSize: '12px', color: '#6B7280', marginBottom: '8px', cursor: 'pointer',
+                                                            fontWeight: '600'
+                                                        }}
+                                                        className="hover:bg-gray-100 transition-colors"
+                                                    >
+                                                        + Adição rápida
+                                                    </button>
+                                                )}
+
+
+                                                <Droppable droppableId={colId}>
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.droppableProps}
+                                                            className="custom-scrollbar"
+                                                            style={{
+                                                                flex: 1,
+                                                                minHeight: '150px',
+                                                                overflowY: 'auto',
+                                                                padding: '8px 0',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: '1px',
+                                                                background: snapshot.isDraggingOver ? `${column.color}10` : 'transparent',
+                                                                borderRadius: '4px',
+                                                                transition: 'background 0.2s ease'
+                                                            }}
+                                                        >
+                                                            {colLeads.map((lead, idx) => (
+                                                                <Draggable key={lead.id.toString()} draggableId={lead.id.toString()} index={idx}>
+                                                                    {(dragProvided, dragSnapshot) => (
+                                                                        <div
+                                                                            ref={dragProvided.innerRef}
+                                                                            {...dragProvided.draggableProps}
+                                                                            {...dragProvided.dragHandleProps}
+                                                                            style={{
+                                                                                ...dragProvided.draggableProps.style,
+                                                                                opacity: dragSnapshot.isDragging ? 0.85 : 1,
+                                                                                boxShadow: dragSnapshot.isDragging ? '0 8px 24px rgba(0,0,0,0.15)' : 'none',
+                                                                                transform: dragSnapshot.isDragging
+                                                                                    ? `${dragProvided.draggableProps.style?.transform || ''} rotate(2deg)`
+                                                                                    : dragProvided.draggableProps.style?.transform,
+                                                                            }}
+                                                                        >
+                                                                            <KanbanCard
+                                                                                lead={lead}
+                                                                                index={idx}
+                                                                                statusColor={column.color}
+                                                                                onClick={() => handleOpenEditLead(lead)}
+                                                                                onQuickAction={handleQuickAction}
+                                                                                isHighlighted={lead.id === highlightedLeadId}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </Draggable>
+                                                            ))}
+                                                            {provided.placeholder}
+                                                        </div>
+                                                    )}
+                                                </Droppable>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </DragDropContext>
                         </div>
                     )
                 )
@@ -1811,108 +2086,311 @@ const CRMBoard = () => {
                                 {/* ATTENDANCE CHECK STEP */}
                                 {moveModal.step === 'attendance_check' ? (
                                     <div className="animate-fade-in">
-                                        <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', color: '#1f2937', textAlign: 'center' }}>
-                                            Confirmação de Agendamento
-                                        </h4>
+                                        {/* Lead info banner */}
+                                        {moveModal.data && (
+                                            <div style={{
+                                                background: 'linear-gradient(135deg, #f8fafc, #eef2ff)',
+                                                borderRadius: '16px',
+                                                padding: '16px',
+                                                marginBottom: '20px',
+                                                border: '1px solid #e2e8f0'
+                                            }}>
+                                                <div style={{ fontWeight: '700', fontSize: '16px', color: '#1e293b' }}>
+                                                    {moveModal.data.name || 'Lead'}
+                                                </div>
+                                                {moveModal.data.phone && (
+                                                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                                                        📞 {moveModal.data.phone}
+                                                    </div>
+                                                )}
+                                                {moveModal.data.appointmentDate && (
+                                                    <div style={{ fontSize: '12px', color: '#8b5cf6', marginTop: '6px', fontWeight: '600' }}>
+                                                        📅 Agendado: {new Date(moveModal.data.appointmentDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                            {/* Question 1: Showed Up? */}
+                                        <h4 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '8px', color: '#1f2937', textAlign: 'center' }}>
+                                            Resultado do Agendamento
+                                        </h4>
+                                        <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4' }}>
+                                            Qual foi o resultado deste agendamento?
+                                        </p>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {/* Option 1: Compareceu → Negotiation */}
+                                            <button
+                                                onClick={() => {
+                                                    setMoveModal(prev => ({
+                                                        ...prev,
+                                                        attendanceConfirmed: true,
+                                                        destinationId: 'negotiation',
+                                                        step: 'details'
+                                                    }));
+                                                    setMoveData(prev => ({ ...prev, outcome: 'success', notes: 'Compareceu ao agendamento. Em negociação.' }));
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '14px',
+                                                    padding: '16px 18px', borderRadius: '16px',
+                                                    border: '1px solid #dcfce7', background: '#f0fdf4',
+                                                    cursor: 'pointer', transition: 'all 0.2s',
+                                                    textAlign: 'left'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.transform = 'scale(1.01)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                            >
+                                                <div style={{
+                                                    width: '44px', height: '44px', borderRadius: '12px',
+                                                    background: '#16a34a', display: 'flex', alignItems: 'center',
+                                                    justifyContent: 'center', fontSize: '22px', flexShrink: 0
+                                                }}>✅</div>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', fontSize: '15px', color: '#15803d' }}>Compareceu</div>
+                                                    <div style={{ fontSize: '12px', color: '#4ade80', fontWeight: '500' }}>Avança para negociação</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Option 2: Bolo / Não Compareceu → No Show */}
+                                            <button
+                                                onClick={() => {
+                                                    setMoveModal(prev => ({
+                                                        ...prev,
+                                                        destinationId: 'no_show',
+                                                        step: 'details'
+                                                    }));
+                                                    setMoveData(prev => ({ ...prev, outcome: 'failure', notes: 'Não compareceu ao agendamento (bolo).' }));
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '14px',
+                                                    padding: '16px 18px', borderRadius: '16px',
+                                                    border: '1px solid #fee2e2', background: '#fef2f2',
+                                                    cursor: 'pointer', transition: 'all 0.2s',
+                                                    textAlign: 'left'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1.01)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                            >
+                                                <div style={{
+                                                    width: '44px', height: '44px', borderRadius: '12px',
+                                                    background: '#dc2626', display: 'flex', alignItems: 'center',
+                                                    justifyContent: 'center', fontSize: '22px', flexShrink: 0
+                                                }}>🍰</div>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', fontSize: '15px', color: '#dc2626' }}>Bolo (Não Compareceu)</div>
+                                                    <div style={{ fontSize: '12px', color: '#f87171', fontWeight: '500' }}>Move para coluna de bolo</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Option 3: Reagendou → stays in Scheduled with new date */}
+                                            <button
+                                                onClick={() => {
+                                                    setMoveModal(prev => ({
+                                                        ...prev,
+                                                        destinationId: 'scheduled',
+                                                        step: 'reschedule'
+                                                    }));
+                                                    setMoveData(prev => ({ ...prev, outcome: 'success', notes: 'Reagendou o atendimento.' }));
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '14px',
+                                                    padding: '16px 18px', borderRadius: '16px',
+                                                    border: '1px solid #fef3c7', background: '#fffbeb',
+                                                    cursor: 'pointer', transition: 'all 0.2s',
+                                                    textAlign: 'left'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#fef3c7'; e.currentTarget.style.transform = 'scale(1.01)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = '#fffbeb'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                            >
+                                                <div style={{
+                                                    width: '44px', height: '44px', borderRadius: '12px',
+                                                    background: '#f59e0b', display: 'flex', alignItems: 'center',
+                                                    justifyContent: 'center', fontSize: '22px', flexShrink: 0
+                                                }}>🔄</div>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', fontSize: '15px', color: '#d97706' }}>Reagendou</div>
+                                                    <div style={{ fontSize: '12px', color: '#fbbf24', fontWeight: '500' }}>Define nova data de agendamento</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Option 4: Matriculou → Won + Enrollment */}
+                                            <button
+                                                onClick={async () => {
+                                                    await executeMove(moveModal.leadId, 'won', { notes: 'Compareceu e matriculou!' });
+                                                    setMoveModal(prev => ({ ...prev, isOpen: false }));
+                                                    const lead = leads.find(l => l.id === moveModal.leadId) || moveModal.data;
+                                                    if (lead) setEnrollmentModal({ isOpen: true, lead });
+                                                }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '14px',
+                                                    padding: '16px 18px', borderRadius: '16px',
+                                                    border: 'none', background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                                                    cursor: 'pointer', transition: 'all 0.2s',
+                                                    textAlign: 'left',
+                                                    boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.3)'; }}
+                                            >
+                                                <div style={{
+                                                    width: '44px', height: '44px', borderRadius: '12px',
+                                                    background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center',
+                                                    justifyContent: 'center', fontSize: '22px', flexShrink: 0
+                                                }}>🎓</div>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', fontSize: '15px', color: '#fff' }}>Matriculou!</div>
+                                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>Iniciar processo de matrícula</div>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        {/* Link to open full lead details */}
+                                        <div style={{ textAlign: 'center', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                                            <button
+                                                onClick={() => {
+                                                    setMoveModal(prev => ({ ...prev, isOpen: false }));
+                                                    const lead = leads.find(l => l.id === moveModal.leadId) || moveModal.data;
+                                                    if (lead) openLeadEditDirectly(lead);
+                                                }}
+                                                style={{
+                                                    background: 'none', border: 'none', cursor: 'pointer',
+                                                    color: '#6366f1', fontSize: '13px', fontWeight: '600',
+                                                    textDecoration: 'underline', opacity: 0.8
+                                                }}
+                                            >
+                                                Ver detalhes completos do lead →
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : moveModal.step === 'reschedule' ? (
+                                    <div className="animate-fade-in">
+                                        <h4 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '8px', color: '#1f2937', textAlign: 'center' }}>
+                                            📅 Reagendar Atendimento
+                                        </h4>
+                                        <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginBottom: '24px', lineHeight: '1.4' }}>
+                                            Selecione a nova data e horário do agendamento.
+                                        </p>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                             <div>
-                                                <label style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '12px', display: 'block', textAlign: 'center' }}>
-                                                    O lead compareceu ao agendamento?
+                                                <label style={{ fontSize: '12px', fontWeight: '700', color: '#4b5563', marginBottom: '6px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Nova Data e Horário
                                                 </label>
-                                                <div style={{ display: 'flex', gap: '12px' }}>
-                                                    <button
-                                                        onClick={() => {
-                                                            // No Show -> Move directly to No-Show logic
-                                                            setMoveModal(prev => ({
-                                                                ...prev,
-                                                                destinationId: 'no_show',
-                                                                step: 'details' // Go to details to capture next attempt
-                                                            }));
-                                                            setMoveData(prev => ({ ...prev, outcome: 'failure' })); // Default to failure/reschedule logic
-                                                        }}
-                                                        style={{
-                                                            flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #fee2e2',
-                                                            background: '#fef2f2', color: '#dc2626', fontWeight: 'bold', cursor: 'pointer',
-                                                            transition: 'transform 0.1s'
-                                                        }}
-                                                    >
-                                                        Não Compareceu
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            // Showed Up -> Ask Enrolled
-                                                            setMoveModal(prev => ({ ...prev, attendanceConfirmed: true }));
-                                                        }}
-                                                        style={{
-                                                            flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #dcfce7',
-                                                            background: moveModal.attendanceConfirmed ? '#166534' : '#f0fdf4',
-                                                            color: moveModal.attendanceConfirmed ? '#fff' : '#16a34a', fontWeight: 'bold', cursor: 'pointer',
-                                                            transition: 'all 0.2s',
-                                                            boxShadow: moveModal.attendanceConfirmed ? '0 4px 12px rgba(22, 163, 74, 0.2)' : 'none'
-                                                        }}
-                                                    >
-                                                        Sim, Compareceu
-                                                    </button>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={moveData.appointmentDate || moveData.nextTaskDate || ''}
+                                                    onChange={(e) => setMoveData(prev => ({
+                                                        ...prev,
+                                                        appointmentDate: e.target.value,
+                                                        nextTaskDate: e.target.value
+                                                    }))}
+                                                    style={{
+                                                        width: '100%', padding: '14px', borderRadius: '12px',
+                                                        border: '2px solid #e2e8f0', fontSize: '15px',
+                                                        background: '#f8fafc', outline: 'none',
+                                                        transition: 'border-color 0.2s'
+                                                    }}
+                                                    onFocus={e => e.target.style.borderColor = '#f59e0b'}
+                                                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label style={{ fontSize: '12px', fontWeight: '700', color: '#4b5563', marginBottom: '6px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Tipo de Atendimento
+                                                </label>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    {['Presencial', 'Online', 'Telefone'].map(tipo => (
+                                                        <button
+                                                            key={tipo}
+                                                            onClick={() => setMoveData(prev => ({ ...prev, appointmentType: tipo }))}
+                                                            style={{
+                                                                flex: 1, padding: '10px', borderRadius: '10px',
+                                                                border: '1px solid',
+                                                                borderColor: moveData.appointmentType === tipo ? '#f59e0b' : '#e2e8f0',
+                                                                background: moveData.appointmentType === tipo ? '#fffbeb' : '#fff',
+                                                                color: moveData.appointmentType === tipo ? '#d97706' : '#6b7280',
+                                                                fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            {tipo}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
 
-                                            {/* Question 2: Enrolled? (Only if Showed Up) */}
-                                            {moveModal.attendanceConfirmed && (
-                                                <div className="animate-fade-in" style={{ borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
-                                                    <label style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '12px', display: 'block', textAlign: 'center' }}>
-                                                        Matrícula realizada?
-                                                    </label>
-                                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                                        <button
-                                                            onClick={() => {
-                                                                // Not Enrolled -> Move to Negotiation
-                                                                setMoveModal(prev => ({
-                                                                    ...prev,
-                                                                    destinationId: 'negotiation',
-                                                                    step: 'details'
-                                                                }));
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0',
-                                                                background: '#fff', color: '#64748b', fontWeight: 'bold', cursor: 'pointer'
-                                                            }}
-                                                        >
-                                                            Não (Negociação)
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                // Enrolled -> Execute Move to Won
-                                                                // Since Won usually triggers specific modal, we can execute move then open enrollment logic
-                                                                await executeMove(moveModal.leadId, 'won', { notes: 'Compareceu e Matriculou' });
-                                                                setMoveModal(prev => ({ ...prev, isOpen: false }));
+                                            <div>
+                                                <label style={{ fontSize: '12px', fontWeight: '700', color: '#4b5563', marginBottom: '6px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Observação (opcional)
+                                                </label>
+                                                <textarea
+                                                    value={moveData.notes}
+                                                    onChange={(e) => setMoveData(prev => ({ ...prev, notes: e.target.value }))}
+                                                    placeholder="Motivo do reagendamento..."
+                                                    rows={2}
+                                                    style={{
+                                                        width: '100%', padding: '12px', borderRadius: '12px',
+                                                        border: '2px solid #e2e8f0', fontSize: '14px',
+                                                        background: '#f8fafc', outline: 'none', resize: 'vertical',
+                                                        transition: 'border-color 0.2s'
+                                                    }}
+                                                    onFocus={e => e.target.style.borderColor = '#f59e0b'}
+                                                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                                                />
+                                            </div>
+                                        </div>
 
-                                                                // Open Enrollment Modal (Assumed logic exists in executeMove or handleDrag check, but here we explicitly trigger it)
-                                                                const lead = leads.find(l => l.id === moveModal.leadId);
-                                                                if (lead) setEnrollmentModal({ isOpen: true, lead });
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '14px', borderRadius: '12px', border: 'none',
-                                                                background: '#2563eb', color: '#fff', fontWeight: 'bold', cursor: 'pointer',
-                                                                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-                                                            }}
-                                                        >
-                                                            Sim, Matricular!
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
+                                        {/* Actions */}
+                                        <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                                            <button
+                                                onClick={() => setMoveModal(prev => ({ ...prev, step: 'attendance_check' }))}
+                                                style={{
+                                                    flex: 1, padding: '14px', borderRadius: '14px',
+                                                    border: '1px solid #e2e8f0', background: '#fff',
+                                                    color: '#64748b', fontWeight: '700', cursor: 'pointer',
+                                                    fontSize: '14px'
+                                                }}
+                                            >
+                                                ← Voltar
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (!moveData.appointmentDate && !moveData.nextTaskDate) {
+                                                        alert('Por favor, selecione a nova data do agendamento.');
+                                                        return;
+                                                    }
+                                                    const dateToUse = moveData.appointmentDate || moveData.nextTaskDate;
+                                                    executeMove(moveModal.leadId, 'scheduled', {
+                                                        notes: moveData.notes || 'Reagendou o atendimento.',
+                                                        appointmentDate: dateToUse,
+                                                        nextTaskDate: dateToUse,
+                                                        nextTaskType: 'Reunião Agendada',
+                                                        appointmentType: moveData.appointmentType || 'Presencial'
+                                                    });
+                                                    setMoveModal(prev => ({ ...prev, isOpen: false }));
+                                                }}
+                                                style={{
+                                                    flex: 2, padding: '14px', borderRadius: '14px',
+                                                    border: 'none', background: '#f59e0b',
+                                                    color: '#fff', fontWeight: '700', cursor: 'pointer',
+                                                    fontSize: '14px',
+                                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+                                                }}
+                                            >
+                                                Confirmar Reagendamento
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                         <p style={{ opacity: 0.6, fontSize: '14px', lineHeight: '1.5' }}>
-                                            {moveModal.destinationId === 'connecting' ? 'Como foi a tentativa de contato? O sistema irá agendar a próxima tarefa automaticamente.' :
-                                                'Atualize as informações do lead para prosseguir com a mudança de estágio no funil.'}
+                                            {(moveModal.destinationId === 'connecting' || moveModal.destinationId === 'connecting_2' || moveModal.destinationId === 'connecting_3') ? 'Como foi a tentativa de contato? O sistema irá agendar a próxima tarefa automaticamente.' :
+                                                moveModal.destinationId === 'negotiation' ? 'Registre o resultado do follow-up de negociação. O lead permanecerá em negociação até que haja matrícula ou encerramento.' :
+                                                    'Atualize as informações do lead para prosseguir com a mudança de estágio no funil.'}
                                         </p>
 
-                                        {moveModal.destinationId === 'connecting' && (
+                                        {(moveModal.destinationId === 'connecting' || moveModal.destinationId === 'connecting_2' || moveModal.destinationId === 'connecting_3') && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                                 <div>
                                                     <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Resultado</label>
@@ -2043,59 +2521,140 @@ const CRMBoard = () => {
                                             </div>
                                         )}
 
-                                        {(moveModal.destinationId === 'negotiation' || moveModal.destinationId === 'scheduled' || moveModal.destinationId === 'closed' || moveModal.destinationId === 'no_show') && (
+                                        {(moveModal.destinationId === 'negotiation') && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                                {moveModal.destinationId === 'negotiation' && (
-                                                    <div>
-                                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Valor Proposto</label>
-                                                        <input
-                                                            type="text"
-                                                            value={moveData.proposedValue}
-                                                            onChange={e => setMoveData({ ...moveData, proposedValue: formatCurrency(e.target.value) })}
-                                                            placeholder="R$ 0,00"
-                                                            className="input-field"
-                                                        />
+                                                {/* Resultado da Negociação */}
+                                                <div>
+                                                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Resultado do Follow-up</label>
+                                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                                        <button
+                                                            onClick={() => setMoveData(prev => ({ ...prev, outcome: 'success' }))}
+                                                            style={{
+                                                                flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid',
+                                                                borderColor: moveData.outcome === 'success' ? '#16a34a' : 'rgba(0,0,0,0.1)',
+                                                                background: moveData.outcome === 'success' ? 'rgba(22, 163, 74, 0.1)' : '#fff',
+                                                                color: moveData.outcome === 'success' ? '#16a34a' : '#000',
+                                                                fontWeight: 'bold', cursor: 'pointer', transition: '0.2s'
+                                                            }}
+                                                        >
+                                                            ✅ Avançou
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setMoveData(prev => ({ ...prev, outcome: 'failure' }))}
+                                                            style={{
+                                                                flex: 1, padding: '12px', borderRadius: '14px', border: '1px solid',
+                                                                borderColor: moveData.outcome === 'failure' ? '#f59e0b' : 'rgba(0,0,0,0.1)',
+                                                                background: moveData.outcome === 'failure' ? 'rgba(245, 158, 11, 0.1)' : '#fff',
+                                                                color: moveData.outcome === 'failure' ? '#d97706' : '#000',
+                                                                fontWeight: 'bold', cursor: 'pointer', transition: '0.2s'
+                                                            }}
+                                                        >
+                                                            🔄 Sem Fechamento
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Success path: Matrícula or Follow-up */}
+                                                {moveData.outcome === 'success' && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <div style={{
+                                                            display: 'flex', alignItems: 'center', gap: '12px',
+                                                            padding: '12px', background: '#f0fdf4', borderRadius: '8px',
+                                                            border: '1px solid #dcfce7', cursor: 'pointer'
+                                                        }} onClick={() => setMoveData(prev => ({ ...prev, scheduledMeeting: prev.scheduledMeeting === 'yes' ? 'no' : 'yes' }))}>
+                                                            <input type="checkbox" checked={moveData.scheduledMeeting === 'yes'} onChange={() => { }} style={{ margin: 0, width: '16px', height: '16px', cursor: 'pointer' }} />
+                                                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#15803d' }}>Houve matrícula?</span>
+                                                        </div>
+
+                                                        {moveData.scheduledMeeting === 'yes' && (
+                                                            <div className="animate-fade-in" style={{ marginTop: '4px' }}>
+                                                                <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Data da Matrícula</label>
+                                                                <input type="datetime-local" value={moveData.appointmentDate} onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })} className="input-field" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+
+                                                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                                                    <div style={{ flex: 2 }}>
+                                                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Curso</label>
+                                                                        <select
+                                                                            value={moveData.courseInterest}
+                                                                            onChange={e => setMoveData({ ...moveData, courseInterest: e.target.value })}
+                                                                            className="input-field"
+                                                                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                                                                        >
+                                                                            <option value="">Selecione...</option>
+                                                                            {courses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Qtd</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1"
+                                                                            value={moveData.quantity}
+                                                                            onChange={e => setMoveData({ ...moveData, quantity: e.target.value })}
+                                                                            className="input-field" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {moveData.scheduledMeeting === 'no' && (
+                                                            <div className="animate-fade-in" style={{ marginTop: '4px' }}>
+                                                                <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Próximo Follow-up (Opcional)</label>
+                                                                <input type="datetime-local" className="input-field" value={moveData.nextTaskDate || ''} onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                                <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Defina uma data para acompanhar a negociação.</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
-                                                {moveModal.destinationId === 'negotiation' && (
-                                                    <div>
-                                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Próximo Contato</label>
-                                                        <input
-                                                            type="datetime-local"
-                                                            value={moveData.nextTaskDate || ''}
-                                                            onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })}
-                                                            className="input-field"
-                                                        />
+
+                                                {/* Failure path: Follow-up / Retentativa */}
+                                                {moveData.outcome === 'failure' && (
+                                                    <div style={{ background: '#FFFBEB', padding: '14px', borderRadius: '12px', border: '1px solid #FEF3C7' }}>
+                                                        <div style={{ fontSize: '13px', color: '#92400E', fontWeight: '600', marginBottom: '10px' }}>
+                                                            📅 Agendar próximo follow-up de negociação
+                                                        </div>
+                                                        <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Data e Hora do Próximo Contato</label>
+                                                        <input type="datetime-local" className="input-field" value={moveData.nextTaskDate} onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                                                        <p style={{ fontSize: '11px', color: '#92400E', marginTop: '6px', opacity: 0.8 }}>
+                                                            O lead permanece em negociação. A tentativa será registrada no histórico.
+                                                        </p>
                                                     </div>
                                                 )}
+
+                                                {/* Valor Proposto / Venda */}
+                                                <div>
+                                                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                                                        {moveData.scheduledMeeting === 'yes' ? 'Valor da Venda' : 'Valor Proposto'}
+                                                    </label>
+                                                    <input type="text" value={moveData.proposedValue} onChange={e => setMoveData({ ...moveData, proposedValue: formatCurrency(e.target.value) })} placeholder="R$ 0,00" className="input-field" />
+                                                </div>
+
+                                                {/* Observações */}
+                                                <div>
+                                                    <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Observações</label>
+                                                    <textarea value={moveData.notes} onChange={e => setMoveData({ ...moveData, notes: e.target.value })} placeholder="Descreva o que aconteceu na negociação..." style={{ height: '80px', width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {(moveModal.destinationId === 'scheduled' || moveModal.destinationId === 'closed' || moveModal.destinationId === 'no_show') && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 {moveModal.destinationId === 'scheduled' && (
                                                     <div>
                                                         <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Data/Hora</label>
-                                                        <input
-                                                            type="datetime-local"
-                                                            value={moveData.appointmentDate}
-                                                            onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })}
-                                                        />
+                                                        <input type="datetime-local" value={moveData.appointmentDate} onChange={e => setMoveData({ ...moveData, appointmentDate: e.target.value })} />
                                                     </div>
                                                 )}
                                                 {moveModal.destinationId === 'no_show' && (
                                                     <div>
                                                         <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Nova Data para Retentativa</label>
-                                                        <input
-                                                            type="datetime-local"
-                                                            value={moveData.nextTaskDate}
-                                                            onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })}
-                                                        />
+                                                        <input type="datetime-local" value={moveData.nextTaskDate} onChange={e => setMoveData({ ...moveData, nextTaskDate: e.target.value })} />
                                                     </div>
                                                 )}
                                                 <div>
                                                     <label style={{ fontSize: '11px', fontWeight: '900', color: '#8E8E93', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Observações</label>
-                                                    <textarea
-                                                        value={moveData.notes}
-                                                        onChange={e => setMoveData({ ...moveData, notes: e.target.value })}
-                                                        placeholder="Descreva o que aconteceu..."
-                                                        style={{ height: '80px', width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
-                                                    />
+                                                    <textarea value={moveData.notes} onChange={e => setMoveData({ ...moveData, notes: e.target.value })} placeholder="Descreva o que aconteceu..." style={{ height: '80px', width: '100%', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
                                                 </div>
                                             </div>
                                         )}
@@ -2104,7 +2663,7 @@ const CRMBoard = () => {
                             </div>
 
                             {/* Footer */}
-                            {moveModal.step !== 'attendance_check' && (
+                            {moveModal.step !== 'attendance_check' && moveModal.step !== 'reschedule' && (
                                 <div style={{
                                     padding: '16px 24px',
                                     borderTop: '1px solid rgba(0,0,0,0.06)',
@@ -2443,9 +3002,77 @@ const CRMBoard = () => {
                 lead={enrollmentModal.lead}
                 onSuccess={(student) => {
                     console.log('Student enrolled:', student);
-                    fetchLeads(); // Refresh leads to show updated status
+                    // 1. Refresh Leads
+                    fetchLeads();
+                    // 2. Close Enrollment Modal
                     setEnrollmentModal({ isOpen: false, lead: null });
+                    // 3. Open Financial Modal immediately
+                    if (student) {
+                        setStudentFinancialModal({ isOpen: true, student });
+                    }
                 }}
+            />
+
+            {/* Won Action Modal */}
+            <VoxModal
+                isOpen={wonActionModal.isOpen}
+                onClose={() => setWonActionModal({ isOpen: false, lead: null })}
+                title={wonActionModal.confirmReopen ? "Confirmar Reabertura" : "Atendimento Finalizado"}
+                width="450px"
+            >
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <div style={{ marginBottom: '20px', color: '#4B5563' }}>
+                        {wonActionModal.confirmReopen
+                            ? <span>Deseja realmente mover <strong>{wonActionModal.lead?.name}</strong> de volta para Negociação?</span>
+                            : <span>O que você deseja fazer com o lead <strong>{wonActionModal.lead?.name}</strong>?</span>
+                        }
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+
+                        {wonActionModal.confirmReopen ? (
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <button
+                                    onClick={() => setWonActionModal({ ...wonActionModal, confirmReopen: false })}
+                                    className="btn-secondary"
+                                    style={{ flex: 1 }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await api.put(`/crm/leads/${wonActionModal.lead.id}/move`, { status: 'negotiation' });
+                                            fetchLeads();
+                                            setWonActionModal({ isOpen: false, lead: null });
+                                        } catch (error) {
+                                            alert('Erro ao reabrir atendimento');
+                                        }
+                                    }}
+                                    className="btn-primary"
+                                    style={{ flex: 1 }}
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setWonActionModal({ ...wonActionModal, confirmReopen: true })}
+                                className="btn-secondary"
+                            >
+                                <ArrowLeft size={16} style={{ marginRight: '8px', display: 'inline-block', verticalAlign: 'text-bottom' }} />
+                                Reabrir Atendimento
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </VoxModal>
+
+            {/* Student Financial Modal */}
+            <StudentFinancialModal
+                isOpen={studentFinancialModal.isOpen}
+                onClose={() => setStudentFinancialModal({ isOpen: false, student: null })}
+                student={studentFinancialModal.student}
             />
 
             {/* Quick Add Modal */}

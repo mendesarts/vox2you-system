@@ -228,7 +228,7 @@ const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', ed
     const deleteAndRecreate = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
 
             // 1. Excluir esta e futuras
             const deleteUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${editRecord.id}?deleteFutures=true`;
@@ -329,7 +329,7 @@ const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', ed
             };
 
 
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const url = (editRecord && !forceCreate)
                 ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${editRecord.id}`
                 : `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/record`;
@@ -388,7 +388,7 @@ const NewPayableModal = ({ onClose, onSuccess, onRefresh, scope = 'business', ed
     const executeDelete = async (deleteScope) => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/financial/${editRecord.id}?deleteScope=${deleteScope}`;
             const res = await fetch(url, {
                 method: 'DELETE',

@@ -63,7 +63,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const unitQuery = selectedUnit ? `?unitId=${selectedUnit}` : '';
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students${unitQuery}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -80,7 +80,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/classes`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -99,7 +99,7 @@ const StudentsManager = ({ initialFilters = {}, hideHeader = false }) => {
     const confirmDelete = async () => {
         if (!studentToDelete) return;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/students/${studentToDelete.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }

@@ -22,7 +22,7 @@ const ConsultationResultPage = () => {
 
     const fetchLead = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}/crm/leads/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -37,7 +37,7 @@ const ConsultationResultPage = () => {
     const handleSave = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             let payload = { notes: formData.notes };
             let redirectAction = null;
 

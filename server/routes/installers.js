@@ -7,80 +7,138 @@ router.get('/download-setup-linux', (req, res) => {
     const REPO_URL = "https://github.com/SEU_USUARIO/VOXFLOW.git";
 
     const shContent = `#!/bin/bash
-# VOXBOX - INSTALADOR UNIVERSAL LINUX (SERVER/MINIMAL)
-# Versão: 2.0 (Com Atalho Desktop)
+# VOXBOX - INSTALADOR UNIVERSAL LINUX (LUBUNTU/UBUNTU/DEBIAN)
+# Versão: 3.0 (Chromium Dedicado + PM2)
 
-echo "============================================="
-echo "   VOXBOX SETUP - LINUX SERVER"
-echo "============================================="
-echo "Este script vai solicitar sua senha de administrador (sudo)."
+# Cores para facilitar leitura
+GREEN='\\033[0;32m'
+CYAN='\\033[0;36m'
+RED='\\033[0;31m'
+NC='\\033[0m' # No Color
+
+echo -e "\${CYAN}============================================="
+echo -e "   🚀 VOXBOX SETUP - SERVIDOR LINUX"
+echo -e "=============================================\${NC}"
+echo "Este script vai solicitar sua senha de admin (sudo) para instalar os programas."
 echo ""
 
-# [1/6] DEPENDENCIAS DO SISTEMA
-echo "[1/6] Instalando bibliotecas do sistema..."
-sudo apt-get update
-sudo apt-get install -y curl git build-essential wget gnupg xterm
-# Dependencias do Chrome/Puppeteer
-sudo apt-get install -y ca-certificates fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 lsb-release xdg-utils
+# [1/7] ATUALIZAR SISTEMA
+echo -e "\${GREEN}[1/7] Atualizando sistema e repositórios...\${NC}"
+sudo apt-get update -y
+sudo apt-get upgrade -y
 
-# [2/6] NODE.JS
+# [2/7] INSTALAR DEPENDÊNCIAS ESSENCIAIS
+echo -e "\${GREEN}[2/7] Instalando ferramentas base (Git, Curl, Wget)...\${NC}"
+sudo apt-get install -y curl git build-essential wget gnupg unzip xterm
+
+# [3/7] INSTALAR CHROMIUM (NAVEGADOR PARA WHATSAPP)
+# Importante para Lubuntu/Debian evitar erro de 'Sandbox'
+echo -e "\${GREEN}[3/7] Instalando Chromium e dependências gráficas...\${NC}"
+sudo apt-get install -y chromium-browser libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libpangocairo-1.0-0
+
+# [4/7] INSTALAR NODE.JS (VERSÃO 20)
 if ! command -v node &> /dev/null; then
-    echo "[2/6] Instalando Node.js v20..."
+    echo -e "\${GREEN}[4/7] Instalando Node.js v20...\${NC}"
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
+else
+    echo -e "\${CYAN}✅ Node.js já instalado: $(node -v)\${NC}"
 fi
 
-# [3/6] PM2
-echo "[3/6] Instalando PM2..."
+# [5/7] BAIXAR SISTEMA
+echo -e "\${GREEN}[5/7] Preparando pasta do projeto...\${NC}"
+cd ~/Desktop || cd ~
+DIR_NAME="voxflow-whatsapp"
+
+# Verifica se a pasta existe
+if [ -d "$DIR_NAME" ]; then
+    echo "Pasta encontrada. Atualizando código..."
+    cd $DIR_NAME
+    git pull
+else
+    echo "Clonando repositório..."
+    # Se a url não estiver definida, usa a padrão ou pede input
+    git clone ${REPO_URL} $DIR_NAME || {
+        echo -e "\${RED}⚠️ Falha ao clonar. Verifique se o GitHub está acessível.\${NC}"
+        # Fallback: Tentar criar pasta e iniciar sem clone se for deploy local zipado
+        mkdir -p $DIR_NAME
+    }
+    cd $DIR_NAME
+fi
+
+# [6/7] INSTALAÇÃO E CONFIGURAÇÃO
+echo -e "\${GREEN}[6/7] Instalando pacotes do projeto...\${NC}"
+if [ -f "package.json" ]; then
+    npm install
+else
+    echo -e "\${RED}❌ package.json não encontrado. Certifique-se de que o código está na pasta.\${NC}"
+fi
+
+# Configurar Variáveis de Ambiente para o Puppeteer usar o Chromium do sistema
+echo -e "\${CYAN}Configurando caminho do Chromium...\${NC}"
+CHROMIUM_PATH=$(which chromium-browser) || $(which chromium)
+echo "PUPPETEER_EXECUTABLE_PATH=$CHROMIUM_PATH" > .env
+echo "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true" >> .env
+
+echo "✅ Arquivo .env criado com caminho: $CHROMIUM_PATH"
+
+# [7/7] INICIAR SERVIÇO (PM2)
+echo -e "\${GREEN}[7/7] Iniciando gerenciador de processos (PM2)...\${NC}"
 sudo npm install -g pm2
 
-# [4/6] APLICAÇÃO
-echo "[4/6] Configurando o VoxFlow..."
-cd ~/Desktop || cd ~
-if [ ! -d "voxflow-sdr" ]; then
-    git clone ${REPO_URL} voxflow-sdr
-fi
-cd voxflow-sdr
-npm install
+# Remove processo antigo se existir
+pm2 delete "VoxWhatsApp" 2>/dev/null || true
 
-# [5/6] BOOT AUTOMATICO
-echo "[5/6] Configurando Boot..."
-pm2 start worker.js --name "VoxFlow-SDR"
+# Inicia com as variáveis carregadas
+# Tenta startar index.js ou worker.js
+if [ -f "worker.js" ]; then
+    START_FILE="worker.js"
+else
+    START_FILE="index.js"
+fi
+
+echo "Iniciando $START_FILE..."
+pm2 start $START_FILE --name "VoxWhatsApp" --node-args="--max-old-space-size=1024"
+
 pm2 save
 pm2 startup | tail -n 1 | bash
 
-# [6/6] CRIAR ATALHO NA ÁREA DE TRABALHO (NOVO!)
-echo "[6/6] Criando icone 'Conectar WhatsApp'..."
+# [EXTRA] ATALHO NA ÁREA DE TRABALHO
+echo -e "\${GREEN}[EXTRA] Criando atalho 'Abrir Monitor'...\${NC}"
 DESKTOP_DIR=~/Desktop
-# Verifica se pasta existe (alguns linux usam 'Área de Trabalho')
 if [ ! -d "$DESKTOP_DIR" ]; then
     DESKTOP_DIR=~/Área\\ de\\ Trabalho
 fi
 
-cat <<EOF > "$DESKTOP_DIR/Conectar_WhatsApp.desktop"
+if [ -d "$DESKTOP_DIR" ]; then
+    cat <<EOF > "$DESKTOP_DIR/Monitor_WhatsApp.desktop"
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Conectar WhatsApp
+Name=Monitor WhatsApp
 Comment=Ver QR Code e Status
 Exec=x-terminal-emulator -e "pm2 monit"
-Icon=phone
+Icon=utilities-terminal
 Terminal=false
 StartupNotify=false
 Categories=Application;
 EOF
-
-# Tenta garantir permissão de execução
-chmod +x "$DESKTOP_DIR/Conectar_WhatsApp.desktop"
+    chmod +x "$DESKTOP_DIR/Monitor_WhatsApp.desktop"
+fi
 
 echo ""
-echo "============================================="
-echo "   INSTALACAO CONCLUIDA!"
-echo "   Um icone 'Conectar WhatsApp' foi criado na sua Area de Trabalho."
-echo "============================================="
+echo -e "\${CYAN}=============================================\${NC}"
+echo -e "\${GREEN}   INSTALAÇÃO CONCLUÍDA COM SUCESSO! \${NC}"
+echo -e "\${CYAN}=============================================\${NC}"
+echo "1. O serviço já está rodando em segundo plano."
+echo "2. Para ver o QR CODE, abra o atalho 'Monitor WhatsApp' ou digite 'pm2 monit' no terminal."
+echo "3. Se precisar reiniciar, use: pm2 restart VoxWhatsApp"
+echo ""
+sleep 2
+pm2 monit
 `;
 
-    res.setHeader('Content-disposition', 'attachment; filename=VoxBox_Setup_Linux.sh');
+    res.setHeader('Content-disposition', 'attachment; filename=VoxBox_Setup_Linux_v3.sh');
     res.setHeader('Content-type', 'application/x-sh');
     res.write(shContent);
     res.end();

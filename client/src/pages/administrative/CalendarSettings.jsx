@@ -33,7 +33,7 @@ const CalendarSettings = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const holidaysRes = await fetch(`${API_URL}/calendar/holidays`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -79,7 +79,7 @@ const CalendarSettings = () => {
 
     const handleCreateHoliday = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}/calendar/holidays`, {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(newHoliday)
@@ -121,7 +121,7 @@ const CalendarSettings = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -144,7 +144,7 @@ const CalendarSettings = () => {
         const year = new Date().getFullYear();
         let count = 0;
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const currentRes = await fetch(`${API_URL}/calendar/holidays`, { headers: { 'Authorization': `Bearer ${token}` } });
             const current = currentRes.ok ? await currentRes.json() : [];
 

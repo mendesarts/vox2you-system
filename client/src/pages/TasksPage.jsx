@@ -64,7 +64,7 @@ const TasksPage = () => {
     // -- DATA FETCHING --
     const fetchUnits = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/units`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -74,7 +74,7 @@ const TasksPage = () => {
 
     const fetchClasses = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pedagogical/classes`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -88,7 +88,7 @@ const TasksPage = () => {
     const fetchTasks = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             let url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tasks?start=${startDate}&end=${endDate}`;
             if (selectedUnit) url += `&unitId=${selectedUnit}`;
 
@@ -112,7 +112,7 @@ const TasksPage = () => {
 
     const handleToggleStatus = async (task) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const newStatus = task.status === 'done' ? 'pending' : 'done';
             await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tasks/${task.id}`, {
                 method: 'PUT',
@@ -133,7 +133,7 @@ const TasksPage = () => {
 
         if (leadId) {
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/crm/leads/${leadId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -179,7 +179,7 @@ const TasksPage = () => {
     const handleCreateTask = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const payload = { ...newTask, dueDate: `${newTask.dueDate}T${newTask.dueTime}:00`, userId: user.id };
             await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tasks`, {
                 method: 'POST',
@@ -273,7 +273,7 @@ const TasksPage = () => {
                         )}
                     </div>
 
-                    {lead && (
+                    {lead ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '12px', fontWeight: '800', color: '#48484a' }}>
                                 {lead.name}
@@ -297,6 +297,25 @@ const TasksPage = () => {
                                     textTransform: 'uppercase'
                                 }}>
                                     {stage.label}
+                                </span>
+                            )}
+                        </div>
+                    ) : task.description && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>
+                                {task.description}
+                            </span>
+                            {task.category === 'pedagogical' && (
+                                <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: '900',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    background: '#8b5cf6',
+                                    color: '#fff',
+                                    textTransform: 'uppercase'
+                                }}>
+                                    Pedagógico
                                 </span>
                             )}
                         </div>

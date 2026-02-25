@@ -21,7 +21,7 @@ const Lead = sequelize.define('Lead', {
     funnel: { type: DataTypes.STRING, defaultValue: 'crm' },
     status: {
         type: DataTypes.ENUM,
-        values: ['new', 'connecting', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed', 'lost', 'closed_won', 'closed_lost', 'archived', 'social_comment', 'social_direct', 'social_prospect', 'internal_students', 'internal_other', 'internal_team', 'nurturing'],
+        values: ['new', 'connecting', 'connecting_2', 'connecting_3', 'connected', 'scheduled', 'no_show', 'negotiation', 'won', 'closed', 'lost', 'closed_won', 'closed_lost', 'archived', 'social_comment', 'social_direct', 'social_prospect', 'internal_students', 'internal_other', 'internal_team', 'nurturing', 'warming_day_1', 'warming_day_2', 'warming_day_3', 'warming_day_4', 'warming_day_5', 'warming_day_6', 'warming_day_7', 'warming_day_8', 'warming_day_9', 'warming_day_10', 'up_cell', 'down_cell'],
         defaultValue: 'new'
     },
     consultant_id: { type: DataTypes.INTEGER, allowNull: true },
@@ -34,6 +34,7 @@ const Lead = sequelize.define('Lead', {
     appointmentDate: { type: DataTypes.DATE },
     notes: { type: DataTypes.TEXT },
     history: { type: DataTypes.TEXT, defaultValue: '[]' },
+    attempts: { type: DataTypes.TEXT, defaultValue: '[]' },
     quantity: { type: DataTypes.INTEGER },
     company: { type: DataTypes.STRING },
     secondary_phone: { type: DataTypes.STRING },
